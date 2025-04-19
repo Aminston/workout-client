@@ -1,0 +1,97 @@
+/* === Reusable Card Component Styles === */
+
+.section-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.data-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.data-card__header {
+  background-color: #f8f9fa;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.data-card__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.category-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3em 0.6em;
+  border-radius: 0.25rem;
+  text-transform: capitalize;
+}
+
+/* Category badge color variants */
+.category-badge--blue {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.category-badge--green {
+  background-color: #22c55e;
+  color: white;
+}
+
+.category-badge--red {
+  background-color: #ef4444;
+  color: white;
+}
+
+.category-badge--yellow {
+  background-color: #facc15;
+  color: #333;
+}
+
+.category-badge--cyan {
+  background-color: #06b6d4;
+  color: white;
+}
+
+.category-badge--purple {
+  background-color: #a855f7;
+  color: white;
+}
+
+.category-badge--indigo {
+  background-color: #6366f1;
+  color: white;
+}
+
+.category-badge--default {
+  background-color: #e5e7eb;
+  color: #333;
+}
+
+.data-divider {
+  margin: 0;
+  border-top: 1px solid #dee2e6;
+}
+
+.entry-list {
+  padding: 1rem;
+  padding-top: 0.75rem;
+  margin: 0;
+  list-style-type: none;
+  color: #333;
+  line-height: 1.6;
+  padding-left: 1.25rem;
+}
+
+.entry-item {
+  margin-bottom: 0.25rem;
+}

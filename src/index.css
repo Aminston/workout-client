@@ -1,0 +1,10 @@
+/* === Global Reset and Layout Foundation === */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #f8f9fa;
+  font-family: system-ui, sans-serif;
+}

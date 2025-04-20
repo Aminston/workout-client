@@ -15,11 +15,22 @@ export default function WeeklyWorkout() {
   const [schedule, setSchedule] = useState([]);
 
   useEffect(() => {
-    fetch('http://localhost:3000/weekly-schedule')
-      .then((res) => res.json())
-      .then((data) => setSchedule(data))
-      .catch((err) => console.error('Failed to fetch workouts:', err));
+    let isMounted = true;
+  
+    fetch("https://workout-backend-gfdy.onrender.com/weekly-schedule")
+      .then(res => res.json())
+      .then(data => {
+        if (isMounted) {
+          setSchedule(data);
+        }
+      })
+      .catch(err => console.error('Failed to fetch workouts:', err));
+  
+    return () => {
+      isMounted = false;
+    };
   }, []);
+  
 
   return (
     <div className="section-list">

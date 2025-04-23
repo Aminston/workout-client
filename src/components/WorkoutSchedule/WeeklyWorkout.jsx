@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 import './WeeklyWorkout.css';
 
 const CATEGORY_CLASSES = {
-  Chest: 'category-badge--blue',
-  Back: 'category-badge--cyan',
-  Legs: 'category-badge--green',
-  Shoulders: 'category-badge--yellow',
-  Arms: 'category-badge--red',
-  Core: 'category-badge--purple',
-  'Full Body': 'category-badge--indigo',
+  'Chest & Triceps': 'category-badge--blue',
+  'Back & Biceps': 'category-badge--cyan',
+  'Legs & Shoulders': 'category-badge--green',
+  'Core & Functional': 'category-badge--purple',
+  'Full-Body': 'category-badge--indigo',
 };
 
 export default function WeeklyWorkout() {
@@ -18,7 +16,7 @@ export default function WeeklyWorkout() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("https://workout-backend-gfdy.onrender.com/weekly-schedule")
+    fetch("https://workout-backend-gfdy.onrender.com")
       .then(res => res.json())
       .then(data => {
         if (isMounted) {
@@ -38,12 +36,6 @@ export default function WeeklyWorkout() {
 
   return (
     <div className="section-list">
-      <div className="program-meta">
-        <p className="program-meta__label">
-          Active Program: <strong>{meta.program_start}</strong> to <strong>{meta.expires_on}</strong>
-        </p>
-      </div>
-
       {schedule.map((day, index) => (
         <div key={day.day} className="data-card">
           <div className="data-card__header">

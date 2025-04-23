@@ -16,7 +16,7 @@ export default function WeeklyWorkout() {
   useEffect(() => {
     let isMounted = true;
 
-    fetch("https://workout-backend-gfdy.onrender.com")
+    fetch("https://workout-backend-gfdy.onrender.com/weekly-schedule")
       .then(res => res.json())
       .then(data => {
         if (isMounted) {

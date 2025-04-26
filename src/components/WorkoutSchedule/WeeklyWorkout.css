@@ -95,3 +95,14 @@
 .entry-item {
   margin-bottom: 0.25rem;
 }
+
+/* === Redirect Style === */
+.exercise-link {
+  color: #0d6efd; /* Bootstrap blue */
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.exercise-link:hover {
+  text-decoration: underline;
+}

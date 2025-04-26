@@ -48,11 +48,21 @@ export default function WeeklyWorkout() {
           <hr className="data-divider" />
           <ul className="entry-list">
             {day.workouts.map((exercise, i) => (
-              <li key={i} className="entry-item">{exercise}</li>
+              <li key={i} className="entry-item">
+                <a 
+                  href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(exercise + ' exercise')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="exercise-link"
+                >
+                  {exercise}
+                </a>
+              </li>
             ))}
           </ul>
         </div>
       ))}
     </div>
   );
-}
+  }
+  

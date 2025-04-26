@@ -15,8 +15,8 @@ export default function WeeklyWorkout() {
 
   useEffect(() => {
     let isMounted = true;
-
-    fetch("https://workout-backend-gfdy.onrender.com/weekly-schedule")
+  
+    fetch(`${import.meta.env.VITE_API_URL}/weekly-schedule`)
       .then(res => res.json())
       .then(data => {
         if (isMounted) {
@@ -28,11 +28,12 @@ export default function WeeklyWorkout() {
         }
       })
       .catch(err => console.error('Failed to fetch workouts:', err));
-
+  
     return () => {
       isMounted = false;
     };
   }, []);
+  
 
   return (
     <div className="section-list">

@@ -13,7 +13,7 @@ function Navbar() {
   const [meta, setMeta] = useState({ program_start: '', expires_on: '' });
 
   useEffect(() => {
-    fetch("http://localhost:3000/weekly-schedule")
+    fetch(`${import.meta.env.VITE_API_URL}/weekly-schedule`)
       .then(res => res.json())
       .then(data => {
         setMeta({

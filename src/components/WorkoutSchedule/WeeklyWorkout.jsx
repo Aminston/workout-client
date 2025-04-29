@@ -33,11 +33,10 @@ export default function WeeklyWorkout() {
       isMounted = false;
     };
   }, []);
-  
 
   return (
     <div className="section-list">
-      {schedule.map((day, index) => (
+      {schedule.map((day) => (
         <div key={day.day} className="data-card">
           <div className="data-card__header">
             <h5 className="data-card__title">{day.day}</h5>
@@ -50,12 +49,12 @@ export default function WeeklyWorkout() {
             {day.workouts.map((exercise, i) => (
               <li key={i} className="entry-item">
                 <a 
-                  href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(exercise + ' exercise')}`} 
+                  href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(exercise.name + ' exercise')}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="exercise-link"
                 >
-                  {exercise}
+                  {exercise.name}
                 </a>
               </li>
             ))}
@@ -64,5 +63,4 @@ export default function WeeklyWorkout() {
       ))}
     </div>
   );
-  }
-  
+}

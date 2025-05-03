@@ -1,12 +1,15 @@
+// src/components/WorkoutSchedule/WeeklyWorkout.jsx
+
 import React, { useEffect, useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import './WeeklyWorkout.css';
 
 const CATEGORY_CLASSES = {
-  'Chest & Triceps': 'category-badge--blue',
-  'Back & Biceps': 'category-badge--cyan',
-  'Legs & Shoulders': 'category-badge--green',
-  'Core & Functional': 'category-badge--purple',
-  'Full-Body': 'category-badge--indigo',
+  'Chest & Triceps':   'category-badge--blue',
+  'Back & Biceps':      'category-badge--cyan',
+  'Legs & Shoulders':   'category-badge--green',
+  'Core & Functional':  'category-badge--purple',
+  'Full-Body':          'category-badge--indigo',
 };
 
 export default function WeeklyWorkout() {
@@ -15,52 +18,83 @@ export default function WeeklyWorkout() {
 
   useEffect(() => {
     let isMounted = true;
-  
-    fetch(`${import.meta.env.VITE_API_URL}/weekly-schedule`)
-      .then(res => res.json())
+    const token = localStorage.getItem('X-API-Token');
+    const headers = token ? { 'X-API-Token': token } : {};
+
+    fetch(`${import.meta.env.VITE_API_URL}/weekly-schedule`, { headers })
+      .then(res => {
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (isMounted) {
           setSchedule(data.schedule);
-          setMeta({
-            program_start: data.program_start,
-            expires_on: data.expires_on
-          });
+          setMeta({ program_start: data.program_start, expires_on: data.expires_on });
         }
       })
       .catch(err => console.error('Failed to fetch workouts:', err));
-  
-    return () => {
-      isMounted = false;
-    };
+
+    return () => { isMounted = false; };
   }, []);
 
+  function formatDetail(ex) {
+    if (ex.sets == null && ex.reps == null && ex.weight == null) return '';
+    const parts = [];
+    if (ex.sets != null) parts.push(`${ex.sets} sets`);
+    if (ex.reps != null) parts.push(`x ${ex.reps} reps`);
+    if (ex.weight && ex.weight.value != null) {
+      parts.push(`, ${ex.weight.value} ${ex.weight.unit}`);
+    }
+    return parts.join(' ');
+  }
+
   return (
-    <div className="section-list">
-      {schedule.map((day) => (
-        <div key={day.day} className="data-card">
-          <div className="data-card__header">
-            <h5 className="data-card__title">{day.day}</h5>
-            <span className={`category-badge ${CATEGORY_CLASSES[day.category] || 'category-badge--default'}`}>
-              {day.category} Day
-            </span>
+    <div className="accordion" id="weeklyWorkoutAccordion">
+      {schedule.map(day => {
+        // create a safe ID by removing spaces
+        const dayId = day.day.replace(/\s+/g, '');
+        return (
+          <div key={day.day} className="accordion-item">
+            <h2 className="accordion-header" id={`heading${dayId}`}>
+              <button
+                className="accordion-button collapsed d-flex justify-content-between align-items-center"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target={`#collapse${dayId}`}
+                aria-expanded="false"
+                aria-controls={`collapse${dayId}`}
+              >
+                <span>{day.day}</span>
+                <span className={`category-badge ms-3 ${CATEGORY_CLASSES[day.category] || 'category-badge--default'}`}>
+                  {day.category} Day
+                </span>
+              </button>
+            </h2>
+            <div
+              id={`collapse${dayId}`}
+              className="accordion-collapse collapse"
+              aria-labelledby={`heading${dayId}`}
+              data-bs-parent="#weeklyWorkoutAccordion"
+            >
+              <div className="accordion-body p-0">
+                <ul className="entry-list">
+                  {day.workouts.map((ex, idx) => {
+                    const detail = formatDetail(ex);
+                    return (
+                      <li key={idx} className="entry-item">
+                        <div className="exercise-row">
+                          <span className="exercise-name">{ex.name}</span>
+                          {detail && <span className="exercise-detail">{detail}</span>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            </div>
           </div>
-          <hr className="data-divider" />
-          <ul className="entry-list">
-            {day.workouts.map((exercise, i) => (
-              <li key={i} className="entry-item">
-                <a 
-                  href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(exercise.name + ' exercise')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="exercise-link"
-                >
-                  {exercise.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

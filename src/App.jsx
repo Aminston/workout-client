@@ -1,20 +1,20 @@
 // src/App.jsx
-import './App.css';
-import './index.css'; // optional, usually global styles (already imported in main.jsx)
-import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
+import React, { useState } from 'react';
 import Navbar from './components/Navbar/Navbar';
+import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 
-function App() {
+export default function App() {
+  // default to an empty array so WeeklyWorkout always receives an array
+  const [personalized, setPersonalized] = useState([]);
+
   return (
     <div className="app-root">
-      <Navbar />
-      <main className="app-main">
-        <div className="content-scrollable">
-          <WeeklyWorkout />
-        </div>
+      {/* Pass the setter so Navbar can load new workouts */}
+      <Navbar onPersonalized={setPersonalized} />
+
+      <main className="app-main" style={{ padding: '1rem' }}>
+        <WeeklyWorkout personalized={personalized} />
       </main>
     </div>
   );
 }
-
-export default App;

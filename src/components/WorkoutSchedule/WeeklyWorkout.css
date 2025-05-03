@@ -1,31 +1,58 @@
-/* === Reusable Card Component Styles === */
+/* src/components/WorkoutSchedule/WeeklyWorkout.css */
 
-.section-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.data-card {
-  background: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
+/* Make sure your accordion‐item has a bit of breathing room and a subtle shadow */
+#weeklyWorkoutAccordion .accordion-item {
+  margin-bottom: 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.data-card__header {
-  background-color: #f8f9fa;
-  padding: 0.75rem 1rem;
+/* Increase hit area on the header */
+#weeklyWorkoutAccordion .accordion-button {
+  padding: 1rem 1.25rem;
+  font-weight: 500;
+}
+
+/* Ensure the badge doesn’t stick to the day text */
+#weeklyWorkoutAccordion .accordion-button .category-badge {
+  margin-left: auto;
+}
+
+/* Body padding for the workout list */
+#weeklyWorkoutAccordion .accordion-body {
+  padding: 1rem 1.25rem;
+}
+
+/* Reset your list styles and give each item vertical padding */
+.entry-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Remove border on last item */
+.entry-item:last-child {
+  border-bottom: none;
+}
+
+/* Flex layout + spacing for exercise rows */
+.exercise-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.data-card__title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin: 0;
+/* Optional: add a little horizontal padding inside each row */
+.exercise-row .exercise-name,
+.exercise-row .exercise-detail {
+  padding: 0 0.5rem;
 }
 
 .category-badge {
@@ -75,34 +102,4 @@
 .category-badge--default {
   background-color: #e5e7eb;
   color: #333;
-}
-
-.data-divider {
-  margin: 0;
-  border-top: 1px solid #dee2e6;
-}
-
-.entry-list {
-  padding: 1rem;
-  padding-top: 0.75rem;
-  margin: 0;
-  list-style-type: none;
-  color: #333;
-  line-height: 1.6;
-  padding-left: 1.25rem;
-}
-
-.entry-item {
-  margin-bottom: 0.25rem;
-}
-
-/* === Redirect Style === */
-.exercise-link {
-  color: #0d6efd; /* Bootstrap blue */
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.exercise-link:hover {
-  text-decoration: underline;
 }

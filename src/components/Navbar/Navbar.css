@@ -1,14 +1,48 @@
+/* src/components/Navbar/Navbar.css */
 .custom-navbar {
-  min-height: 48px;
+  background-color: #212529;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.custom-container {
+  padding: 0.25rem 0.5rem;
+}
+
+.navbar-flex {
+  display: flex;
+  align-items: center;
+}
+
+.nav-workout .dropdown-toggle {
   padding: 0;
 }
-.custom-container {
-  padding: 0.25rem;
-}
-.subtitle {
-  font-size: 0.85rem;
+
+.nav-dates {
+  font-size: 0.75rem;
   line-height: 1.2;
 }
-.custom-navbar .dropdown-toggle {
+
+/* Mobile: tighter, left-aligned */
+@media (max-width: 991px) {
+  .custom-navbar {
+    min-height: 40px;
+  }
+  /* All items naturally left-align in this flex layout */
+}
+
+/* Desktop: workouts on left, dates centered, user-info on right */
+@media (min-width: 992px) {
+  .nav-dates {
+    flex: 1;
+    text-align: center;
+  }
+  .nav-user-button {
+    margin-left: auto;
+  }
+}
+
+.custom-navbar .dropdown-toggle,
+.custom-navbar .nav-user-button .btn {
   padding: 0.25rem 0.5rem;
 }

@@ -53,10 +53,20 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
                 <ul className="entry-list">
                   {day.workouts.map((ex, idx) => {
                     const detail = formatDetail(ex);
+                    const query = encodeURIComponent(`how to do ${ex.name}`);
+                    const googleLink = `https://www.google.com/search?q=${query}`;
+
                     return (
                       <li key={idx} className="entry-item">
                         <div className="exercise-row">
-                          <span className="exercise-name">{ex.name}</span>
+                          <a
+                            className="exercise-name"
+                            href={googleLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {ex.name}
+                          </a>
                           {detail && <span className="exercise-detail">{detail}</span>}
                         </div>
                       </li>

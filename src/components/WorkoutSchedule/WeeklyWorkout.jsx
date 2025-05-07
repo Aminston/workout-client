@@ -1,42 +1,16 @@
-// src/components/WorkoutSchedule/WeeklyWorkout.jsx
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './WeeklyWorkout.css';
 
 const CATEGORY_CLASSES = {
   'Chest & Triceps':   'category-badge--blue',
-  'Back & Biceps':      'category-badge--cyan',
-  'Legs & Shoulders':   'category-badge--green',
-  'Core & Functional':  'category-badge--purple',
-  'Full-Body':          'category-badge--indigo',
+  'Back & Biceps':     'category-badge--cyan',
+  'Legs & Shoulders':  'category-badge--green',
+  'Core & Functional': 'category-badge--purple',
+  'Full-Body':         'category-badge--indigo',
 };
 
-export default function WeeklyWorkout() {
-  const [schedule, setSchedule] = useState([]);
-  const [meta, setMeta] = useState({ program_start: '', expires_on: '' });
-
-  useEffect(() => {
-    let isMounted = true;
-    const token = localStorage.getItem('X-API-Token');
-    const headers = token ? { 'X-API-Token': token } : {};
-
-    fetch(`${import.meta.env.VITE_API_URL}/weekly-schedule`, { headers })
-      .then(res => {
-        if (!res.ok) throw new Error(`Status ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (isMounted) {
-          setSchedule(data.schedule);
-          setMeta({ program_start: data.program_start, expires_on: data.expires_on });
-        }
-      })
-      .catch(err => console.error('Failed to fetch workouts:', err));
-
-    return () => { isMounted = false; };
-  }, []);
-
+export default function WeeklyWorkout({ personalized = [], meta = {} }) {
   function formatDetail(ex) {
     if (ex.sets == null && ex.reps == null && ex.weight == null) return '';
     const parts = [];
@@ -50,8 +24,7 @@ export default function WeeklyWorkout() {
 
   return (
     <div className="accordion" id="weeklyWorkoutAccordion">
-      {schedule.map(day => {
-        // create a safe ID by removing spaces
+      {personalized.map(day => {
         const dayId = day.day.replace(/\s+/g, '');
         return (
           <div key={day.day} className="accordion-item">

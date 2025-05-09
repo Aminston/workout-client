@@ -11,14 +11,13 @@ import ProfileModal from '../ProfileModal/ProfileModal';
 function formatDate(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr).toLocaleDateString('es-MX', {
-    year:  'numeric',
+    year: 'numeric',
     month: 'long',
-    day:   'numeric'
+    day: 'numeric'
   });
 }
 
-export default function AppNavbar({ onPersonalized, meta }) {
-  const [token, setToken] = useState(localStorage.getItem('jwt_token') || '');
+export default function AppNavbar({ token, setToken, meta, onPersonalized, fetchSchedule }) {
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [showUserModal, setShowUserModal] = useState(false);
   const [authMode, setAuthMode] = useState('login');
@@ -46,7 +45,7 @@ export default function AppNavbar({ onPersonalized, meta }) {
       }
 
       alert('✅ Personalized workout plan generated!');
-      onPersonalized?.();
+      fetchSchedule?.();
     } catch (error) {
       alert('❌ Error: ' + error.message);
     }
@@ -107,7 +106,10 @@ export default function AppNavbar({ onPersonalized, meta }) {
           setUserName={setUserName}
           authMode={authMode}
           setAuthMode={setAuthMode}
-          onLoginSuccess={onPersonalized}
+          onLoginSuccess={() => {
+            onPersonalized?.();
+            fetchSchedule?.();
+          }}
         />
       )}
     </>

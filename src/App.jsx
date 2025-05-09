@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 
@@ -10,18 +10,16 @@ export default function App() {
     user_name: ''
   });
 
-  const hasFetchedRef = useRef(false);
-  const token = localStorage.getItem('jwt_token');
+  const [token, setToken] = useState(localStorage.getItem('jwt_token'));
 
-  const fetchSchedule = async () => {
-    if (!token || hasFetchedRef.current) return;
-
-    hasFetchedRef.current = true;
+  const fetchSchedule = async (customToken) => {
+    const usedToken = customToken || token;
+    if (!usedToken) return;
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/schedule`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${usedToken}`
         }
       });
 
@@ -45,7 +43,13 @@ export default function App() {
 
   return (
     <div className="app-root">
-      <Navbar onPersonalized={fetchSchedule} meta={meta} />
+      <Navbar
+        token={token}
+        setToken={setToken}
+        onPersonalized={() => fetchSchedule()}
+        fetchSchedule={fetchSchedule}
+        meta={meta}
+      />
       <main className="app-main" style={{ padding: '1rem' }}>
         <WeeklyWorkout personalized={personalized} meta={meta} />
       </main>

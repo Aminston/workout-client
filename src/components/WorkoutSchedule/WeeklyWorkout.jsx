@@ -38,7 +38,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
               >
                 <span className="accordion-button-label">{day.day}</span>
                 <span className={`category-badge ${CATEGORY_CLASSES[day.category] || 'category-badge--default'}`}>
-                  {day.category} 
+                  {day.category}
                 </span>
               </button>
             </h2>
@@ -51,22 +51,23 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
               <ul className="entry-list p-0 m-0">
                 {day.workouts.map((exercise, idx) => {
                   const detail = formatDetail(exercise);
-                  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(
-                    `how to do ${exercise.name}`
-                  )}`;
+                  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(`how to do ${exercise.name}`)}`;
 
                   return (
-                    <li
-                      key={idx}
-                      className="entry-item clickable-card"
-                      onClick={() => window.open(googleSearchUrl, '_blank')}
-                    >
-                      <span className="exercise-name">{exercise.name}</span>
-                      {detail && (
-                        <span className="exercise-detail">
-                          {detail}
-                        </span>
-                      )}
+                    <li key={idx} className="entry-item">
+                      <a
+                        href={googleSearchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="clickable-card"
+                      >
+                        <span className="exercise-name">{exercise.name}</span>
+                        {detail && (
+                          <span className="exercise-detail">
+                            {detail}
+                          </span>
+                        )}
+                      </a>
                     </li>
                   );
                 })}

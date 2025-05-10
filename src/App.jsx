@@ -1,17 +1,19 @@
+// App.jsx
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
-import './App.css'; // Make sure this is included
+import LandingPage from './pages/Landing/LandingPage';
+import './App.css';
 
 export default function App() {
+  const [token, setToken] = useState(localStorage.getItem('jwt_token'));
+  const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [personalized, setPersonalized] = useState([]);
   const [meta, setMeta] = useState({
     program_start: '',
     expires_on: '',
     user_name: ''
   });
-
-  const [token, setToken] = useState(localStorage.getItem('jwt_token'));
 
   const fetchSchedule = async (customToken) => {
     const usedToken = customToken || token;
@@ -39,8 +41,29 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchSchedule();
+    if (token) {
+      fetchSchedule();
+    }
   }, [token]);
+
+  const handleLoginSuccess = () => {
+    fetchSchedule();
+    setUserName(localStorage.getItem('userName') || '');
+  };
+
+  if (!token) {
+    return (
+      <div className="app-root">
+        <LandingPage
+          token={token}
+          setToken={setToken}
+          userName={userName}
+          setUserName={setUserName}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="app-root">

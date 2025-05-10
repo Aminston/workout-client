@@ -1,12 +1,89 @@
 @import '../../styles/theme.css';
 
+/* Modal layout */
 .modal-content {
   background-color: var(--color-bg-card);
   color: var(--color-text-main);
+  border-radius: var(--radius-md);
+  border: none;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
 }
 
+/* Ensure contrast on every section */
 .modal-header,
 .modal-body,
 .modal-footer {
+  background-color: var(--color-bg-card);
   border-color: var(--color-border);
+  color: var(--color-text-main) !important;
+}
+
+/* Explicit text styling */
+.modal-header .modal-title,
+.modal-body h6,
+.modal-body p,
+.modal-body label,
+.modal-footer,
+.alert,
+.alert * {
+  color: var(--color-text-main) !important;
+}
+
+/* Inputs and selects */
+.modal-body .form-control,
+.modal-body .form-select {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+}
+
+/* Force placeholder to be readable */
+.modal-body .form-control::placeholder {
+  color: var(--color-text-secondary) !important;
+  opacity: 1 !important;
+}
+
+/* Focus state */
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+}
+
+/* Buttons */
+.modal-body .btn-primary,
+.modal-body .btn-success {
+  background-color: var(--color-accent);
+  border: none;
+  font-weight: 500;
+  color: white;
+}
+
+.modal-body .btn-primary:hover,
+.modal-body .btn-success:hover {
+  background-color: #dc2626;
+}
+
+/* Link buttons */
+.modal-body .btn-link {
+  color: var(--color-accent);
+  font-weight: 500;
+  padding-left: 0;
+}
+
+/* Spinner */
+.modal-body .spinner-border {
+  vertical-align: middle;
+}
+
+/* Alert override */
+.alert-success {
+  background-color: #14532d;
+  border-color: #22c55e;
+  color: #bbf7d0;
 }

@@ -1,49 +1,79 @@
-/* src/components/Navbar/Navbar.css */
+@import '../../styles/theme.css';
+
 .custom-navbar {
-  background-color: #212529;
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
 }
 
 .custom-container {
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.75rem;
 }
 
 .navbar-flex {
   display: flex;
   align-items: center;
-  width: 100%; /* Ensure full-width layout inside container */
+  justify-content: space-between;
+  width: 100%;
+  position: relative;
 }
 
-.nav-workout .dropdown-toggle {
-  padding: 0;
-}
-
-.nav-dates {
-  font-size: 0.75rem;
+/* Dropdown title */
+.nav-header-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-main);
   line-height: 1.2;
 }
 
+.nav-title {
+  text-decoration: none !important;
+  padding: 0;
+  color: var(--color-text-main);
+  line-height: 1.2;
+}
+
+.nav-title:hover,
+.nav-title:focus {
+  text-decoration: none !important;
+}
+
+/* Right-aligned auth buttons */
 .nav-user-button .btn {
   padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.2;
 }
 
-/* Mobile: tighter, left-aligned */
-@media (max-width: 991px) {
-  .custom-navbar {
-    min-height: 40px;
-  }
-  /* All items naturally left-align in this flex layout */
+.nav-user-button {
+  gap: 0.5rem;
 }
 
-/* Desktop: workouts on left, dates centered, user-info on right */
-@media (min-width: 992px) {
-  .nav-dates {
-    flex: 1;
-    text-align: center;
-  }
+/* Desktop: centered date across navbar */
+.nav-dates-desktop {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
 
-  .nav-user-button {
-    margin-left: auto;
+/* Mobile: stacked date under title */
+.nav-header-dates-mobile {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.15rem;
+}
+
+/* Show only in appropriate screens */
+@media (min-width: 577px) {
+  .nav-header-dates-mobile {
+    display: none;
+  }
+}
+
+@media (max-width: 576px) {
+  .nav-dates-desktop {
+    display: none;
   }
 }

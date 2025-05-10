@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
+import './App.css'; // Make sure this is included
 
 export default function App() {
   const [personalized, setPersonalized] = useState([]);
@@ -50,8 +51,10 @@ export default function App() {
         fetchSchedule={fetchSchedule}
         meta={meta}
       />
-      <main className="app-main" style={{ padding: '1rem' }}>
-        <WeeklyWorkout personalized={personalized} meta={meta} />
+      <main className="app-main">
+        <div className="content-scrollable">
+          <WeeklyWorkout personalized={personalized} meta={meta} />
+        </div>
       </main>
     </div>
   );

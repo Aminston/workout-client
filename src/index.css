@@ -1,10 +1,12 @@
-/* === Global Reset and Layout Foundation === */
+@import './styles/theme.css';
+
 html, body, #root {
+  background-color: var(--color-bg-main) !important;
+  color: var(--color-text-main);
   margin: 0;
   padding: 0;
   height: 100%;
   width: 100%;
   box-sizing: border-box;
-  background-color: #f8f9fa;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-family);
 }

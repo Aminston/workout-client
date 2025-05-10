@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import './Navbar.css';
 import {
   Navbar,
   Container,
@@ -7,6 +6,7 @@ import {
   Button,
 } from 'react-bootstrap';
 import ProfileModal from '../ProfileModal/ProfileModal';
+import './Navbar.css';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -51,15 +51,21 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
     }
   };
 
+  const displayName = userName || meta?.user_name || '';
+
   return (
     <>
-      <Navbar variant="dark" className="custom-navbar">
+      <Navbar bg="dark" variant="dark" className="custom-navbar">
         <Container fluid className="custom-container">
           <div className="navbar-flex w-100">
+
+            {/* Left: Dropdown title */}
             <div className="nav-workout">
-              <Dropdown align="end">
-                <Dropdown.Toggle variant="link" className="text-white fs-4 fw-bold p-0">
-                  {token ? `${userName || meta.user_name || ''}'s Workouts` : 'Your Workouts'}
+              <Dropdown align="start">
+                <Dropdown.Toggle variant="dark" className="nav-title text-white p-0">
+                  <span className="nav-header-title">
+                    {token ? `${displayName}'s Workout` : 'Your Workout'}
+                  </span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   {token ? (
@@ -67,9 +73,7 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
                       <Dropdown.Item onClick={() => { setAuthMode('profile'); setShowUserModal(true); }}>
                         Edit Profile
                       </Dropdown.Item>
-                      <Dropdown.Item onClick={handleGetWorkout}>
-                        Get Workout
-                      </Dropdown.Item>
+                      <Dropdown.Item onClick={handleGetWorkout}>Get Workout</Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
                     </>
@@ -80,14 +84,25 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
                   )}
                 </Dropdown.Menu>
               </Dropdown>
+
+              {/* Mobile-only stacked date */}
+              {token && (
+                <div className="nav-header-dates-mobile">
+                  {formatDate(meta.program_start)} — {formatDate(meta.expires_on)}
+                </div>
+              )}
             </div>
 
-            <div className="nav-dates text-center flex-grow-1">
-              {formatDate(meta.program_start)} — {formatDate(meta.expires_on)}
-            </div>
+            {/* Desktop-only centered date */}
+            {token && (
+              <div className="nav-dates-desktop">
+                {formatDate(meta.program_start)} — {formatDate(meta.expires_on)}
+              </div>
+            )}
 
+            {/* Right: Auth Buttons */}
             {!token && (
-              <div className="nav-user-button d-flex gap-2">
+              <div className="nav-user-button d-flex gap-2 ms-auto">
                 <Button variant="outline-light" onClick={() => { setAuthMode('login'); setShowUserModal(true); }}>Login</Button>
                 <Button variant="light" onClick={() => { setAuthMode('register'); setShowUserModal(true); }}>Register</Button>
               </div>

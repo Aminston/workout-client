@@ -1,7 +1,9 @@
-/* === App Layout === */
+@import './styles/theme.css';
+
 .app-root {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
   min-height: 100vh;
-  background-color: #f8f9fa;
   display: flex;
   flex-direction: column;
 }
@@ -10,74 +12,27 @@
   flex-grow: 1;
   display: flex;
   justify-content: center;
-  align-items: center;
   padding: 1rem;
+  background-color: var(--color-bg-main); /* Fix white BG on center area */
 }
 
 .content-scrollable {
-  background-color: #fff;
-  border-radius: 0.75rem;
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-radius: var(--radius-md);
   padding: 1rem;
   width: 100%;
   max-width: 640px;
-  height: 85vh;
-  overflow-y: auto;
+  height: auto;
+  min-height: 80vh;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-/* src/components/WorkoutSchedule/WeeklyWorkout.css */
-
-/* Make sure your accordion‐item has a bit of breathing room and a subtle shadow */
-#weeklyWorkoutAccordion .accordion-item {
-  margin-bottom: 1.5rem;
-  border: none;
-  border-radius: .75 rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-/* Increase hit area on the header */
-#weeklyWorkoutAccordion .accordion-button {
-  padding: 1rem 1.25rem;
-  font-weight: 500;
-}
-
-/* Ensure the badge doesn’t stick to the day text */
-#weeklyWorkoutAccordion .accordion-button .category-badge {
-  margin-left: auto;
-}
-
-/* Body padding for the workout list */
-#weeklyWorkoutAccordion .accordion-body {
-  padding: 1rem 1.25rem;
-}
-
-/* Reset your list styles and give each item vertical padding */
-.entry-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.entry-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-/* Remove border on last item */
-.entry-item:last-child {
-  border-bottom: none;
-}
-
-/* Flex layout + spacing for exercise rows */
-.exercise-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Optional: add a little horizontal padding inside each row */
-.exercise-row .exercise-name,
-.exercise-row .exercise-detail {
-  padding: 0 0.5rem;
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .content-scrollable {
+    border-radius: 0;
+    box-shadow: none;
+    padding: 1rem 0.75rem;
+  }
 }

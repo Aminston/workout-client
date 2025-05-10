@@ -1,0 +1,12 @@
+@import '../../styles/theme.css';
+
+.modal-content {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+}
+
+.modal-header,
+.modal-body,
+.modal-footer {
+  border-color: var(--color-border);
+}

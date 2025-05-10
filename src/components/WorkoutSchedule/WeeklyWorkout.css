@@ -1,105 +1,149 @@
-/* src/components/WorkoutSchedule/WeeklyWorkout.css */
+@import '../../styles/theme.css';
 
-/* Make sure your accordion‐item has a bit of breathing room and a subtle shadow */
+/* Outer wrapper */
+.workout-container {
+  background-color: var(--color-bg-main);
+  padding: 1rem;
+}
+
+/* Accordion item (card wrapper) */
 #weeklyWorkoutAccordion .accordion-item {
-  margin-bottom: 1.5rem;
+  background-color: #1f2937;
   border: none;
   border-radius: 0.75rem;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   overflow: hidden;
 }
 
-/* Increase hit area on the header */
+/* Accordion header button */
 #weeklyWorkoutAccordion .accordion-button {
-  padding: 1rem 1.25rem;
+  background-color: #1f2937;
+  color: var(--color-text-main);
   font-weight: 500;
+  padding: 1rem 1.25rem;
+  position: relative;
 }
 
-/* Ensure the badge doesn’t stick to the day text */
-#weeklyWorkoutAccordion .accordion-button .category-badge {
-  margin-left: auto;
+.accordion-button::after {
+  filter: brightness(1.6);
+  opacity: 0.8;
 }
 
-/* Body padding for the workout list */
+.accordion-button:not(.collapsed)::after {
+  transform: rotate(180deg);
+}
+
+/* Category badge position */
+.accordion-button .category-badge {
+  position: absolute;
+  right: 3.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+}
+
+/* Accordion content */
 #weeklyWorkoutAccordion .accordion-body {
+  background-color: #1f2937;
   padding: 1rem 1.25rem;
 }
 
-/* Reset your list styles and give each item vertical padding */
+/* List setup */
 .entry-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+/* Individual exercise card */
 .entry-item {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e9ecef;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background-color: transparent;
 }
 
-/* Remove border on last item */
+.entry-item:hover {
+  background-color: var(--color-bg-hover);
+}
+
 .entry-item:last-child {
   border-bottom: none;
 }
 
-/* Flex layout + spacing for exercise rows */
-.exercise-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* Exercise name */
+.exercise-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-text-main);
+  text-decoration: none;
 }
 
-/* Optional: add a little horizontal padding inside each row */
-.exercise-row .exercise-name,
-.exercise-row .exercise-detail {
-  padding: 0 0.5rem;
+.exercise-name:hover {
+  text-decoration: underline;
 }
 
+/* Exercise detail: reps, sets, weight */
+.exercise-detail {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Responsive: smaller text and break weight to next line */
+@media (max-width: 576px) {
+  .exercise-name {
+    font-size: 0.95rem;
+  }
+
+  .exercise-detail {
+    font-size: 0.85rem;
+    display: block;
+  }
+}
+
+/* Category badge */
 .category-badge {
   font-size: 0.75rem;
   font-weight: 600;
   padding: 0.3em 0.6em;
   border-radius: 0.25rem;
   text-transform: capitalize;
-}
-
-/* Category badge color variants */
-.category-badge--blue {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.category-badge--green {
-  background-color: #22c55e;
-  color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 .category-badge--red {
-  background-color: #ef4444;
-  color: white;
+  background-color: #dc2626;
+  color: #fff;
 }
-
-.category-badge--yellow {
-  background-color: #facc15;
-  color: #333;
-}
-
 .category-badge--cyan {
-  background-color: #06b6d4;
-  color: white;
+  background-color: #0891b2;
+  color: #fff;
 }
-
+.category-badge--green {
+  background-color: #16a34a;
+  color: #fff;
+}
 .category-badge--purple {
-  background-color: #a855f7;
-  color: white;
+  background-color: #7e22ce;
+  color: #fff;
 }
-
 .category-badge--indigo {
-  background-color: #6366f1;
-  color: white;
+  background-color: #4f46e5;
+  color: #fff;
+}
+.category-badge--default {
+  background-color: #4b5563;
+  color: #fff;
 }
 
-.category-badge--default {
-  background-color: #e5e7eb;
-  color: #333;
+/* Optional: YouTube modal iframe */
+.modal-body iframe {
+  border-radius: 0 0 8px 8px;
 }

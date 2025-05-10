@@ -1,0 +1,14 @@
+:root {
+    --color-bg-main: #1e1e2f;
+    --color-bg-card: #26263a;
+    --color-bg-hover: #2e2e44;
+    --color-border: #383850;
+    --color-text-main: #e5e7eb;
+    --color-text-secondary: #9ca3af;
+    --color-accent: #ef4444;
+  
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --font-family: system-ui, sans-serif;
+  }
+  

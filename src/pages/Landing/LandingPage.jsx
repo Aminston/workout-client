@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './landing.css';              // Main landing page styles
-import './landing-navbar.css';       // Navbar-specific styles
+import './Landing.css';              // Main landing page styles
+import './LandingNavbar.css';       // Navbar-specific styles
 import ProfileModal from '../../components/ProfileModal/ProfileModal';
 
 export default function LandingPage({ token, setToken, userName, setUserName, onLoginSuccess }) {

@@ -195,3 +195,22 @@
     padding: 4rem 1rem;
   }
 }
+
+.section-image {
+  width: 100%;
+  max-width: 500px;
+  max-height: 380px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 768px) {
+  .section-image {
+    max-height: 260px;
+    max-width: 90%;
+    margin-bottom: 2rem;
+  }
+}

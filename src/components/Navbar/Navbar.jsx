@@ -6,6 +6,7 @@ import {
   Button,
 } from 'react-bootstrap';
 import ProfileModal from '../ProfileModal/ProfileModal';
+import { toast } from '../ToastManager'; // ✅ Import global toast
 import './Navbar.css';
 
 function formatDate(dateStr) {
@@ -44,10 +45,10 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
         throw new Error(err.message || 'Failed to generate workout plan');
       }
 
-      alert('✅ Personalized workout plan generated!');
+      toast.show('success', '✅ Personalized workout plan generated!'); // ✅ Toast on success
       fetchSchedule?.();
     } catch (error) {
-      alert('❌ Error: ' + error.message);
+      toast.show('danger', '❌ ' + error.message); // ✅ Toast on error
     }
   };
 
@@ -111,6 +112,7 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
         </Container>
       </Navbar>
 
+      {/* Profile modal when user logs in or clicks edit */}
       {showUserModal && (
         <ProfileModal
           show={showUserModal}
@@ -124,6 +126,9 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
           onLoginSuccess={() => {
             onPersonalized?.();
             fetchSchedule?.();
+          }}
+          onSaveSuccess={() => {
+            toast.show('success', '✅ Profile updated successfully!');
           }}
         />
       )}

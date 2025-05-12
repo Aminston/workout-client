@@ -1,6 +1,5 @@
 @import '../../styles/theme.css';
 
-/* Modal layout */
 .modal-content {
   background-color: var(--color-bg-card);
   color: var(--color-text-main);
@@ -10,7 +9,6 @@
   overflow: hidden;
 }
 
-/* Ensure contrast on every section */
 .modal-header,
 .modal-body,
 .modal-footer {
@@ -19,7 +17,6 @@
   color: var(--color-text-main) !important;
 }
 
-/* Explicit text styling */
 .modal-header .modal-title,
 .modal-body h6,
 .modal-body p,
@@ -30,7 +27,6 @@
   color: var(--color-text-main) !important;
 }
 
-/* Inputs and selects */
 .modal-body .form-control,
 .modal-body .form-select {
   background-color: var(--color-bg-hover);
@@ -40,13 +36,11 @@
   font-size: 0.95rem;
 }
 
-/* Force placeholder to be readable */
 .modal-body .form-control::placeholder {
   color: var(--color-text-secondary) !important;
   opacity: 1 !important;
 }
 
-/* Focus state */
 .modal-body .form-control:focus,
 .modal-body .form-select:focus {
   background-color: var(--color-bg-card);
@@ -55,35 +49,64 @@
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
 }
 
-/* Buttons */
-.modal-body .btn-primary,
-.modal-body .btn-success {
+.btn-accent {
   background-color: var(--color-accent);
-  border: none;
-  font-weight: 500;
   color: white;
+  font-weight: 500;
+  border: none;
 }
 
-.modal-body .btn-primary:hover,
-.modal-body .btn-success:hover {
+.btn-accent:hover {
   background-color: #dc2626;
 }
 
-/* Link buttons */
-.modal-body .btn-link {
+.btn-link {
   color: var(--color-accent);
   font-weight: 500;
   padding-left: 0;
 }
 
-/* Spinner */
-.modal-body .spinner-border {
+.spinner-border {
   vertical-align: middle;
 }
 
-/* Alert override */
 .alert-success {
   background-color: #14532d;
   border-color: #22c55e;
   color: #bbf7d0;
 }
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background-color: var(--color-bg-card) !important;
+  border-top: 1px solid var(--color-border) !important;
+  padding: 1rem 1.25rem;
+}
+
+.cta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 480px) {
+  .cta-row,
+  .modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta-row .btn,
+  .modal-footer .btn {
+    width: 100%;
+  }
+}
+
+.form-spaced > * {
+  margin-bottom: 0.75rem;
+}
+

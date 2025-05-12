@@ -126,7 +126,6 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
         {/* How It Works Section */}
         <section className="landing-section" id="how-it-works">
           <div className="container">
-            <h2 className="landing-subheading text-center mb-5">How It Works</h2>
             <div className="row align-items-center">
               <div className="col-md-6 d-flex flex-column gap-4">
                 <img
@@ -136,6 +135,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
                 />
               </div>
               <div className="col-md-6">
+              <h2 className="landing-subheading mb-5">How It Works</h2>
                 <ul className="benefit-list">
                   {[
                     'Create an account',

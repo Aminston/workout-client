@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import LandingPage from './pages/Landing/LandingPage';
+import ToastManager, { toast } from './components/ToastManager'; // ✅ Global toast
 import './App.css';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
     user_name: ''
   });
 
+  // ✅ Fetch schedule from backend
   const fetchSchedule = async (customToken) => {
     const usedToken = customToken || token;
     if (!usedToken) return;
@@ -35,11 +37,19 @@ export default function App() {
         expires_on: data.expires_on,
         user_name: data.user_name || ''
       });
+
+      // ✅ Optionally toast after generating a new AI plan
+      if (data.from_ai) {
+        toast.show('success', '✅ Your personalized workout plan is ready!');
+      }
+
     } catch (err) {
       console.error('Failed to fetch schedule:', err);
+      toast.show('danger', '❌ Failed to load schedule');
     }
   };
 
+  // ✅ Run on login
   useEffect(() => {
     if (token) {
       fetchSchedule();
@@ -51,6 +61,11 @@ export default function App() {
     setUserName(localStorage.getItem('userName') || '');
   };
 
+  const handleSaveSuccess = () => {
+    toast.show('success', '✅ Profile updated successfully');
+  };
+
+  // 🔒 Not logged in: show LandingPage
   if (!token) {
     return (
       <div className="app-root">
@@ -60,11 +75,14 @@ export default function App() {
           userName={userName}
           setUserName={setUserName}
           onLoginSuccess={handleLoginSuccess}
+          onSaveSuccess={handleSaveSuccess} // ✅ toast after profile update
         />
+        <ToastManager /> {/* ✅ Mount once globally */}
       </div>
     );
   }
 
+  // 🔓 Logged in view
   return (
     <div className="app-root">
       <Navbar
@@ -79,6 +97,7 @@ export default function App() {
           <WeeklyWorkout personalized={personalized} meta={meta} />
         </div>
       </main>
+      <ToastManager /> {/* ✅ Global toast UI */}
     </div>
   );
 }

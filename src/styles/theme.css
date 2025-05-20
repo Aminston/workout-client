@@ -21,3 +21,72 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
   
+  /* --- Modal --- */
+.modal-content {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-radius: var(--radius-md);
+  border: none;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.modal-header,
+.modal-body,
+.modal-footer {
+  background-color: var(--color-bg-card);
+  border-color: var(--color-border);
+  color: var(--color-text-main);
+}
+
+.modal-title {
+  color: var(--color-text-main);
+}
+
+/* --- Form Elements --- */
+.modal-body .form-control,
+.modal-body .form-select {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.modal-body .form-control::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+}
+
+.btn-modal-cancel {
+  background-color: transparent;
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+}
+
+.btn-modal-cancel:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+}
+
+.btn-modal-confirm {
+  background-color: var(--color-accent);
+  color: white;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  border: none;
+}
+
+.btn-modal-confirm:hover {
+  background-color: #dc2626;
+}

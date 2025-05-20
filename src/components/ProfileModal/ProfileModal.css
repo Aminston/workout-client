@@ -1,5 +1,81 @@
 @import '../../styles/theme.css';
 
+/* Base Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius-md);
+  line-height: 1.25;
+  min-height: 40px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Primary Action Button (Save) */
+.btn-primary {
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+}
+
+.btn-primary:hover {
+  background-color: #dc2626;
+}
+
+/* Secondary Action Button (Cancel) */
+.btn-secondary {
+  background-color: #667085;
+  color: white;
+  border: none;
+}
+
+.btn-secondary:hover {
+  background-color: #7b8794;
+}
+
+/* Link/Button used for switches (login/register) */
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  font-weight: 500;
+  padding-left: 0;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.btn-link:hover {
+  color: #f87171;
+}
+
+/* Accent used for login/register submit */
+.btn-accent {
+  background-color: var(--color-accent);
+  color: white;
+  font-weight: 500;
+  border: none;
+}
+
+.btn-accent:hover {
+  background-color: #dc2626;
+}
+
+/* Disabled state */
+.btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Spinner */
+.spinner-border {
+  vertical-align: middle;
+}
+
+/* Modal Styling */
 .modal-content {
   background-color: var(--color-bg-card);
   color: var(--color-text-main);
@@ -27,6 +103,7 @@
   color: var(--color-text-main) !important;
 }
 
+/* Inputs */
 .modal-body .form-control,
 .modal-body .form-select {
   background-color: var(--color-bg-hover);
@@ -49,40 +126,13 @@
   box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
 }
 
-.btn-accent {
-  background-color: var(--color-accent);
-  color: white;
-  font-weight: 500;
-  border: none;
-}
-
-.btn-accent:hover {
-  background-color: #dc2626;
-}
-
-.btn-link {
-  color: var(--color-accent);
-  font-weight: 500;
-  padding-left: 0;
-}
-
-.spinner-border {
-  vertical-align: middle;
-}
-
-.alert-success {
-  background-color: #14532d;
-  border-color: #22c55e;
-  color: #bbf7d0;
-}
-
+/* Modal Footer and CTA Layout */
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
-  background-color: var(--color-bg-card) !important;
-  border-top: 1px solid var(--color-border) !important;
   padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .cta-row {
@@ -106,7 +156,7 @@
   }
 }
 
+/* Spacing Between Form Fields */
 .form-spaced > * {
   margin-bottom: 0.75rem;
 }
-

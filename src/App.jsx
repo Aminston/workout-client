@@ -1,10 +1,16 @@
-// App.jsx
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import LandingPage from './pages/Landing/LandingPage';
-import ToastManager, { toast } from './components/ToastManager'; // ✅ Global toast
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import ToastManager, { toast } from './components/ToastManager';
 import './App.css';
+
+function ProtectedRoute({ token, children }) {
+  return token ? children : <Navigate to="/" replace />;
+}
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('jwt_token'));
@@ -16,16 +22,13 @@ export default function App() {
     user_name: ''
   });
 
-  // ✅ Fetch schedule from backend
   const fetchSchedule = async (customToken) => {
     const usedToken = customToken || token;
     if (!usedToken) return;
 
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/schedule`, {
-        headers: {
-          Authorization: `Bearer ${usedToken}`
-        }
+        headers: { Authorization: `Bearer ${usedToken}` }
       });
 
       if (!res.ok) throw new Error('Failed to fetch schedule');
@@ -38,22 +41,17 @@ export default function App() {
         user_name: data.user_name || ''
       });
 
-      // ✅ Optionally toast after generating a new AI plan
       if (data.from_ai) {
         toast.show('success', '✅ Your personalized workout plan is ready!');
       }
-
     } catch (err) {
       console.error('Failed to fetch schedule:', err);
       toast.show('danger', '❌ Failed to load schedule');
     }
   };
 
-  // ✅ Run on login
   useEffect(() => {
-    if (token) {
-      fetchSchedule();
-    }
+    if (token) fetchSchedule();
   }, [token]);
 
   const handleLoginSuccess = () => {
@@ -65,39 +63,51 @@ export default function App() {
     toast.show('success', '✅ Profile updated successfully');
   };
 
-  // 🔒 Not logged in: show LandingPage
-  if (!token) {
-    return (
-      <div className="app-root">
-        <LandingPage
-          token={token}
-          setToken={setToken}
-          userName={userName}
-          setUserName={setUserName}
-          onLoginSuccess={handleLoginSuccess}
-          onSaveSuccess={handleSaveSuccess} // ✅ toast after profile update
-        />
-        <ToastManager /> {/* ✅ Mount once globally */}
-      </div>
-    );
-  }
+  const isLoggedIn = !!token;
 
-  // 🔓 Logged in view
   return (
     <div className="app-root">
-      <Navbar
-        token={token}
-        setToken={setToken}
-        onPersonalized={() => fetchSchedule()}
-        fetchSchedule={fetchSchedule}
-        meta={meta}
-      />
-      <main className="app-main">
-        <div className="content-scrollable">
-          <WeeklyWorkout personalized={personalized} meta={meta} />
-        </div>
-      </main>
-      <ToastManager /> {/* ✅ Global toast UI */}
+      <Routes>
+        <Route
+          path="/login"
+          element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/register"
+          element={isLoggedIn ? <Navigate to="/" replace /> : <RegisterPage />}
+        />
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              <>
+                <Navbar
+                  token={token}
+                  setToken={setToken}
+                  onPersonalized={fetchSchedule}
+                  fetchSchedule={fetchSchedule}
+                  meta={meta}
+                />
+                <main className="app-main">
+                  <div className="content-scrollable">
+                    <WeeklyWorkout personalized={personalized} meta={meta} />
+                  </div>
+                </main>
+              </>
+            ) : (
+              <LandingPage
+                token={token}
+                setToken={setToken}
+                userName={userName}
+                setUserName={setUserName}
+                onLoginSuccess={handleLoginSuccess}
+                onSaveSuccess={handleSaveSuccess}
+              />
+            )
+          }
+        />
+      </Routes>
+      <ToastManager />
     </div>
   );
 }

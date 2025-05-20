@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Navbar,
   Container,
@@ -6,7 +7,7 @@ import {
   Button,
 } from 'react-bootstrap';
 import ProfileModal from '../ProfileModal/ProfileModal';
-import { toast } from '../ToastManager'; // ✅ Import global toast
+import { toast } from '../ToastManager';
 import './Navbar.css';
 
 function formatDate(dateStr) {
@@ -19,15 +20,16 @@ function formatDate(dateStr) {
 }
 
 export default function AppNavbar({ token, setToken, meta, onPersonalized, fetchSchedule }) {
+  const navigate = useNavigate();
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [showUserModal, setShowUserModal] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
 
   const handleLogout = () => {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('userName');
     setToken('');
     setUserName('');
+    navigate('/'); // redirect to landing
   };
 
   const handleGetWorkout = async () => {
@@ -45,10 +47,10 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
         throw new Error(err.message || 'Failed to generate workout plan');
       }
 
-      toast.show('success', '✅ Personalized workout plan generated!'); // ✅ Toast on success
+      toast.show('success', '✅ Personalized workout plan generated!');
       fetchSchedule?.();
     } catch (error) {
-      toast.show('danger', '❌ ' + error.message); // ✅ Toast on error
+      toast.show('danger', '❌ ' + error.message);
     }
   };
 
@@ -59,8 +61,6 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
       <Navbar bg="dark" variant="dark" className="custom-navbar">
         <Container fluid className="custom-container">
           <div className="navbar-flex w-100">
-
-            {/* Left: Dropdown title */}
             <div className="nav-workout">
               <Dropdown align="start">
                 <Dropdown.Toggle variant="dark" className="nav-title text-white p-0">
@@ -71,22 +71,17 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
                 <Dropdown.Menu>
                   {token ? (
                     <>
-                      <Dropdown.Item onClick={() => { setAuthMode('profile'); setShowUserModal(true); }}>
+                      <Dropdown.Item onClick={() => setShowUserModal(true)}>
                         Edit Profile
                       </Dropdown.Item>
                       <Dropdown.Item onClick={handleGetWorkout}>Get Workout</Dropdown.Item>
                       <Dropdown.Divider />
                       <Dropdown.Item onClick={handleLogout}>Logout</Dropdown.Item>
                     </>
-                  ) : (
-                    <Dropdown.Item onClick={() => { setAuthMode('login'); setShowUserModal(true); }}>
-                      Login / Register
-                    </Dropdown.Item>
-                  )}
+                  ) : null}
                 </Dropdown.Menu>
               </Dropdown>
 
-              {/* Mobile-only stacked date */}
               {token && (
                 <div className="nav-header-dates-mobile">
                   {formatDate(meta.program_start)} — {formatDate(meta.expires_on)}
@@ -94,42 +89,29 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
               )}
             </div>
 
-            {/* Desktop-only centered date */}
             {token && (
               <div className="nav-dates-desktop">
                 {formatDate(meta.program_start)} — {formatDate(meta.expires_on)}
               </div>
             )}
 
-            {/* Right: Auth Buttons */}
             {!token && (
               <div className="nav-user-button d-flex gap-2 ms-auto">
-                <Button variant="outline-light" onClick={() => { setAuthMode('login'); setShowUserModal(true); }}>Login</Button>
-                <Button variant="light" onClick={() => { setAuthMode('register'); setShowUserModal(true); }}>Register</Button>
+                <Button variant="outline-light" onClick={() => navigate('/login')}>Login</Button>
+                <Button variant="light" onClick={() => navigate('/register')}>Register</Button>
               </div>
             )}
           </div>
         </Container>
       </Navbar>
 
-      {/* Profile modal when user logs in or clicks edit */}
-      {showUserModal && (
+      {token && showUserModal && (
         <ProfileModal
           show={showUserModal}
           onHide={() => setShowUserModal(false)}
           token={token}
-          setToken={setToken}
-          userName={userName}
           setUserName={setUserName}
-          authMode={authMode}
-          setAuthMode={setAuthMode}
-          onLoginSuccess={() => {
-            onPersonalized?.();
-            fetchSchedule?.();
-          }}
-          onSaveSuccess={() => {
-            toast.show('success', '✅ Profile updated successfully!');
-          }}
+          onSaveSuccess={() => toast.show('success', '✅ Profile updated successfully!')}
         />
       )}
     </>

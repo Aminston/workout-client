@@ -1,0 +1,77 @@
+/* ModalTheme.css */
+
+.modal-content {
+    background-color: var(--color-bg-card);
+    color: var(--color-text-main);
+    border-radius: var(--radius-md);
+    border: none;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  }
+  
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    background-color: var(--color-bg-card);
+    border-color: var(--color-border);
+    color: var(--color-text-main);
+  }
+  
+  .modal-header .modal-title {
+    font-weight: 600;
+  }
+  
+  .modal-body h6 {
+    color: var(--color-text-main);
+    margin-bottom: 1rem;
+  }
+  
+  .modal-body .form-control,
+  .modal-body .form-select {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+  
+  .modal-body .form-control::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 1;
+  }
+  
+  .modal-body .form-control:focus,
+  .modal-body .form-select:focus {
+    background-color: var(--color-bg-card);
+    color: var(--color-text-main);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    border-top: 1px solid var(--color-border);
+    padding: 1rem 1.25rem;
+  }
+  
+  .cta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  
+  @media (max-width: 480px) {
+    .cta-row,
+    .modal-footer {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .cta-row .btn,
+    .modal-footer .btn {
+      width: 100%;
+    }
+  }
+  

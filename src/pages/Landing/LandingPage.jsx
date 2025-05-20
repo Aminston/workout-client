@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './Landing.css';              // Main landing page styles
-import './LandingNavbar.css';       // Navbar-specific styles
-import ProfileModal from '../../components/ProfileModal/ProfileModal';
+import './Landing.css';
+import './LandingNavbar.css';
+import LoginForm from '@/components/Auth/LoginForm';
+import RegisterForm from '@/components/Auth/RegisterForm';
 
 export default function LandingPage({ token, setToken, userName, setUserName, onLoginSuccess }) {
   const [showModal, setShowModal] = useState(false);
@@ -13,23 +14,27 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
     setShowModal(true);
   };
 
+  const handleLoginSuccess = () => {
+    onLoginSuccess?.();
+    setShowModal(false);
+  };
+
+  useEffect(() => {
+    if (token) {
+      setShowModal(false);
+    }
+  }, [token]);
+
   return (
     <>
-      {/* ✅ NAVBAR */}
       <nav className="custom-navbar">
         <div className="custom-container">
           <div className="navbar-flex">
-            <a className="nav-header-title" href="/">
-              FedMa
-            </a>
+            <a className="nav-header-title" href="/">FedMa</a>
             {!token ? (
               <div className="nav-user-button">
-                <button className="btn btn-outline-primary" onClick={() => openModal('login')}>
-                  Login
-                </button>
-                <button className="btn btn-primary" onClick={() => openModal('register')}>
-                  Register
-                </button>
+                <button className="btn btn-outline-primary" onClick={() => openModal('login')}>Login</button>
+                <button className="btn btn-primary" onClick={() => openModal('register')}>Register</button>
               </div>
             ) : (
               <span className="navbar-text" style={{ color: 'var(--color-text-main)', fontSize: '0.9rem' }}>
@@ -40,7 +45,6 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
         </div>
       </nav>
 
-      {/* ✅ LANDING CONTENT */}
       <main className="landing-main">
         {/* Hero Section */}
         <section className="landing-hero d-flex align-items-center">
@@ -135,7 +139,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
                 />
               </div>
               <div className="col-md-6">
-              <h2 className="landing-subheading mb-5">How It Works</h2>
+                <h2 className="landing-subheading mb-5">How It Works</h2>
                 <ul className="benefit-list">
                   {[
                     'Create an account',
@@ -184,18 +188,24 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
         </section>
       </main>
 
-      {/* ✅ PROFILE MODAL */}
-      <ProfileModal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        token={token}
-        setToken={setToken}
-        userName={userName}
-        setUserName={setUserName}
-        authMode={authMode}
-        setAuthMode={setAuthMode}
-        onLoginSuccess={onLoginSuccess}
-      />
+      {authMode === 'login' && (
+        <LoginForm
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          setToken={setToken}
+          onLoginSuccess={handleLoginSuccess}
+          setAuthMode={setAuthMode}
+        />
+      )}
+      {authMode === 'register' && (
+        <RegisterForm
+          show={showModal}
+          onHide={() => setShowModal(false)}
+          setToken={setToken}
+          onLoginSuccess={handleLoginSuccess}
+          setAuthMode={setAuthMode}
+        />
+      )}
     </>
   );
 }

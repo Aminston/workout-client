@@ -6,9 +6,11 @@ import {
   Dropdown,
   Button,
 } from 'react-bootstrap';
-import ProfileModal from '../ProfileModal/ProfileModal';
 import { toast } from '../ToastManager';
+import UserProfileModal from '../ProfileModal/UserProfileModal';
+
 import './Navbar.css';
+
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
@@ -34,7 +36,7 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
 
   const handleGetWorkout = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/personalize/plan`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/personalize/plan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +108,7 @@ export default function AppNavbar({ token, setToken, meta, onPersonalized, fetch
       </Navbar>
 
       {token && showUserModal && (
-        <ProfileModal
+        <UserProfileModal
           show={showUserModal}
           onHide={() => setShowUserModal(false)}
           token={token}

@@ -14,7 +14,7 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
     e.preventDefault();
     setIsRegistering(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(authForm)
@@ -22,7 +22,7 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-      const loginRes = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+      const loginRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: authForm.email, password: authForm.password })

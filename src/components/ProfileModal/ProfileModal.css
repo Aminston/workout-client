@@ -160,3 +160,21 @@
 .form-spaced > * {
   margin-bottom: 0.75rem;
 }
+
+/* Metric Input Layout */
+.metric-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem; /* ✅ Same as .form-spaced > * */
+}
+
+.metric-input-group .form-control,
+.metric-input-group .form-select {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .metric-input-group {
+    flex-direction: column;
+  }
+}

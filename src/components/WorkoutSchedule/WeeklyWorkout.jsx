@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './WeeklyWorkout.css';
+import WorkoutEditModal from './WorkoutEditModal';
 
 const CATEGORY_CLASSES = {
   'Chest & Triceps': 'category-badge--red',
@@ -11,7 +12,9 @@ const CATEGORY_CLASSES = {
 };
 
 export default function WeeklyWorkout({ personalized = [], meta = {} }) {
-  function formatDetail(exercise) {
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
+
+  const formatDetail = (exercise) => {
     const parts = [];
     if (exercise.sets != null) parts.push(`${exercise.sets} sets`);
     if (exercise.reps != null) parts.push(`x ${exercise.reps} reps`);
@@ -19,7 +22,17 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
       parts.push(`, ${exercise.weight.value} ${exercise.weight.unit}`);
     }
     return parts.join(' ');
-  }
+  };
+
+  const handleEditClick = (day, workout) => {
+    setSelectedWorkout({
+      ...workout,
+      day,
+      program_id: meta.program_id,
+    });
+  };
+
+  const closeModal = () => setSelectedWorkout(null);
 
   return (
     <div className="accordion workout-container" id="weeklyWorkoutAccordion">
@@ -54,21 +67,26 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
                   const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(`how to do ${exercise.name}`)}`;
 
                   return (
-                    <li key={idx} className="entry-item">
-                      <a
-                        href={googleSearchUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="clickable-card"
-                      >
-                        <span className="exercise-name">{exercise.name}</span>
-                        {detail && (
-                          <span className="exercise-detail">
-                            {detail}
-                          </span>
-                        )}
-                      </a>
-                    </li>
+                  <li key={idx} className="entry-item">
+                    <a
+                      href={googleSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="exercise-link"
+                    >
+                      <span className="exercise-name">{exercise.name}</span>
+                      {detail && <span className="exercise-detail">{detail}</span>}
+                    </a>
+                    <button
+                      className="btn-modal-confirm "
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(day.day, exercise);
+                      }}
+                    >
+                      Edit
+                    </button>
+                  </li>
                   );
                 })}
               </ul>
@@ -76,6 +94,13 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
           </div>
         );
       })}
+
+      {selectedWorkout && (
+        <WorkoutEditModal
+          workout={selectedWorkout}
+          onClose={closeModal}
+        />
+      )}
     </div>
   );
 }

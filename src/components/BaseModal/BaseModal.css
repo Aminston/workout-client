@@ -62,3 +62,26 @@
     background-color: #dc2626;
   }
   
+
+  /* Spacing Between Form Fields */
+.form-spaced > * {
+  margin-bottom: 0.75rem;
+}
+
+/* Ensure metric input fields match spacing */
+.metric-input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem; /* ✅ match .form-spaced spacing */
+}
+
+.metric-input-group .form-control,
+.metric-input-group .form-select {
+  flex: 1;
+}
+
+@media (max-width: 480px) {
+  .metric-input-group {
+    flex-direction: column;
+  }
+}

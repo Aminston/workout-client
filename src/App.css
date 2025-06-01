@@ -17,15 +17,10 @@
 }
 
 .content-scrollable {
-  background-color: var(--color-bg-card);
   color: var(--color-text-main);
-  border-radius: var(--radius-md);
-  padding: 1rem;
   width: 100%;
   max-width: 640px;
   height: auto;
-  min-height: 80vh;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 /* Responsive tweaks */

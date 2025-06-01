@@ -3,8 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import LandingPage from './pages/Landing/LandingPage';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
 import ToastManager, { toast } from './components/ToastManager';
 import './App.css';
 
@@ -36,6 +34,7 @@ export default function App() {
 
       setPersonalized(data.schedule || []);
       setMeta({
+        program_id: data.program_id,
         program_start: data.program_start,
         expires_on: data.expires_on,
         user_name: data.user_name || ''
@@ -45,17 +44,20 @@ export default function App() {
         toast.show('success', '✅ Your personalized workout plan is ready!');
       }
     } catch (err) {
-      console.error('Failed to fetch schedule:', err);
+      console.error('❌ Failed to fetch schedule:', err);
       toast.show('danger', '❌ Failed to load schedule');
     }
   };
 
   useEffect(() => {
-    if (token) fetchSchedule();
+    if (token) {
+      console.log('✅ Token detected, logging in...');
+      fetchSchedule();
+      setUserName(localStorage.getItem('userName') || '');
+    }
   }, [token]);
 
   const handleLoginSuccess = () => {
-    fetchSchedule();
     setUserName(localStorage.getItem('userName') || '');
   };
 
@@ -69,31 +71,10 @@ export default function App() {
     <div className="app-root">
       <Routes>
         <Route
-          path="/login"
-          element={isLoggedIn ? <Navigate to="/" replace /> : <LoginPage />}
-        />
-        <Route
-          path="/register"
-          element={isLoggedIn ? <Navigate to="/" replace /> : <RegisterPage />}
-        />
-        <Route
           path="/"
           element={
             isLoggedIn ? (
-              <>
-                <Navbar
-                  token={token}
-                  setToken={setToken}
-                  onPersonalized={fetchSchedule}
-                  fetchSchedule={fetchSchedule}
-                  meta={meta}
-                />
-                <main className="app-main">
-                  <div className="content-scrollable">
-                    <WeeklyWorkout personalized={personalized} meta={meta} />
-                  </div>
-                </main>
-              </>
+              <Navigate to="/schedule" replace />
             ) : (
               <LandingPage
                 token={token}
@@ -104,6 +85,27 @@ export default function App() {
                 onSaveSuccess={handleSaveSuccess}
               />
             )
+          }
+        />
+        <Route
+          path="/schedule"
+          element={
+            <ProtectedRoute token={token}>
+              <>
+                <Navbar
+                  token={token}
+                  setToken={setToken}
+                  onPersonalized={fetchSchedule}
+                  fetchSchedule={fetchSchedule}
+                  meta={meta}
+                />
+                <main className="app-main">
+                  <div className="content-scrollable">
+                    <WeeklyWorkout personalized={personalized} meta={meta} setPersonalized={setPersonalized} />
+                  </div>
+                </main>
+              </>
+            </ProtectedRoute>
           }
         />
       </Routes>

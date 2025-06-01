@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Landing.css';
 import './LandingNavbar.css';
@@ -17,13 +17,8 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
   const handleLoginSuccess = () => {
     onLoginSuccess?.();
     setShowModal(false);
+    window.location.href = '/schedule'; // ✅ Force full reload to /schedule
   };
-
-  useEffect(() => {
-    if (token) {
-      setShowModal(false);
-    }
-  }, [token]);
 
   return (
     <>
@@ -34,7 +29,9 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
             {!token ? (
               <div className="nav-user-button">
                 <button className="btn btn-outline-primary" onClick={() => openModal('login')}>Login</button>
-                <button className="btn btn-primary" onClick={() => openModal('register')}>Register</button>
+                <button className="btn btn-primary text-white fw-semibold" onClick={() => openModal('register')}>
+                  Register
+                </button>
               </div>
             ) : (
               <span className="navbar-text" style={{ color: 'var(--color-text-main)', fontSize: '0.9rem' }}>
@@ -46,7 +43,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
       </nav>
 
       <main className="landing-main">
-        {/* Hero Section */}
+        {/* HERO */}
         <section className="landing-hero d-flex align-items-center">
           <div className="container">
             <div className="row align-items-center g-5">
@@ -55,7 +52,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
                 <p className="landing-subtext">
                   Get a weekly plan built for your body. Train with your friends—even at different levels.
                 </p>
-                <button className="btn-primary" onClick={() => openModal('register')}>
+                <button className="btn btn-primary text-white fw-semibold" onClick={() => openModal('register')}>
                   Get My Plan – Free Forever
                 </button>
                 <div className="landing-trust">Built by real gym-goers, not influencers</div>
@@ -71,7 +68,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* Problem Section */}
+        {/* PROBLEM SECTION */}
         <section className="landing-section text-center">
           <div className="container">
             <h2 className="landing-subheading">Starting shouldn’t feel like a test.</h2>
@@ -82,16 +79,14 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* Solution Section */}
+        {/* SOLUTION SECTION */}
         <section className="landing-section">
           <div className="container">
             <div className="row align-items-center g-5">
               <div className="col-md-6">
                 <h2 className="landing-subheading">We make it simple.</h2>
-                <p className="landing-paragraph">
-                  No guesswork. No planning. Just open the app and start.
-                </p>
-                <a href="#how-it-works" className="btn-outline">See How It Works</a>
+                <p className="landing-paragraph">No guesswork. No planning. Just open the app and start.</p>
+                <a href="#how-it-works" className="btn btn-outline-primary">See How It Works</a>
               </div>
               <div className="col-md-6">
                 <img
@@ -104,7 +99,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* Benefits Section */}
+        {/* BENEFITS SECTION */}
         <section className="landing-section landing-benefits text-center">
           <div className="container">
             <h2 className="landing-subheading mb-4">Why You’ll Love It</h2>
@@ -127,7 +122,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* How It Works Section */}
+        {/* HOW IT WORKS */}
         <section className="landing-section" id="how-it-works">
           <div className="container">
             <div className="row align-items-center">
@@ -153,7 +148,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
                   ))}
                 </ul>
                 <div className="text-center text-md-start mt-4">
-                  <button className="btn-primary" onClick={() => openModal('register')}>
+                  <button className="btn btn-primary text-white fw-semibold" onClick={() => openModal('register')}>
                     Start Now
                   </button>
                 </div>
@@ -162,7 +157,7 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* Testimonials */}
+        {/* TESTIMONIALS */}
         <section className="landing-section text-center">
           <div className="container">
             <h2 className="landing-subheading mb-4">Real Users, Real Results</h2>
@@ -176,18 +171,17 @@ export default function LandingPage({ token, setToken, userName, setUserName, on
           </div>
         </section>
 
-        {/* Final CTA */}
+        {/* FINAL CTA */}
         <section className="landing-section text-center">
           <h2 className="landing-heading">Less planning. More lifting.</h2>
-          <p className="landing-subtext">
-            Start your weekly plan today—tailored to you, synced with your crew.
-          </p>
-          <button className="btn-primary" onClick={() => openModal('register')}>
+          <p className="landing-subtext">Start your weekly plan today—tailored to you, synced with your crew.</p>
+          <button className="btn btn-primary text-white fw-semibold" onClick={() => openModal('register')}>
             Start Free – 2 Min Setup
           </button>
         </section>
       </main>
 
+      {/* AUTH MODALS */}
       {authMode === 'login' && (
         <LoginForm
           show={showModal}

@@ -15,12 +15,20 @@ export default function BaseModal({
   confirmLabel = 'Save',
   confirmVariant = 'accent'
 }) {
+  console.log('🧪 BaseModal children:', children);
+
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
         <Modal.Title>{title}</Modal.Title>
       </Modal.Header>
-      <div>{children}</div>
+
+      <Modal.Body>
+        <div >
+          {children || '⚠️ No children passed to BaseModal'}
+        </div>
+      </Modal.Body>
+
       <ModalFooter
         cancelLabel={cancelLabel}
         confirmLabel={confirmLabel}

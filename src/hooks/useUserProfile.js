@@ -62,23 +62,26 @@ export default function useUserProfile() {
 
   // 🔁 Fetch profile from backend
   const fetchProfile = async (token, setUserName) => {
-    if (!token || hasFetchedRef.current) return;
-
+    if (!token || hasFetchedRef.current) {
+      console.log('⚠️ Skipping fetch — token missing or already fetched.');
+      return;
+    }
+  
     console.log('🔁 Fetching user profile...');
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user-profile`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
+  
       const data = await res.json();
       console.log('👤 /user-profile response:', res.status, data);
-
+  
       if (!res.ok) throw new Error(data.error || 'Failed to fetch profile');
-
-      // 🗓 Convert date + fallback defaults
+  
+      // 🗓 Convert date to YYYY-MM-DD
       const birthdayIso = data.birthday ? new Date(data.birthday).toISOString().split('T')[0] : '';
       const loadedForm = {
         name: data.name || '',
@@ -93,10 +96,13 @@ export default function useUserProfile() {
         training_experience: data.training_experience || '',
         injury_caution_area: data.injury_caution_area || 'none'
       };
-
+  
+      console.log('✅ Dispatching form payload:', loadedForm);
       dispatch({ type: 'SET_FORM', payload: loadedForm });
+  
       setUserName(data.name || '');
       localStorage.setItem('userName', data.name || '');
+  
       hasFetchedRef.current = true;
       setError('');
     } catch (err) {
@@ -106,13 +112,14 @@ export default function useUserProfile() {
       setLoading(false);
     }
   };
+  
 
-  // 💾 Save profile to backend
+  // 💾 Save profile to backend 
   const saveProfile = async (token) => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/user-profile`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -164,6 +171,7 @@ export default function useUserProfile() {
     fetchProfile,
     saveProfile,
     resetForm,
-    clearAll
+    clearAll,
+    hasFetched: hasFetchedRef.current 
   };
 }

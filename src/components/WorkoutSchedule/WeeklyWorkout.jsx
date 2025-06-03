@@ -12,7 +12,23 @@ const CATEGORY_CLASSES = {
 };
 
 export default function WeeklyWorkout({ personalized = [], meta = {} }) {
+  const [workoutData, setWorkoutData] = useState(personalized);
   const [selectedWorkout, setSelectedWorkout] = useState(null);
+
+  const handleSave = (updatedWorkout) => {
+    const newWorkoutData = workoutData.map((day) => {
+      if (day.day !== updatedWorkout.day) return day;
+
+      return {
+        ...day,
+        workouts: day.workouts.map((w) =>
+          w.workout_id === updatedWorkout.workout_id ? updatedWorkout : w
+        ),
+      };
+    });
+
+    setWorkoutData(newWorkoutData);
+  };
 
   const formatDetail = (exercise) => {
     const parts = [];
@@ -36,7 +52,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
 
   return (
     <div className="accordion workout-container" id="weeklyWorkoutAccordion">
-      {personalized.map((day) => {
+      {workoutData.map((day) => {
         const dayId = day.day.replace(/\s+/g, '');
         return (
           <div key={day.day} className="accordion-item">
@@ -78,7 +94,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
                       {detail && <span className="exercise-detail">{detail}</span>}
                     </a>
                     <button
-                      className="btn-modal-confirm "
+                      className="btn-modal-confirm"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEditClick(day.day, exercise);
@@ -99,6 +115,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
         <WorkoutEditModal
           workout={selectedWorkout}
           onClose={closeModal}
+          onSave={handleSave}
         />
       )}
     </div>

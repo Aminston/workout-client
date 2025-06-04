@@ -1,45 +1,28 @@
 import React, { useState } from 'react';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './WeeklyWorkout.css';
 import WorkoutEditModal from './WorkoutEditModal';
-
-const CATEGORY_CLASSES = {
-  'Chest & Triceps': 'category-badge--red',
-  'Back & Biceps': 'category-badge--cyan',
-  'Legs & Shoulders': 'category-badge--green',
-  'Core & Functional': 'category-badge--purple',
-  'Full-Body': 'category-badge--indigo',
-};
+import { CATEGORY_CLASSES } from '../../../constants/enums';
 
 export default function WeeklyWorkout({ personalized = [], meta = {} }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
 
-  const formatDetail = (exercise) => {
-    const parts = [];
-    if (exercise.sets != null) parts.push(`${exercise.sets} sets`);
-    if (exercise.reps != null) parts.push(`x ${exercise.reps} reps`);
-    if (exercise.weight?.value != null) {
-      parts.push(`, ${exercise.weight.value} ${exercise.weight.unit}`);
-    }
-    return parts.join(' ');
-  };
+  const formatDetail = ({ sets, reps, weight }) =>
+    [sets && `${sets} sets`, reps && `x ${reps} reps`, weight?.value && `${weight.value} ${weight.unit}`]
+      .filter(Boolean)
+      .join(', ');
 
-  const handleEditClick = (day, workout) => {
-    setSelectedWorkout({
-      ...workout,
-      day,
-      program_id: meta.program_id,
-    });
-  };
+  const handleEditClick = (day, workout) =>
+    setSelectedWorkout({ ...workout, day, program_id: meta.program_id });
 
-  const closeModal = () => setSelectedWorkout(null);
+  const getSearchUrl = (name) => `https://www.google.com/search?q=${encodeURIComponent(`how to do ${name}`)}`;
 
   return (
     <div className="accordion workout-container" id="weeklyWorkoutAccordion">
-      {personalized.map((day) => {
-        const dayId = day.day.replace(/\s+/g, '');
+      {personalized.map(({ day, category, workouts }) => {
+        const dayId = day.replace(/\s+/g, '');
+
         return (
-          <div key={day.day} className="accordion-item">
+          <div key={day} className="accordion-item">
             <h2 className="accordion-header" id={`heading${dayId}`}>
               <button
                 className="accordion-button collapsed"
@@ -49,9 +32,9 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
                 aria-expanded="false"
                 aria-controls={`collapse${dayId}`}
               >
-                <span className="accordion-button-label">{day.day}</span>
-                <span className={`category-badge ${CATEGORY_CLASSES[day.category] || 'category-badge--default'}`}>
-                  {day.category}
+                <span className="accordion-button-label">{day}</span>
+                <span className={`category-badge ${CATEGORY_CLASSES[category] || 'category-badge--default'}`}>
+                  {category}
                 </span>
               </button>
             </h2>
@@ -62,31 +45,29 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
               data-bs-parent="#weeklyWorkoutAccordion"
             >
               <ul className="entry-list p-0 m-0">
-                {day.workouts.map((exercise, idx) => {
+                {workouts.map((exercise, idx) => {
                   const detail = formatDetail(exercise);
-                  const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(`how to do ${exercise.name}`)}`;
-
                   return (
-                  <li key={idx} className="entry-item">
-                    <a
-                      href={googleSearchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="exercise-link"
-                    >
-                      <span className="exercise-name">{exercise.name}</span>
-                      {detail && <span className="exercise-detail">{detail}</span>}
-                    </a>
-                    <button
-                      className="btn-modal-confirm "
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditClick(day.day, exercise);
-                      }}
-                    >
-                      Edit
-                    </button>
-                  </li>
+                    <li key={idx} className="entry-item">
+                      <a
+                        href={getSearchUrl(exercise.name)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="exercise-link"
+                      >
+                        <span className="exercise-name">{exercise.name}</span>
+                        {detail && <span className="exercise-detail">{detail}</span>}
+                      </a>
+                      <button
+                        className="btn-modal-confirm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditClick(day, exercise);
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </li>
                   );
                 })}
               </ul>
@@ -95,12 +76,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
         );
       })}
 
-      {selectedWorkout && (
-        <WorkoutEditModal
-          workout={selectedWorkout}
-          onClose={closeModal}
-        />
-      )}
+      {selectedWorkout && <WorkoutEditModal workout={selectedWorkout} onClose={() => setSelectedWorkout(null)} />}
     </div>
   );
 }

@@ -26,3 +26,11 @@ export const INJURY_AREAS = [
   { key: 'ankles', label: 'Ankles' },
   { key: 'hips', label: 'Hips' }
 ];
+
+export const CATEGORY_CLASSES = {
+  'Chest & Triceps': 'category-badge--red',
+  'Back & Biceps': 'category-badge--cyan',
+  'Legs & Shoulders': 'category-badge--green',
+  'Core & Functional': 'category-badge--purple',
+  'Full-Body': 'category-badge--indigo',
+};

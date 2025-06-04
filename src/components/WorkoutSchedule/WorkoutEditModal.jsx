@@ -41,13 +41,8 @@ export default function WorkoutEditModal({ workout, onClose, onSave }) {
 
       if (res.ok) {
         toast.show('success', '✅ Workout updated successfully!');
-        onSave?.({
-          ...workout,
-          sets: parseInt(sets),
-          reps: parseInt(reps),
-          weight: { value: parseFloat(weight), unit }
-        });
-        onClose();
+        onSave?.(); // Refresh schedule
+        onClose();  // Close modal
       } else {
         toast.show('danger', data?.error || '❌ Failed to save changes');
       }
@@ -82,8 +77,8 @@ export default function WorkoutEditModal({ workout, onClose, onSave }) {
 
       if (res.ok) {
         toast.show('success', '↩️ Workout reset to original values');
-        onSave?.(data.updatedWorkout); // assuming API returns updated workout
-        onClose();
+        onSave?.(); // Refresh schedule
+        onClose();  // Close modal
       } else {
         toast.show('danger', data?.error || '❌ Failed to reset workout');
       }

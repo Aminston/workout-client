@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import BaseModal from '@/components/BaseModal/BaseModal';
 import { toast } from '@/components/ToastManager';
 
-export default function WorkoutEditModal({ workout, onClose, onSave }) {
+export default function WorkoutEditModal({ workout, onClose }) {
   const [sets, setSets] = useState(workout.sets ?? '');
   const [reps, setReps] = useState(workout.reps ?? '');
   const [weight, setWeight] = useState(workout.weight?.value ?? '');
@@ -32,17 +32,11 @@ export default function WorkoutEditModal({ workout, onClose, onSave }) {
         body: JSON.stringify(payload)
       });
 
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        console.warn('⚠️ No JSON body in response');
-      }
+      const data = await res.json();
 
-      if (res.ok) {
+      if (res.ok && data.updatedWorkout) {
         toast.show('success', '✅ Workout updated successfully!');
-        onSave?.(); // Refresh schedule
-        onClose();  // Close modal
+        window.location.reload(); // 🔁 Refresh to re-fetch updated schedule
       } else {
         toast.show('danger', data?.error || '❌ Failed to save changes');
       }
@@ -77,8 +71,7 @@ export default function WorkoutEditModal({ workout, onClose, onSave }) {
 
       if (res.ok) {
         toast.show('success', '↩️ Workout reset to original values');
-        onSave?.(); // Refresh schedule
-        onClose();  // Close modal
+        window.location.reload(); // 🔁 Refresh to show reset workout
       } else {
         toast.show('danger', data?.error || '❌ Failed to reset workout');
       }

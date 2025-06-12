@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback } from 'react';
 import BaseModal from '@/components/BaseModal/BaseModal';
 import UserProfileForm from './UserProfileForm';
 import { toast } from '@/components/ToastManager';
@@ -28,6 +28,8 @@ export default function UserProfileModal({ show, onHide, token, setUserName, onS
   }, [isDirty, resetForm, onHide]);
 
   const handleSubmit = useCallback(async () => {
+    if (!isDirty) return;
+  
     const result = await saveProfile(token);
     if (result.success) {
       setUserName(form.name);
@@ -37,38 +39,18 @@ export default function UserProfileModal({ show, onHide, token, setUserName, onS
     } else {
       toast.show('danger', '❌ Failed to save profile');
     }
-  }, [form.name, saveProfile, token, setUserName, resetForm, onHide, onSaveSuccess]);
-
-  const isProfileValid = useMemo(() => {
-    return (
-      form.name &&
-      form.email &&
-      form.birthday &&
-      parseFloat(form.height) > 0 &&
-      parseFloat(form.weight) > 0 &&
-      form.training_goal &&
-      form.training_experience
-    );
-  }, [form]);
+  }, [isDirty, form.name, saveProfile, token, setUserName, resetForm, onHide, onSaveSuccess]);
+  
 
   return (
-    <BaseModal
-      show={show}
-      onHide={onHide}
-      title="Edit Profile"
-      onCancel={handleCancel}
-      onSubmit={handleSubmit}
-      canSubmit={isDirty && isProfileValid}
-      isSubmitting={loading}
-    >
+    <BaseModal show={show} onHide={onHide} title="Edit Profile">
       {form.name || form.email ? (
         <UserProfileForm
           form={form}
           isDirty={isDirty}
-          isValid={isProfileValid}
           loading={loading}
           handleChange={handleChange}
-          handleSubmit={e => {
+          handleSubmit={(e) => {
             e.preventDefault();
             handleSubmit();
           }}

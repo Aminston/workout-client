@@ -6,12 +6,12 @@ const initialForm = {
   email: '',
   birthday: '',
   height: '',
-  height_unit: 'cm', // ✅ Matches backend ENUM
+  height_unit: 'cm',
   weight: '',
   weight_unit: 'kg',
   background: '',
-  training_goal: '',
-  training_experience: '',
+  training_goal: 'general_fitness',
+  training_experience: 'beginner',
   injury_caution_area: 'none'
 };
 
@@ -25,12 +25,15 @@ function reducer(state, action) {
         originalForm: action.payload,
         isDirty: false
       };
-    case 'CHANGE_FIELD':
+    case 'CHANGE_FIELD': {
+      const updatedForm = { ...state.form, [action.field]: action.value };
+      const isDirty = JSON.stringify(updatedForm) !== JSON.stringify(state.originalForm);
       return {
         ...state,
-        form: { ...state.form, [action.field]: action.value },
-        isDirty: true
+        form: updatedForm,
+        isDirty
       };
+    }
     case 'RESET':
       return { ...state, form: state.originalForm, isDirty: false };
     case 'CLEAR_ALL':
@@ -46,42 +49,28 @@ function reducer(state, action) {
 
 // 🧩 Custom React hook for managing user profile form
 export default function useUserProfile() {
-  // 🔄 useReducer for form state
   const [state, dispatch] = useReducer(reducer, {
     form: initialForm,
     originalForm: null,
     isDirty: false
   });
 
-  // ⏳ Loading/error state
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // 🧷 Prevent double fetch
   const hasFetchedRef = useRef(false);
 
-  // 🔁 Fetch profile from backend
   const fetchProfile = async (token, setUserName) => {
-    if (!token || hasFetchedRef.current) {
-      console.log('⚠️ Skipping fetch — token missing or already fetched.');
-      return;
-    }
-  
-    console.log('🔁 Fetching user profile...');
+    if (!token || hasFetchedRef.current) return;
+
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        headers: { Authorization: `Bearer ${token}` }
       });
-  
       const data = await res.json();
-      console.log('👤 /user-profile response:', res.status, data);
-  
+
       if (!res.ok) throw new Error(data.error || 'Failed to fetch profile');
-  
-      // 🗓 Convert date to YYYY-MM-DD
+
       const birthdayIso = data.birthday ? new Date(data.birthday).toISOString().split('T')[0] : '';
       const loadedForm = {
         name: data.name || '',
@@ -92,17 +81,14 @@ export default function useUserProfile() {
         weight: data.weight?.toString() || '',
         weight_unit: data.weight_unit || 'kg',
         background: data.background || '',
-        training_goal: data.training_goal || '',
-        training_experience: data.training_experience || '',
+        training_goal: data.training_goal || 'general_fitness',
+        training_experience: data.training_experience || 'beginner',
         injury_caution_area: data.injury_caution_area || 'none'
       };
-  
-      console.log('✅ Dispatching form payload:', loadedForm);
+
       dispatch({ type: 'SET_FORM', payload: loadedForm });
-  
       setUserName(data.name || '');
       localStorage.setItem('userName', data.name || '');
-  
       hasFetchedRef.current = true;
       setError('');
     } catch (err) {
@@ -112,9 +98,7 @@ export default function useUserProfile() {
       setLoading(false);
     }
   };
-  
 
-  // 💾 Save profile to backend 
   const saveProfile = async (token) => {
     setLoading(true);
     setError('');
@@ -133,12 +117,8 @@ export default function useUserProfile() {
       });
 
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to update profile');
-      }
-
-      // ✅ Reset dirty state
       dispatch({ type: 'SET_FORM', payload: state.form });
       return { success: true };
     } catch (err) {
@@ -150,19 +130,14 @@ export default function useUserProfile() {
     }
   };
 
-  // ♻️ Reset to last loaded values
-  const resetForm = () => {
-    dispatch({ type: 'RESET' });
-  };
+  const resetForm = () => dispatch({ type: 'RESET' });
 
-  // 🧼 Clear all state (e.g., on modal close)
   const clearAll = () => {
     dispatch({ type: 'CLEAR_ALL' });
     hasFetchedRef.current = false;
     setError('');
   };
 
-  // 🧩 Return hook API
   return {
     ...state,
     loading,
@@ -172,6 +147,6 @@ export default function useUserProfile() {
     saveProfile,
     resetForm,
     clearAll,
-    hasFetched: hasFetchedRef.current 
+    hasFetched: hasFetchedRef.current
   };
 }

@@ -3,7 +3,7 @@ import './WeeklyWorkout.css';
 import WorkoutEditModal from './WorkoutEditModal';
 import { CATEGORY_CLASSES } from '../../../constants/enums';
 
-export default function WeeklyWorkout({ personalized = [], meta = {} }) {
+export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
 
   const formatDetail = ({ sets, reps, weight }) =>
@@ -15,6 +15,21 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
     setSelectedWorkout({ ...workout, day, program_id: meta.program_id });
 
   const getSearchUrl = (name) => `https://www.google.com/search?q=${encodeURIComponent(`how to do ${name}`)}`;
+
+  const handleWorkoutUpdate = (updatedWorkout) => {
+    setPersonalized((prev) =>
+      prev.map((dayObj) => {
+        if (dayObj.day !== updatedWorkout.day) return dayObj;
+        return {
+          ...dayObj,
+          workouts: dayObj.workouts.map((w) =>
+            w.workout_id === updatedWorkout.workout_id ? updatedWorkout : w
+          ),
+        };
+      })
+    );
+    setSelectedWorkout(null);
+  };
 
   return (
     <div className="accordion workout-container" id="weeklyWorkoutAccordion">
@@ -76,7 +91,13 @@ export default function WeeklyWorkout({ personalized = [], meta = {} }) {
         );
       })}
 
-      {selectedWorkout && <WorkoutEditModal workout={selectedWorkout} onClose={() => setSelectedWorkout(null)} />}
+      {selectedWorkout && (
+        <WorkoutEditModal
+          workout={selectedWorkout}
+          onClose={() => setSelectedWorkout(null)}
+          onWorkoutUpdate={handleWorkoutUpdate}
+        />
+      )}
     </div>
   );
 }

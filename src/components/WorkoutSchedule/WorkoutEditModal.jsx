@@ -3,7 +3,7 @@ import { Form, Button, Spinner } from 'react-bootstrap';
 import BaseModal from '@/components/BaseModal/BaseModal';
 import { toast } from '@/components/ToastManager';
 
-export default function WorkoutEditModal({ workout, onClose }) {
+export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) {
   const [sets, setSets] = useState(workout.sets ?? '');
   const [reps, setReps] = useState(workout.reps ?? '');
   const [weight, setWeight] = useState(workout.weight?.value ?? '');
@@ -43,7 +43,8 @@ export default function WorkoutEditModal({ workout, onClose }) {
       const data = await res.json();
       if (res.ok && data.updatedWorkout) {
         toast.show('success', '✅ Workout updated successfully!');
-        window.location.reload();
+        onWorkoutUpdate?.(data.updatedWorkout);
+        onClose();
       } else {
         toast.show('danger', data?.error || '❌ Failed to save changes');
       }
@@ -73,9 +74,10 @@ export default function WorkoutEditModal({ workout, onClose }) {
       });
 
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.updatedWorkout) {
         toast.show('success', '↩️ Workout reset to original values');
-        window.location.reload();
+        onWorkoutUpdate?.(data.updatedWorkout);
+        onClose();
       } else {
         toast.show('danger', data?.error || '❌ Failed to reset workout');
       }

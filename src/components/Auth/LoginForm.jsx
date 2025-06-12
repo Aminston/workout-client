@@ -1,11 +1,9 @@
-// src/components/LoginForm/LoginForm.jsx
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Form } from 'react-bootstrap';
+import { Form, Button, Spinner } from 'react-bootstrap';
 import BaseModal from '@/components/BaseModal/BaseModal';
 
-export default function LoginForm({ show, onHide, setToken, setAuthMode }) {
+export default function LoginForm({ show, onHide, setToken, onLoginSuccess, setAuthMode }) {
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
@@ -26,32 +24,26 @@ export default function LoginForm({ show, onHide, setToken, setAuthMode }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
 
+      const userName = data.user?.name || '';
+      console.log('✅ Login successful, token:', data.token);
+
       localStorage.setItem('jwt_token', data.token);
-      localStorage.setItem('userName', data.user.name || '');
+      localStorage.setItem('userName', userName);
       setToken(data.token);
+      onLoginSuccess?.(); // Optional chaining in case it's undefined
+      console.log('➡️ Navigating to /schedule');
+      navigate('/schedule');
       onHide();
-      navigate('/schedule'); // Redirect after login
     } catch (err) {
-      console.error(err);
+      console.error('❌ Login error:', err.message);
     } finally {
       setIsLoggingIn(false);
     }
   };
 
-  const isValid = authForm.email && authForm.password;
-
   return (
-    <BaseModal
-      show={show}
-      onHide={onHide}
-      title="Login"
-      onCancel={onHide}
-      onSubmit={handleLogin}
-      canSubmit={isValid}
-      isSubmitting={isLoggingIn}
-      confirmLabel="Login"
-    >
-      <div className="modal-body">
+    <BaseModal show={show} onHide={onHide} title="Login">
+      <Form onSubmit={handleLogin}>
         <Form.Control
           type="email"
           name="email"
@@ -60,6 +52,7 @@ export default function LoginForm({ show, onHide, setToken, setAuthMode }) {
           value={authForm.email}
           onChange={handleChange}
           autoComplete="off"
+          required
         />
         <Form.Control
           type="password"
@@ -69,6 +62,7 @@ export default function LoginForm({ show, onHide, setToken, setAuthMode }) {
           value={authForm.password}
           onChange={handleChange}
           autoComplete="off"
+          required
         />
         <p className="text-sm mt-2">
           No account?{' '}
@@ -76,7 +70,23 @@ export default function LoginForm({ show, onHide, setToken, setAuthMode }) {
             Register here
           </button>
         </p>
-      </div>
+        <div className="modal-footer modal-footer-actions mt-3">
+          <Button
+            type="button"
+            onClick={onHide}
+            className="btn-outline-secondary btn-modal-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoggingIn}
+            className="btn-modal-confirm btn-accent"
+          >
+            {isLoggingIn ? <Spinner size="sm" animation="border" /> : 'Login'}
+          </Button>
+        </div>
+      </Form>
     </BaseModal>
   );
 }

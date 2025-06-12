@@ -1,61 +1,54 @@
 import { useState } from 'react';
-import { Form } from 'react-bootstrap';
+import { Form, Button, Spinner } from 'react-bootstrap';
 import BaseModal from '@/components/BaseModal/BaseModal';
+import { useNavigate } from 'react-router-dom';
 
 export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, setAuthMode }) {
   const [authForm, setAuthForm] = useState({ name: '', email: '', password: '' });
   const [isRegistering, setIsRegistering] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = e => {
+  const handleChange = (e) => {
     setAuthForm({ ...authForm, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsRegistering(true);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
+      const registerRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(authForm)
+        body: JSON.stringify(authForm),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
+      const registerData = await registerRes.json();
+      if (!registerRes.ok) throw new Error(registerData.error || 'Registration failed');
 
       const loginRes = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: authForm.email, password: authForm.password })
+        body: JSON.stringify({ email: authForm.email, password: authForm.password }),
       });
       const loginData = await loginRes.json();
       if (!loginRes.ok) throw new Error(loginData.error || 'Auto-login failed');
 
+      const userName = loginData.user?.name || '';
       localStorage.setItem('jwt_token', loginData.token);
-      localStorage.setItem('userName', loginData.user.name || '');
+      localStorage.setItem('userName', userName);
       setToken(loginData.token);
       onLoginSuccess?.();
+      navigate('/schedule');
       onHide();
     } catch (err) {
-      console.error(err);
+      console.error('❌ Registration error:', err.message);
     } finally {
       setIsRegistering(false);
     }
   };
 
-  const isValid = authForm.name && authForm.email && authForm.password;
-
   return (
-    <BaseModal
-      show={show}
-      onHide={onHide}
-      title="Register"
-      onCancel={onHide}
-      onSubmit={handleRegister}
-      canSubmit={isValid}
-      isSubmitting={isRegistering}
-      confirmLabel="Register"
-    >
-      <div className="modal-body">
+    <BaseModal show={show} onHide={onHide} title="Register">
+      <Form onSubmit={handleSubmit}>
         <Form.Control
           type="text"
           name="name"
@@ -64,6 +57,7 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
           value={authForm.name}
           onChange={handleChange}
           autoComplete="off"
+          required
         />
         <Form.Control
           type="email"
@@ -73,6 +67,7 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
           value={authForm.email}
           onChange={handleChange}
           autoComplete="off"
+          required
         />
         <Form.Control
           type="password"
@@ -82,6 +77,7 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
           value={authForm.password}
           onChange={handleChange}
           autoComplete="off"
+          required
         />
         <p className="text-sm mt-2">
           Already have an account?{' '}
@@ -89,7 +85,15 @@ export default function RegisterForm({ show, onHide, setToken, onLoginSuccess, s
             Login here
           </button>
         </p>
-      </div>
+        <div className="modal-footer modal-footer-actions mt-3">
+          <Button type="button" onClick={onHide} className="btn-outline-secondary btn-modal-cancel">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isRegistering} className="btn-modal-confirm btn-accent">
+            {isRegistering ? <Spinner size="sm" animation="border" /> : 'Register'}
+          </Button>
+        </div>
+      </Form>
     </BaseModal>
   );
 }

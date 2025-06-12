@@ -50,8 +50,8 @@ export default function App() {
   };
 
   useEffect(() => {
+    console.log('🔄 App.jsx token updated:', token);
     if (token) {
-      console.log('✅ Token detected, logging in...');
       fetchSchedule();
       setUserName(localStorage.getItem('userName') || '');
     }

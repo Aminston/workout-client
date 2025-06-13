@@ -19,6 +19,7 @@ export default function App() {
     expires_on: '',
     user_name: ''
   });
+  const [loadingWorkout, setLoadingWorkout] = useState(false); // 🔥 added shared loading state
 
   const fetchSchedule = async (customToken) => {
     const usedToken = customToken || token;
@@ -98,10 +99,17 @@ export default function App() {
                   onPersonalized={fetchSchedule}
                   fetchSchedule={fetchSchedule}
                   meta={meta}
+                  loadingWorkout={loadingWorkout}
+                  setLoadingWorkout={setLoadingWorkout}
                 />
                 <main className="app-main">
                   <div className="content-scrollable">
-                    <WeeklyWorkout personalized={personalized} meta={meta} setPersonalized={setPersonalized} />
+                    <WeeklyWorkout
+                      personalized={personalized}
+                      meta={meta}
+                      setPersonalized={setPersonalized}
+                      loadingWorkout={loadingWorkout}
+                    />
                   </div>
                 </main>
               </>

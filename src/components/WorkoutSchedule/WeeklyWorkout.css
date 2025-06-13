@@ -45,6 +45,23 @@
   padding: 1rem 1.25rem;
 }
 
+.workout-loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #007bff;
+  animation: fadeIn 0.4s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+
 
 
 /* Entry list */

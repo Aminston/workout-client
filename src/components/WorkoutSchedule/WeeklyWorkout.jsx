@@ -3,7 +3,7 @@ import './WeeklyWorkout.css';
 import WorkoutEditModal from './WorkoutEditModal';
 import { CATEGORY_CLASSES } from '../../../constants/enums';
 
-export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized }) {
+export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized, loadingWorkout = false }) {
   const [selectedWorkout, setSelectedWorkout] = useState(null);
 
   const formatDetail = ({ sets, reps, weight }) =>
@@ -33,7 +33,14 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
 
   return (
     <div className="accordion workout-container" id="weeklyWorkoutAccordion">
-      {personalized.map(({ day, category, workouts }) => {
+      {loadingWorkout && (
+        <div className="workout-loading-overlay">
+          <div className="spinner-border text-primary" role="status" />
+          <span className="loading-text ms-2">Generating your workout...</span>
+        </div>
+      )}
+
+      {!loadingWorkout && personalized.map(({ day, category, workouts }) => {
         const dayId = day.replace(/\s+/g, '');
 
         return (

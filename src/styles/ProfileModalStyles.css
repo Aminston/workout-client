@@ -1,19 +1,18 @@
 .form-spaced > * {
     margin-bottom: 0.75rem;
-  }
-  
-  .form-spaced .d-flex {
+}
+
+.form-spaced .d-flex {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
-  }
-  
-  .modal-footer .btn {
+}
+
+.modal-footer .btn {
     min-height: 40px;
     padding: 0.5rem 1.25rem;
-  }
-  
-  .modal-body h6 {
+}
+
+.modal-body h6 {
     margin-bottom: 1rem;
-  }
-  
+}

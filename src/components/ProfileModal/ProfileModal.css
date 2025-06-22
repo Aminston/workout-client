@@ -2,95 +2,98 @@
 
 /* Base Button */
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--radius-md);
-  line-height: 1.25;
-  min-height: 40px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border-radius: var(--radius-md);
+    line-height: 1.25;
+    min-height: 40px;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        opacity 0.2s ease;
 }
 
 /* Primary Action Button (Save) */
 .btn-primary {
-  background-color: var(--color-accent);
-  color: white;
-  border: none;
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
 }
 
 .btn-primary:hover {
-  background-color: #dc2626;
+    background-color: #dc2626;
 }
 
 /* Secondary Action Button (Cancel) */
 .btn-secondary {
-  background-color: #667085;
-  color: white;
-  border: none;
+    background-color: #667085;
+    color: white;
+    border: none;
 }
 
 .btn-secondary:hover {
-  background-color: #7b8794;
+    background-color: #7b8794;
 }
 
 /* Link/Button used for switches (login/register) */
 .btn-link {
-  background: none;
-  border: none;
-  color: var(--color-accent);
-  font-weight: 500;
-  padding-left: 0;
-  cursor: pointer;
-  transition: color 0.2s ease;
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    font-weight: 500;
+    padding-left: 0;
+    cursor: pointer;
+    transition: color 0.2s ease;
 }
 
 .btn-link:hover {
-  color: #f87171;
+    color: #f87171;
 }
 
 /* Accent used for login/register submit */
 .btn-accent {
-  background-color: var(--color-accent);
-  color: white;
-  font-weight: 500;
-  border: none;
+    background-color: var(--color-accent);
+    color: white;
+    font-weight: 500;
+    border: none;
 }
 
 .btn-accent:hover {
-  background-color: #dc2626;
+    background-color: #dc2626;
 }
 
 /* Disabled state */
 .btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Spinner */
 .spinner-border {
-  vertical-align: middle;
+    vertical-align: middle;
 }
 
 /* Modal Styling */
 .modal-content {
-  background-color: var(--color-bg-card);
-  color: var(--color-text-main);
-  border-radius: var(--radius-md);
-  border: none;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
+    background-color: var(--color-bg-card);
+    color: var(--color-text-main);
+    border-radius: var(--radius-md);
+    border: none;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
 }
 
 .modal-header,
 .modal-body,
 .modal-footer {
-  background-color: var(--color-bg-card);
-  border-color: var(--color-border);
-  color: var(--color-text-main) !important;
+    background-color: var(--color-bg-card);
+    border-color: var(--color-border);
+    color: var(--color-text-main) !important;
 }
 
 .modal-header .modal-title,
@@ -100,81 +103,81 @@
 .modal-footer,
 .alert,
 .alert * {
-  color: var(--color-text-main) !important;
+    color: var(--color-text-main) !important;
 }
 
 /* Inputs */
 .modal-body .form-control,
 .modal-body .form-select {
-  background-color: var(--color-bg-hover);
-  color: var(--color-text-main);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: 0.95rem;
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
 }
 
 .modal-body .form-control::placeholder {
-  color: var(--color-text-secondary) !important;
-  opacity: 1 !important;
+    color: var(--color-text-secondary) !important;
+    opacity: 1 !important;
 }
 
 .modal-body .form-control:focus,
 .modal-body .form-select:focus {
-  background-color: var(--color-bg-card);
-  color: var(--color-text-main);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+    background-color: var(--color-bg-card);
+    color: var(--color-text-main);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
 }
 
 /* Modal Footer and CTA Layout */
 .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--color-border);
 }
 
 .cta-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
 }
 
 @media (max-width: 480px) {
-  .cta-row,
-  .modal-footer {
-    flex-direction: column;
-    align-items: stretch;
-  }
+    .cta-row,
+    .modal-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
 
-  .cta-row .btn,
-  .modal-footer .btn {
-    width: 100%;
-  }
+    .cta-row .btn,
+    .modal-footer .btn {
+        width: 100%;
+    }
 }
 
 /* Spacing Between Form Fields */
 .form-spaced > * {
-  margin-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
 }
 
 /* Metric Input Layout */
 .metric-input-group {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem; /* ✅ Same as .form-spaced > * */
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem; /* ✅ Same as .form-spaced > * */
 }
 
 .metric-input-group .form-control,
 .metric-input-group .form-select {
-  flex: 1;
+    flex: 1;
 }
 
 @media (max-width: 480px) {
-  .metric-input-group {
-    flex-direction: column;
-  }
+    .metric-input-group {
+        flex-direction: column;
+    }
 }

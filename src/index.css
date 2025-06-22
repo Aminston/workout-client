@@ -1,12 +1,14 @@
 @import './styles/theme.css';
 
-html, body, #root {
-  background-color: var(--color-bg-main) !important;
-  color: var(--color-text-main);
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  font-family: var(--font-family);
+html,
+body,
+#root {
+    background-color: var(--color-bg-main) !important;
+    color: var(--color-text-main);
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-family);
 }

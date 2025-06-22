@@ -2,185 +2,183 @@
 
 /* Container */
 .workout-container {
-  background-color: var(--color-bg-main);
-  padding: 1rem;
+    background-color: var(--color-bg-main);
+    padding: 1rem;
 }
 
 /* Accordion styling */
 #weeklyWorkoutAccordion .accordion-item {
-  background-color: #1f2937;
-  border: none;
-  border-radius: 0.75rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  overflow: hidden;
+    background-color: #1f2937;
+    border: none;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
 }
 
 #weeklyWorkoutAccordion .accordion-button {
-  background-color: #1f2937;
-  color: var(--color-text-main);
-  font-weight: 500;
-  position: relative;
+    background-color: #1f2937;
+    color: var(--color-text-main);
+    font-weight: 500;
+    position: relative;
 }
 
 .accordion-button::after {
-  filter: brightness(1.6);
-  opacity: 0.8;
+    filter: brightness(1.6);
+    opacity: 0.8;
 }
 
 .accordion-button:not(.collapsed)::after {
-  transform: rotate(180deg);
+    transform: rotate(180deg);
 }
 
 .accordion-button .category-badge {
-  position: absolute;
-  right: 3.25rem;
-  top: 50%;
-  transform: translateY(-50%);
-  white-space: nowrap;
+    position: absolute;
+    right: 3.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
 }
 
 #weeklyWorkoutAccordion .accordion-body {
-  background-color: #1f2937;
-  padding: 1rem 1.25rem;
+    background-color: #1f2937;
+    padding: 1rem 1.25rem;
 }
 
 .workout-loading-overlay {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #007bff;
-  animation: fadeIn 0.4s ease-in;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #007bff;
+    animation: fadeIn 0.4s ease-in;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
-
-
-
 
 /* Entry list */
 .entry-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: #1f2937;
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
-  transition: background-color 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #1f2937;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: background-color 0.2s ease;
 }
 
 .entry-item:hover {
-  background-color: #3a3a4a;
+    background-color: #3a3a4a;
 }
 
 .exercise-link {
-  flex: 1;
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
+    flex: 1;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
 }
 
 .exercise-name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--color-text-main);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text-main);
 }
 
 .exercise-name:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 .exercise-detail {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  margin-top: 0.15rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    margin-top: 0.15rem;
 }
 
 /* Button already styled via .btn */
 
-
-
 /* Text inside card */
 .exercise-name {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--color-text-main);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text-main);
 }
 
 .exercise-name:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
 .exercise-detail {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin-top: 0.15rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin-top: 0.15rem;
 }
 
 /* Responsive tweaks */
 @media (max-width: 576px) {
-  .exercise-name {
-    font-size: 0.95rem;
-  }
+    .exercise-name {
+        font-size: 0.95rem;
+    }
 
-  .exercise-detail {
-    font-size: 0.85rem;
-  }
+    .exercise-detail {
+        font-size: 0.85rem;
+    }
 }
 
 /* Category tags */
 .category-badge {
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 0.25em 0.5em;
-  border-radius: 0.25rem;
-  text-transform: capitalize;
-  background-color: transparent;
-  border: 1px solid;
-  opacity: 0.8;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25em 0.5em;
+    border-radius: 0.25rem;
+    text-transform: capitalize;
+    background-color: transparent;
+    border: 1px solid;
+    opacity: 0.8;
 }
 
 .category-badge--red {
-  color: #f87171;
-  border-color: #f87171;
+    color: #f87171;
+    border-color: #f87171;
 }
 
 .category-badge--cyan {
-  color: #67e8f9;
-  border-color: #67e8f9;
+    color: #67e8f9;
+    border-color: #67e8f9;
 }
 
 .category-badge--green {
-  color: #6ee7b7;
-  border-color: #6ee7b7;
+    color: #6ee7b7;
+    border-color: #6ee7b7;
 }
 
 .category-badge--purple {
-  color: #c4b5fd;
-  border-color: #c4b5fd;
+    color: #c4b5fd;
+    border-color: #c4b5fd;
 }
 
 .category-badge--indigo {
-  color: #a5b4fc;
-  border-color: #a5b4fc;
+    color: #a5b4fc;
+    border-color: #a5b4fc;
 }
 
 .category-badge--default {
-  color: #94a3b8;
-  border-color: #94a3b8;
+    color: #94a3b8;
+    border-color: #94a3b8;
 }
-
 
 /* Modal iframe (if used) */
 .modal-body iframe {
-  border-radius: 0 0 8px 8px;
+    border-radius: 0 0 8px 8px;
 }

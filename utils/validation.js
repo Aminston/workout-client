@@ -7,10 +7,11 @@
  * @returns {boolean}
  */
 function isEnumValid(value, enumArray) {
-    return value === undefined || enumArray.some(option => option.key === value);
-  }
-  
-  module.exports = {
-    isEnumValid
-  };
-  
+    return (
+        value === undefined || enumArray.some(option => option.key === value)
+    );
+}
+
+module.exports = {
+    isEnumValid,
+};

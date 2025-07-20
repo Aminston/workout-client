@@ -1,33 +1,5 @@
+/* app.css - Just import the theme */
 @import './styles/theme.css';
+@import './styles/buttons.css';
 
-.app-root {
-  background-color: var(--color-bg-main);
-  color: var(--color-text-main);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.app-main {
-  flex-grow: 1;
-  display: flex;
-  justify-content: center;
-  padding: 1rem;
-  background-color: var(--color-bg-main); /* Fix white BG on center area */
-}
-
-.content-scrollable {
-  color: var(--color-text-main);
-  width: 100%;
-  max-width: 640px;
-  height: auto;
-}
-
-/* Responsive tweaks */
-@media (max-width: 768px) {
-  .content-scrollable {
-    border-radius: 0;
-    box-shadow: none;
-    padding: 1rem 0.75rem;
-  }
-}
+/* Any app-specific overrides go here if needed */

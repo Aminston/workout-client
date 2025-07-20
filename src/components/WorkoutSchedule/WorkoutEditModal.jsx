@@ -1,3 +1,4 @@
+/* WorkoutEditModal.jsx */
 import React, { useState, useMemo } from 'react';
 import { Form, Button, Spinner } from 'react-bootstrap';
 import BaseModal from '@/components/BaseModal/BaseModal';
@@ -49,6 +50,7 @@ export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) 
         toast.show('danger', data?.error || '❌ Failed to save changes');
       }
     } catch (err) {
+      console.error('Error updating workout:', err);
       toast.show('danger', '❌ Network error or invalid server response');
     } finally {
       setLoading(false);
@@ -82,6 +84,7 @@ export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) 
         toast.show('danger', data?.error || '❌ Failed to reset workout');
       }
     } catch (err) {
+      console.error('Error resetting workout:', err);
       toast.show('danger', '❌ Network error on reset');
     } finally {
       setLoading(false);
@@ -93,11 +96,25 @@ export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) 
       <Form onSubmit={handleSave}>
         <div className="mb-3">
           <label className="form-label">Sets</label>
-          <input type="number" className="form-control" value={sets} onChange={(e) => setSets(e.target.value)} />
+          <input 
+            type="number" 
+            className="form-control" 
+            value={sets} 
+            onChange={(e) => setSets(e.target.value)}
+            min="1"
+            required
+          />
         </div>
         <div className="mb-3">
           <label className="form-label">Reps</label>
-          <input type="number" className="form-control" value={reps} onChange={(e) => setReps(e.target.value)} />
+          <input 
+            type="number" 
+            className="form-control" 
+            value={reps} 
+            onChange={(e) => setReps(e.target.value)}
+            min="1"
+            required
+          />
         </div>
         <div className="mb-3">
           <label className="form-label">Weight</label>
@@ -107,6 +124,8 @@ export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) 
             value={weight}
             onChange={(e) => setWeight(e.target.value)}
             disabled={unit === 'none' || unit === 'bodyweight'}
+            min="0"
+            step="0.1"
           />
         </div>
         <div className="mb-3">
@@ -126,13 +145,14 @@ export default function WorkoutEditModal({ workout, onClose, onWorkoutUpdate }) 
               className="btn-modal-confirm btn-accent"
               disabled={loading}
             >
-              Reset
+              {loading ? <Spinner size="sm" animation="border" /> : 'Reset'}
             </Button>
           )}
           <Button
             type="button"
             onClick={onClose}
             className="btn-outline-secondary btn-modal-cancel"
+            disabled={loading}
           >
             Cancel
           </Button>

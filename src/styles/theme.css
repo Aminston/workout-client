@@ -1,34 +1,70 @@
+/* styles/theme.css - Simplified and optimized */
+
+/* CSS Variables */
 :root {
-    --color-bg-main: #1e1e2f;
-    --color-bg-card: #26263a;
-    --color-bg-hover: #2e2e44;
-    --color-border: #383850;
-  
-    --color-text-main: #f8fafc; /* brighter for better contrast */
-    --color-text-secondary: #9ca3af;
-    --color-accent: #ef4444;
-  
-    --radius-sm: 0.5rem;
-    --radius-md: 0.75rem;
-    --font-family: system-ui, sans-serif;
-  }
-  
-  .image-contained {
-    width: 100%;
-    height: auto;
-    object-fit: contain;
-    border-radius: var(--radius-md);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  }
-  
-  /* --- Modal --- */
+  --color-bg-main: #1e1e2f;
+  --color-bg-card: #26263a;
+  --color-bg-hover: #2e2e44;
+  --color-border: #383850;
+
+  --color-text-main: #f8fafc;
+  --color-text-secondary: #9ca3af;
+  --color-accent: #ef4444;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --font-family: system-ui, sans-serif;
+}
+
+/* Base App Layout */
+.app-root {
+  background-color: var(--color-bg-main);
+  color: var(--color-text-main);
+  min-height: 100vh;
+  font-family: var(--font-family);
+}
+
+.app-main {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  background-color: var(--color-bg-main);
+}
+
+.content-container {
+  width: 100%;
+  max-width: 640px;
+  min-width: 480px;
+  color: var(--color-text-main);
+}
+
+/* Forms & Modals */
+.form-control,
+.form-select {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.form-control::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.form-control:focus,
+.form-select:focus {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
+}
+
 .modal-content {
   background-color: var(--color-bg-card);
   color: var(--color-text-main);
   border-radius: var(--radius-md);
   border: none;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
 }
 
 .modal-header,
@@ -43,50 +79,22 @@
   color: var(--color-text-main);
 }
 
-/* --- Form Elements --- */
-.modal-body .form-control,
-.modal-body .form-select {
-  background-color: var(--color-bg-hover);
-  color: var(--color-text-main);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-}
-
-.modal-body .form-control::placeholder {
-  color: var(--color-text-secondary);
-  opacity: 1;
-}
-
-.modal-body .form-control:focus,
-.modal-body .form-select:focus {
-  background-color: var(--color-bg-card);
-  color: var(--color-text-main);
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.25);
-}
-
-.btn-modal-cancel {
-  background-color: transparent;
-  color: var(--color-text-main);
-  border: 1px solid var(--color-border);
-  padding: 0.5rem 1rem;
+/* Images */
+.image-contained {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
   border-radius: var(--radius-md);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.btn-modal-cancel:hover {
-  background-color: var(--color-bg-hover);
-  color: var(--color-text-main);
-}
-
-.btn-modal-confirm {
-  background-color: var(--color-accent);
-  color: white;
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
-  border: none;
-}
-
-.btn-modal-confirm:hover {
-  background-color: #dc2626;
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .app-main {
+    padding: 0.75rem;
+  }
+  
+  .content-container {
+    min-width: 320px;
+  }
 }

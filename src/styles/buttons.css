@@ -26,6 +26,16 @@
   background-color: #dc2626;
 }
 
+/* Better contrast for accent on dark backgrounds */
+.btn-accent {
+  background-color: #ef4444;
+  border: 1px solid #f87171;
+}
+.btn-accent:hover {
+  background-color: #dc2626;
+  border-color: #ef4444;
+}
+
 /* Secondary (Cancel, etc) */
 .btn-secondary {
   background-color: #667085;
@@ -38,12 +48,13 @@
 
 /* Outline for neutral options */
 .btn-outline-secondary {
-  background-color: transparent;
+  background-color: var(--color-bg-card);
   color: var(--color-text-main);
   border: 1px solid var(--color-border);
 }
 .btn-outline-secondary:hover {
   background-color: var(--color-bg-hover);
+  border-color: var(--color-accent);
 }
 
 /* Link-style button */
@@ -68,4 +79,19 @@
 .btn-sm {
   font-size: 0.875rem;
   padding: 0.35rem 0.75rem;
+}
+
+/* Mobile responsive - larger touch targets */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+  }
+  
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
 }

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import './WeeklyWorkout.css';
+/* WeeklyWorkout.jsx - Simplified layout and div management */
+import React, { useState, useEffect } from 'react';
 import WorkoutEditModal from './WorkoutEditModal';
+import './WeeklyWorkout.css'; 
+import WorkoutSplitButton from './WorkoutSplitButton';
 import { CATEGORY_CLASSES } from '../../../constants/enums';
 
 export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized, loadingWorkout = false }) {
@@ -31,72 +33,98 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
     setSelectedWorkout(null);
   };
 
+  const handleWorkoutStatusUpdate = (day, updatedWorkout) => {
+    setPersonalized((prev) =>
+      prev.map((dayObj) => {
+        if (dayObj.day !== day) return dayObj;
+        return {
+          ...dayObj,
+          workouts: dayObj.workouts.map((w) =>
+            w.workout_id === updatedWorkout.workout_id ? { ...w, ...updatedWorkout } : w
+          ),
+        };
+      })
+    );
+  };
+
+  if (loadingWorkout) {
+    return (
+      <div className="workout-loading">
+        <div className="spinner-border text-primary" role="status" />
+        <span className="ms-2">Generating your workout...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="accordion workout-container" id="weeklyWorkoutAccordion">
-      {loadingWorkout && (
-        <div className="workout-loading-overlay">
-          <div className="spinner-border text-primary" role="status" />
-          <span className="loading-text ms-2">Generating your workout...</span>
-        </div>
-      )}
+    <div className="workout-container">
+      <div className="accordion" id="weeklyWorkoutAccordion">
+        {personalized.map(({ day, category, workouts }) => {
+          const dayId = day.replace(/\s+/g, '');
 
-      {!loadingWorkout && personalized.map(({ day, category, workouts }) => {
-        const dayId = day.replace(/\s+/g, '');
+          return (
+            <div key={day} className="accordion-item">
+              {/* Day Header */}
+              <div className="accordion-header">
+                <button
+                  className="accordion-button collapsed"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target={`#collapse${dayId}`}
+                  aria-expanded="false"
+                  aria-controls={`collapse${dayId}`}
+                >
+                  <span className="day-title">{day}</span>
+                  <span className={`category-badge ${CATEGORY_CLASSES[category] || 'category-badge--default'}`}>
+                    {category}
+                  </span>
+                </button>
+              </div>
 
-        return (
-          <div key={day} className="accordion-item">
-            <h2 className="accordion-header" id={`heading${dayId}`}>
-              <button
-                className="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                data-bs-target={`#collapse${dayId}`}
-                aria-expanded="false"
-                aria-controls={`collapse${dayId}`}
+              {/* Day Content */}
+              <div
+                id={`collapse${dayId}`}
+                className="accordion-collapse collapse"
+                data-bs-parent="#weeklyWorkoutAccordion"
               >
-                <span className="accordion-button-label">{day}</span>
-                <span className={`category-badge ${CATEGORY_CLASSES[category] || 'category-badge--default'}`}>
-                  {category}
-                </span>
-              </button>
-            </h2>
-            <div
-              id={`collapse${dayId}`}
-              className="accordion-collapse collapse"
-              aria-labelledby={`heading${dayId}`}
-              data-bs-parent="#weeklyWorkoutAccordion"
-            >
-              <ul className="entry-list p-0 m-0">
-                {workouts.map((exercise, idx) => {
-                  const detail = formatDetail(exercise);
-                  return (
-                    <li key={idx} className="entry-item">
-                      <a
-                        href={getSearchUrl(exercise.name)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="exercise-link"
-                      >
-                        <span className="exercise-name">{exercise.name}</span>
-                        {detail && <span className="exercise-detail">{detail}</span>}
-                      </a>
-                      <button
-                        className="btn-modal-confirm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(day, exercise);
-                        }}
-                      >
-                        Edit
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                <div className="accordion-body">
+                  {workouts.map((exercise, idx) => (
+                    <div key={idx} className="exercise-card">
+                      {/* Exercise Info */}
+                      <div className="exercise-info">
+                        <a
+                          href={getSearchUrl(exercise.name)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="exercise-name"
+                        >
+                          {exercise.name}
+                        </a>
+                        {formatDetail(exercise) && (
+                          <div className="exercise-detail">
+                            {formatDetail(exercise)}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Exercise Action */}
+                      <div className="exercise-action">
+                        <WorkoutSplitButton
+                          workout={exercise}
+                          programId={meta.program_id}
+                          scheduleId={meta.schedule_id}
+                          onEdit={() => handleEditClick(day, exercise)}
+                          onWorkoutUpdate={(updatedWorkout) => handleWorkoutStatusUpdate(day, updatedWorkout)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {selectedWorkout && (
         <WorkoutEditModal

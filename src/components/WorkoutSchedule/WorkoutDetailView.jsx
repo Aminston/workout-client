@@ -38,11 +38,10 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
   const pauseTimerRef = useRef(null);
 
   // API Helpers
-  const getApiUrl = (endpoint) => {
-    return process.env.NODE_ENV === 'production' 
-      ? endpoint 
-      : `http://localhost:3000${endpoint}`;
-  };
+const getApiUrl = (endpoint) => {
+  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  return `${baseUrl}${endpoint}`;
+};
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('jwt_token') || localStorage.getItem('X-API-Token');

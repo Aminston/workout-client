@@ -1,12 +1,22 @@
+/* Navbar.css - Fixed duplicate dates and dropdown visibility */
 @import '../../styles/theme.css';
 
 .custom-navbar {
-  padding-top: 0.25rem;
-  padding-bottom: 0.25rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  background-color: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-border);
+  width: 100%;
+  overflow: visible; /* Changed from hidden to visible for dropdown */
+  position: relative;
+  z-index: 1000;
 }
 
 .custom-container {
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 1rem;
+  max-width: 100%;
+  margin: 0 auto;
+  position: relative;
 }
 
 .navbar-flex {
@@ -15,14 +25,29 @@
   justify-content: space-between;
   width: 100%;
   position: relative;
+  min-height: 40px;
+  gap: 1rem;
 }
 
-/* Dropdown title */
+/* Left section - Title */
+.nav-title-section {
+  flex: 1;
+  min-width: 0;
+  max-width: 60%;
+  position: relative;
+}
+
 .nav-header-title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--color-text-main);
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+  display: block;
+  cursor: pointer;
 }
 
 .nav-title {
@@ -30,25 +55,16 @@
   padding: 0;
   color: var(--color-text-main);
   line-height: 1.2;
+  display: block;
 }
 
 .nav-title:hover,
 .nav-title:focus {
   text-decoration: none !important;
+  color: var(--color-text-main);
 }
 
-/* Right-aligned auth buttons */
-.nav-user-button .btn {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.2;
-}
-
-.nav-user-button {
-  gap: 0.5rem;
-}
-
-/* Desktop: centered date across navbar */
+/* Center section - Desktop dates only */
 .nav-dates-desktop {
   position: absolute;
   left: 50%;
@@ -56,24 +72,282 @@
   font-size: 0.875rem;
   color: var(--color-text-secondary);
   white-space: nowrap;
+  z-index: 1;
+  pointer-events: none;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Mobile: stacked date under title */
+/* Right section - User buttons */
+.nav-user-button {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1001;
+}
+
+.nav-user-button .btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+/* Mobile dates under title - ONLY show on mobile */
 .nav-header-dates-mobile {
   font-size: 0.75rem;
   color: var(--color-text-secondary);
-  margin-top: 0.15rem;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: none; /* Hidden by default */
 }
 
-/* Show only in appropriate screens */
+/* Dropdown Menu Styles */
+.dropdown-menu {
+  background-color: var(--color-bg-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  min-width: 200px !important;
+  z-index: 1050 !important;
+  margin-top: 0.25rem !important;
+  padding: 0.5rem 0 !important;
+}
+
+.dropdown-item {
+  color: var(--color-text-main) !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+  border: none !important;
+  background: transparent !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  background-color: var(--color-bg-hover) !important;
+  color: var(--color-text-main) !important;
+}
+
+.dropdown-toggle::after {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+/* Show/Hide dates based on screen size */
 @media (min-width: 577px) {
   .nav-header-dates-mobile {
-    display: none;
+    display: none !important; /* Force hide on desktop/tablet */
+  }
+  
+  .nav-dates-desktop {
+    display: block;
   }
 }
 
 @media (max-width: 576px) {
   .nav-dates-desktop {
-    display: none;
+    display: none !important; /* Force hide on mobile */
+  }
+  
+  .nav-header-dates-mobile {
+    display: block !important; /* Force show on mobile */
+  }
+}
+
+/* Responsive Design */
+
+/* Large screens */
+@media (min-width: 992px) {
+  .custom-container {
+    padding: 0.5rem 1.5rem;
+  }
+  
+  .nav-header-title {
+    font-size: 1.25rem;
+  }
+  
+  .nav-dates-desktop {
+    font-size: 0.9375rem;
+    max-width: 300px;
+  }
+}
+
+/* Medium screens */
+@media (min-width: 768px) and (max-width: 991px) {
+  .nav-title-section {
+    max-width: 50%;
+  }
+  
+  .nav-dates-desktop {
+    font-size: 0.8125rem;
+    max-width: 220px;
+  }
+}
+
+/* Small screens */
+@media (min-width: 577px) and (max-width: 767px) {
+  .nav-header-title {
+    font-size: 1rem;
+  }
+  
+  .nav-title-section {
+    max-width: 45%;
+  }
+  
+  .nav-dates-desktop {
+    font-size: 0.75rem;
+    max-width: 180px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 576px) {
+  .custom-container {
+    padding: 0.375rem 0.75rem;
+  }
+  
+  .navbar-flex {
+    gap: 0.75rem;
+    min-height: 36px;
+  }
+  
+  .nav-title-section {
+    max-width: 70%;
+  }
+  
+  .nav-header-title {
+    font-size: 1rem;
+  }
+  
+  .nav-user-button {
+    gap: 0.375rem;
+  }
+  
+  .nav-user-button .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+  
+  /* Adjust dropdown for mobile */
+  .dropdown-menu {
+    min-width: 180px !important;
+    right: 0 !important;
+    left: auto !important;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+  .custom-container {
+    padding: 0.375rem 0.5rem;
+  }
+  
+  .navbar-flex {
+    gap: 0.5rem;
+  }
+  
+  .nav-title-section {
+    max-width: 65%;
+  }
+  
+  .nav-header-title {
+    font-size: 0.9375rem;
+  }
+  
+  .nav-header-dates-mobile {
+    font-size: 0.6875rem;
+    margin-top: 0.125rem;
+  }
+  
+  .nav-user-button .btn {
+    padding: 0.25rem 0.375rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 375px) {
+  .custom-container {
+    padding: 0.25rem 0.375rem;
+  }
+  
+  .nav-title-section {
+    max-width: 60%;
+  }
+  
+  .nav-header-title {
+    font-size: 0.875rem;
+  }
+  
+  .nav-header-dates-mobile {
+    font-size: 0.625rem;
+  }
+  
+  .nav-user-button {
+    gap: 0.25rem;
+  }
+  
+  .nav-user-button .btn {
+    padding: 0.1875rem 0.375rem;
+    font-size: 0.6875rem;
+  }
+  
+  .dropdown-menu {
+    min-width: 160px !important;
+  }
+}
+
+/* Ultra small screens */
+@media (max-width: 320px) {
+  .nav-title-section {
+    max-width: 55%;
+  }
+  
+  .nav-header-title {
+    font-size: 0.8125rem;
+  }
+  
+  .nav-user-button .btn {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.625rem;
+  }
+}
+
+/* Focus and accessibility */
+.nav-title:focus-visible,
+.nav-header-title:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.nav-user-button .btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Ensure dropdown is always visible */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu.show {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
+/* Dark theme enhancements */
+@media (prefers-color-scheme: dark) {
+  .custom-navbar {
+    background-color: var(--color-bg-card, #26263a);
+    border-bottom-color: var(--color-border, #383850);
   }
 }

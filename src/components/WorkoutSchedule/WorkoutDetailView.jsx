@@ -692,7 +692,7 @@ const getApiUrl = (endpoint) => {
   // Simple render helpers
   const getActionButton = (set, exerciseId, setId) => {
     if (set.status === 'done') {
-      return <span className="status-badge status-done">✅ Done</span>;
+      return <span className="status-badge status-done">Done</span>;
     }
     
     if (set.status === 'in-progress') {
@@ -701,7 +701,7 @@ const getApiUrl = (endpoint) => {
           className="btn btn-warning btn-sm"
           onClick={() => handleSetAction(exerciseId, setId, 'complete')}
         >
-          Complete Set
+          End
         </button>
       );
     }
@@ -711,7 +711,7 @@ const getApiUrl = (endpoint) => {
         className="btn btn-success btn-sm"
         onClick={() => handleSetAction(exerciseId, setId, 'start')}
       >
-        Start Set
+        Start
       </button>
     );
   };
@@ -777,16 +777,6 @@ const getApiUrl = (endpoint) => {
         </h1>
       </div>
 
-      {/* Unit Toggle */}
-      <div className="unit-toggle-container">
-        <button
-          className={`unit-toggle-btn ${useMetric ? 'active' : ''}`}
-          onClick={() => setUseMetric(!useMetric)}
-        >
-          Display: {useMetric ? 'Metric (kg)' : 'Imperial (lbs)'}
-        </button>
-      </div>
-
       {/* Progress Section */}
       <div className="workout-progress-section">
         <h3 className="progress-title">Workout Progress</h3>
@@ -832,22 +822,37 @@ const getApiUrl = (endpoint) => {
         )}
       </div>
 
+      {/* Unit Toggle */}
+      <div className="unit-toggle-container">
+        <button
+          className={`unit-toggle-btn ${useMetric ? 'active' : ''}`}
+          onClick={() => setUseMetric(!useMetric)}
+        >
+          Display: {useMetric ? 'Metric (kg)' : 'Imperial (lbs)'}
+        </button>
+      </div>
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map(exercise => (
           <div key={exercise.id} className="exercise-detail-card">
             <div className="exercise-header">
-              <h3 className="exercise-name">{exercise.name}</h3>
+              <h3 
+                className="exercise-name exercise-clickable" 
+                onClick={() => window.open(`https://www.google.com/search?q=how+to+${encodeURIComponent(exercise.name)}&tbm=vid`, '_blank')}
+                title="Click to watch exercise tutorial videos"
+              >
+                {exercise.name}
+              </h3>
               {exercise.status === 'done' && (
-                <span className="exercise-status-badge exercise-done">✓ Complete</span>
+                <span className="exercise-status-badge exercise-done">Done</span>
               )}
             </div>
 
             <div className="sets-table">
               <div className="sets-header">
                 <span>Set</span>
-                <span>Weight</span>
                 <span>Reps</span>
+                <span>Weight</span>
                 <span>Time</span>
                 <span>Action</span>
               </div>

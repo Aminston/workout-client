@@ -880,6 +880,18 @@ const getApiUrl = (endpoint) => {
             </div>
           </div>
         ))}
+        {/* Manual Save Controls */}
+        {hasUnsavedChanges && (
+          <div className="save-controls">
+            <button 
+              className="save-button"
+              onClick={handleManualSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Workout'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

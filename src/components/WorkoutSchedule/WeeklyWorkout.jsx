@@ -279,7 +279,6 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
                   <button 
                     className={`start-workout-btn ${
                       workoutStatus.isCompleted ? 'completed' : 
-                      workoutStatus.mightBeCompleted ? 'might-completed' :
                       workoutStatus.isPartiallyCompleted ? 'partial' :
                       workoutStatus.isStarted ? 'resume' : 'start'
                     }`}
@@ -287,8 +286,6 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
                   >
                     {workoutStatus.isCompleted 
                       ? '📋 Review Workout' 
-                      : workoutStatus.mightBeCompleted
-                        ? '🔄 Review Workout (Syncing...)'
                         : workoutStatus.isPartiallyCompleted
                           ? '⚠️ Continue Workout'
                           : workoutStatus.isStarted 

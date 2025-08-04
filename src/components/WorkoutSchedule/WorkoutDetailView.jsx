@@ -38,10 +38,10 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
   const pauseTimerRef = useRef(null);
 
   // API Helpers
-const getApiUrl = (endpoint) => {
-  const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-  return `${baseUrl}${endpoint}`;
-};
+  const getApiUrl = (endpoint) => {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    return `${baseUrl}${endpoint}`;
+  };
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('jwt_token') || localStorage.getItem('X-API-Token');
@@ -51,7 +51,28 @@ const getApiUrl = (endpoint) => {
     };
   };
 
-  // Manual save function - only called by user action
+  // 🚀 ENHANCED: Calculate elapsed time for a set
+  const calculateElapsedTime = (startTime, endTime) => {
+    if (!startTime || !endTime) return null;
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const elapsedMs = end - start;
+    return Math.round(elapsedMs / 100) / 10; // Round to 1 decimal place (e.g., 45.5 seconds)
+  };
+
+  // Simple elapsed time formatter
+  const formatElapsedTime = (elapsedTime) => {
+    if (!elapsedTime) return '-';
+    if (elapsedTime < 60) {
+      return elapsedTime % 1 === 0 ? `${elapsedTime}s` : `${elapsedTime.toFixed(1)}s`;
+    } else {
+      const minutes = Math.floor(elapsedTime / 60);
+      const seconds = Math.round(elapsedTime % 60);
+      return seconds === 0 ? `${minutes}m` : `${minutes}m ${seconds}s`;
+    }
+  };
+
+  // 🚀 ENHANCED: Updated handleManualSave with elapsed time support
   const handleManualSave = async () => {
     if (!hasUnsavedChanges || isSaving) return;
     
@@ -90,63 +111,90 @@ const getApiUrl = (endpoint) => {
         return;
       }
 
-      console.log(`💾 Saving ${exercisesToSave.length} exercises with changes`);
+      console.log(`💾 Bulk saving ${exercisesToSave.length} exercises with changes`);
 
-      // Save each exercise
-      const savePromises = exercisesToSave.map(async (exercise) => {
+      // 🚀 ENHANCED: Build bulk workoutSessions array with elapsed time
+      const workoutSessions = exercisesToSave.map(exercise => {
         const setsToSave = exercise.sets.filter(set => {
           const isNewlyCompleted = set.status === 'done' && !set.isFromSession;
           const isModified = set.isModified === true;
           return isNewlyCompleted || isModified;
         });
         
-        const performedSets = setsToSave.map(set => ({
-          setNumber: set.id,
-          reps: set.reps,
-          weight: set.weight,
-          weightUnit: set.weightUnit || 'kg'
-        }));
+        const performedSets = setsToSave.map(set => {
+          // 🚀 NEW: Calculate and include elapsed time
+          const elapsedTime = calculateElapsedTime(set.startTime, set.completedAt);
+          
+          const performedSet = {
+            setNumber: set.id,
+            reps: set.reps,
+            weight: set.weight,
+            weightUnit: set.weightUnit || 'kg'
+          };
 
-        console.log(`📤 Saving ${exercise.name} with ${performedSets.length} sets:`, performedSets);
+          // 🚀 NEW: Add elapsed time if available
+          if (elapsedTime !== null) {
+            performedSet.elapsedTime = elapsedTime;
+            console.log(`⏱️ Set ${set.id} elapsed time: ${elapsedTime}s`);
+          }
 
-        const response = await fetch(getApiUrl('/sessions/save'), {
-          method: 'POST',
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            scheduleId: exercise.scheduleId,
-            performedSets: performedSets
-          })
+          return performedSet;
         });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Failed to save ${exercise.name}: ${errorData.error || response.statusText}`);
-        }
+        console.log(`📤 Preparing ${exercise.name} with ${performedSets.length} sets:`, performedSets);
 
-        const result = await response.json();
-        console.log(`✅ Saved ${exercise.name} successfully:`, result);
-        
-        return { exerciseId: exercise.id, result, savedSets: setsToSave };
+        return {
+          scheduleId: exercise.scheduleId,
+          status: 'completed',
+          performedSets: performedSets
+        };
       });
 
-      // Wait for all saves to complete
-      const results = await Promise.all(savePromises);
-      console.log('📋 All save results:', results);
+      // Single bulk API call
+      console.log('🌐 Making SINGLE bulk API call with workoutSessions:', workoutSessions);
       
-      // Update UI to mark sets as saved
+      const response = await fetch(getApiUrl('/sessions/save'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          workoutSessions: workoutSessions
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Bulk save failed: ${errorData.error || response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Bulk save successful:', result);
+      
+      if (!result.success || !result.sessions) {
+        throw new Error('Invalid bulk save response format');
+      }
+      
+      const sessions = result.sessions;
+      console.log(`📊 Bulk save stats: ${result.totalSessions} sessions, total volume: ${result.totalVolume}`);
+      
+      // 🚀 ENHANCED: Update UI to mark sets as saved and preserve elapsed time from API response
       setExercises(prev => prev.map(exercise => {
-        const exerciseResult = results.find(r => r?.exerciseId === exercise.id);
+        const exerciseResult = sessions.find(session => session.scheduleId === exercise.scheduleId);
         if (!exerciseResult) return exercise;
         
+        console.log(`🔄 Updating UI for ${exercise.name} - ${exerciseResult.savedSets.length} sets saved`);
+        
         const updatedSets = exercise.sets.map(set => {
-          const wasSaved = exerciseResult.savedSets.some(savedSet => savedSet.id === set.id);
-          if (!wasSaved) return set;
+          // Check if this set was saved
+          const savedSet = exerciseResult.savedSets.find(savedSet => savedSet.setNumber === set.id);
+          if (!savedSet) return set;
           
           return {
             ...set,
             isModified: false,
             lastSaved: new Date().toISOString(),
-            isFromSession: set.status === 'done' ? true : set.isFromSession
+            isFromSession: set.status === 'done' ? true : set.isFromSession,
+            // 🚀 NEW: Preserve elapsed time from API response
+            elapsedTime: savedSet.elapsedTime || set.elapsedTime || calculateElapsedTime(set.startTime, set.completedAt)
           };
         });
         
@@ -155,17 +203,14 @@ const getApiUrl = (endpoint) => {
       
       setHasUnsavedChanges(false);
       setSaveStatus('saved');
-      console.log('✅ All changes saved successfully');
+      console.log(`✅ Bulk save completed successfully - saved ${sessions.length} exercises`);
       
-      // Clear success message after 3 seconds
       setTimeout(() => setSaveStatus(null), 3000);
       
     } catch (error) {
-      console.error('❌ Failed to save changes:', error);
+      console.error('❌ Failed to bulk save changes:', error);
       setSaveStatus('error');
       alert(`Failed to save workout: ${error.message}`);
-      
-      // Clear error message after 5 seconds
       setTimeout(() => setSaveStatus(null), 5000);
     } finally {
       setIsSaving(false);
@@ -189,7 +234,7 @@ const getApiUrl = (endpoint) => {
     };
   }, [hasUnsavedChanges]);
 
-  // Fetch fresh data from /schedule API and transform according to requirements
+  // 🚀 ENHANCED: Fetch fresh data with elapsed time support
   useEffect(() => {
     let isMounted = true;
     
@@ -226,7 +271,7 @@ const getApiUrl = (endpoint) => {
             console.log(`🔄 Processing workout: ${workout.name} (${workout.sets} sets)`);
             console.log(`🔄 All sessions for ${workout.name}:`, workout.sessions);
             
-            // Create session lookup by set_number
+            // 🚀 ENHANCED: Create session lookup by set_number, handling duplicates
             const sessionsBySetNumber = {};
             if (workout.sessions && workout.sessions.length > 0) {
               workout.sessions.forEach(session => {
@@ -235,13 +280,25 @@ const getApiUrl = (endpoint) => {
                   set_number: session.set_number,
                   set_status: session.set_status,
                   reps: session.reps,
-                  weight: session.weight
+                  weight: session.weight,
+                  elapsed_time: session.elapsed_time,
+                  created_at: session.created_at
                 });
                 
                 // Only use sessions with actual set_number and completed status
                 if (session.set_number !== null && session.set_status === 'completed') {
-                  sessionsBySetNumber[session.set_number] = session;
-                  console.log(`✅ Added session for set ${session.set_number}`);
+                  // 🚀 NEW: Handle duplicate sessions - keep the most recent one
+                  const existingSession = sessionsBySetNumber[session.set_number];
+                  if (!existingSession || new Date(session.created_at) > new Date(existingSession.created_at)) {
+                    sessionsBySetNumber[session.set_number] = session;
+                    console.log(`✅ Added/Updated session for set ${session.set_number}:`, {
+                      session_id: session.session_id,
+                      elapsed_time: session.elapsed_time,
+                      created_at: session.created_at
+                    });
+                  } else {
+                    console.log(`⏭️ Skipped older session for set ${session.set_number}`);
+                  }
                 }
               });
               console.log(`📋 Final sessions lookup for ${workout.name}:`, sessionsBySetNumber);
@@ -263,11 +320,13 @@ const getApiUrl = (endpoint) => {
                   weightUnit: session.weight?.unit || 'kg',
                   time: session.time?.value || null,
                   duration: session.time?.value || null,
+                  // 🚀 NEW: Include elapsed time from session
+                  elapsedTime: session.elapsed_time || null,
                   status: 'done',
                   completedAt: session.created_at,
                   isFromSession: true
                 });
-                console.log(`✅ Set ${setNum} marked as DONE for ${workout.name}`);
+                console.log(`✅ Set ${setNum} marked as DONE for ${workout.name} with elapsed time: ${session.elapsed_time}s`);
               } else {
                 console.log(`⏸️ No session found for set ${setNum}, using base workout data`);
                 sets.push({
@@ -277,6 +336,7 @@ const getApiUrl = (endpoint) => {
                   weightUnit: workout.weight?.unit || 'kg',
                   time: null,
                   duration: null,
+                  elapsedTime: null, // 🚀 NEW: No elapsed time for pending sets
                   status: 'pending',
                   completedAt: null,
                   isFromSession: false
@@ -300,7 +360,14 @@ const getApiUrl = (endpoint) => {
             console.log(`📊 Final exercise for ${workout.name}:`, {
               name: exercise.name,
               status: exercise.status,
-              sets: sets.map(s => ({ id: s.id, status: s.status, isFromSession: s.isFromSession, reps: s.reps, weight: s.weight }))
+              sets: sets.map(s => ({ 
+                id: s.id, 
+                status: s.status, 
+                isFromSession: s.isFromSession, 
+                reps: s.reps, 
+                weight: s.weight,
+                elapsedTime: s.elapsedTime // 🚀 NEW: Log elapsed time
+              }))
             });
 
             return exercise;
@@ -399,7 +466,11 @@ const getApiUrl = (endpoint) => {
             foundWorkout.sessions.forEach(session => {
               // Only use sessions with actual set_number and completed status  
               if (session.set_number !== null && session.set_status === 'completed') {
-                sessionsBySetNumber[session.set_number] = session;
+                // Handle duplicate sessions - keep the most recent one
+                const existingSession = sessionsBySetNumber[session.set_number];
+                if (!existingSession || new Date(session.created_at) > new Date(existingSession.created_at)) {
+                  sessionsBySetNumber[session.set_number] = session;
+                }
               }
             });
             console.log('📋 Session data for single workout:', sessionsBySetNumber);
@@ -419,6 +490,8 @@ const getApiUrl = (endpoint) => {
                 weightUnit: session.weight?.unit || 'kg',
                 time: session.time?.value || null,
                 duration: session.time?.value || null,
+                // 🚀 ENHANCED: Handle both numeric and null elapsed_time values
+                elapsedTime: typeof session.elapsed_time === 'number' ? session.elapsed_time : null,
                 status: 'done',
                 completedAt: session.created_at,
                 isFromSession: true
@@ -431,6 +504,7 @@ const getApiUrl = (endpoint) => {
                 weightUnit: foundWorkout.weight?.unit || 'kg',
                 time: null,
                 duration: null,
+                elapsedTime: null, // 🚀 NEW: No elapsed time for pending sets
                 status: 'pending',
                 completedAt: null,
                 isFromSession: false
@@ -477,10 +551,10 @@ const getApiUrl = (endpoint) => {
           category: "Chest",
           type: "Accessory",
           sets: [
-            { id: 1, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null },
-            { id: 2, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null },
-            { id: 3, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null },
-            { id: 4, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null }
+            { id: 1, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null, elapsedTime: null },
+            { id: 2, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null, elapsedTime: null },
+            { id: 3, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null, elapsedTime: null },
+            { id: 4, reps: 8, weight: 60, weightUnit: 'kg', status: 'pending', isFromSession: false, duration: null, elapsedTime: null }
           ],
           status: 'pending'
         };
@@ -512,7 +586,7 @@ const getApiUrl = (endpoint) => {
     };
   }, [location.state]);
 
-  // Simple set action handler
+  // 🚀 ENHANCED: Simple set action handler with elapsed time tracking
   const handleSetAction = (exerciseId, setId, action) => {
     console.log(`🎯 Set action: ${action} for exercise ${exerciseId}, set ${setId}`);
     
@@ -529,11 +603,10 @@ const getApiUrl = (endpoint) => {
           }
           if (action === 'complete') {
             const endTime = new Date().toISOString();
-            const duration = set.startTime 
-              ? Math.round((new Date(endTime) - new Date(set.startTime)) / 1000)
-              : 0;
+            // 🚀 ENHANCED: Calculate elapsed time more precisely
+            const elapsedTime = calculateElapsedTime(set.startTime, endTime);
             
-            console.log(`✅ Completing set ${setId} for ${exercise.name} - status will be 'done'`);
+            console.log(`✅ Completing set ${setId} for ${exercise.name} - elapsed time: ${elapsedTime}s`);
             
             // Mark as having unsaved changes when completing a set
             setHasUnsavedChanges(true);
@@ -542,7 +615,7 @@ const getApiUrl = (endpoint) => {
               ...set, 
               status: 'done', 
               isFromSession: false, // Mark as NOT from session (newly completed)
-              duration,
+              elapsedTime, // 🚀 NEW: Store calculated elapsed time
               completedAt: endTime
             };
           }
@@ -831,6 +904,7 @@ const getApiUrl = (endpoint) => {
           Display: {useMetric ? 'Metric (kg)' : 'Imperial (lbs)'}
         </button>
       </div>
+      
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map(exercise => (
@@ -851,8 +925,8 @@ const getApiUrl = (endpoint) => {
             <div className="sets-table">
               <div className="sets-header">
                 <span>Set</span>
-                <span>Reps</span>
                 <span>Weight</span>
+                <span>Reps</span>
                 <span>Time</span>
                 <span>Action</span>
               </div>
@@ -869,8 +943,12 @@ const getApiUrl = (endpoint) => {
                   <span className="set-reps">
                     {renderEditableCell(exercise, set, 'reps')}
                   </span>
-                  <span className={`set-time ${set.status === 'done' && set.duration ? 'completed' : 'pending'}`}>
-                    {set.status === 'done' && set.duration ? `${set.duration}s` : '-'}
+                  {/* Display elapsed time - simple and direct */}
+                  <span className={`set-time ${set.status === 'done' && set.elapsedTime ? 'completed' : 'pending'}`}>
+                    {set.status === 'done' && set.elapsedTime 
+                      ? formatElapsedTime(set.elapsedTime)
+                      : '-'
+                    }
                   </span>
                   <div className="set-action">
                     {getActionButton(set, exercise.id, set.id)}
@@ -880,6 +958,7 @@ const getApiUrl = (endpoint) => {
             </div>
           </div>
         ))}
+        
         {/* Manual Save Controls */}
         {hasUnsavedChanges && (
           <div className="save-controls">

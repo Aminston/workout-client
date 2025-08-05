@@ -912,8 +912,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
             <div className="exercise-header">
               <h3 
                 className="exercise-name exercise-clickable" 
-                onClick={() => window.open(`https://www.google.com/search?q=how+to+${encodeURIComponent(exercise.name)}&tbm=vid`, '_blank')}
-                title="Click to watch exercise tutorial videos"
+                onClick={() => { const link = document.createElement('a'); link.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(exercise.name)}&tbm=vid`; link.target = '_blank'; link.rel = 'noopener'; link.click(); }}                title="Click to watch exercise tutorial videos"
               >
                 {exercise.name}
               </h3>

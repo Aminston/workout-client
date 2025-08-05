@@ -434,11 +434,16 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
+/* ======================
+   EXERCISE HEADER - FIXED ALIGNMENT
+   ====================== */
 .exercise-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
+  gap: 1rem;
+  min-height: 2rem;
 }
 
 .exercise-name {
@@ -448,10 +453,26 @@
   margin: 0;
   text-decoration: none;
   line-height: 1.2;
+  flex: 1;
 }
 
 .exercise-name:hover {
   text-decoration: underline;
+}
+
+.exercise-status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 1rem;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.exercise-done {
+  background-color: #10b981;
+  color: white;
 }
 
 /* ======================
@@ -766,6 +787,20 @@
     padding: 0.25rem 0.5rem;
   }
 
+  .exercise-header {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .exercise-name {
+    font-size: 1.125rem;
+  }
+  
+  .exercise-status-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+  }
+
   .sets-header,
   .set-row {
     grid-template-columns: var(--grid-tablet);
@@ -869,14 +904,23 @@
     padding: 0.2rem 0.4rem;
   }
 
+  /* FIXED: Keep exercise header horizontal on mobile */
   .exercise-header {
-    flex-direction: column;
-    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .exercise-name {
+    font-size: 1.125rem;
+    flex: 1;
   }
 
   .exercise-status-badge {
-    align-self: flex-end;
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
   }
 
   .sets-header,
@@ -963,6 +1007,24 @@
     padding: 0.5rem;
   }
 
+  /* FIXED: Keep exercise header horizontal on very small phones */
+  .exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .exercise-name {
+    font-size: 1rem;
+  }
+
+  .exercise-status-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.35rem;
+  }
+
   .sets-header,
   .set-row {
     grid-template-columns: var(--grid-small);
@@ -985,6 +1047,3 @@
     font-size: 0.8rem;
   }
 }
-
-
-

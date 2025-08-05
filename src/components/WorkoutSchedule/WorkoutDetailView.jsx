@@ -918,7 +918,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
                 {exercise.name}
               </h3>
               {exercise.status === 'done' && (
-                <span className="exercise-status-badge exercise-done">Done</span>
+                <span className="exercise-done-icon emoji" title="Done">✅</span>
               )}
             </div>
 

@@ -16,8 +16,17 @@ export const weightConverter = {
   
   // Display weight in preferred unit
   display: (weightInKg, useMetric = true) => {
-    if (weightInKg === null) return 'Bodyweight';
-    return useMetric ? `${weightInKg}kg` : `${weightConverter.kgToLbs(weightInKg)}lbs`;
+    
+    if (useMetric) {
+      // Round kg to 1 decimal place and remove trailing zeros
+      const rounded = Math.round(weightInKg * 10) / 10;
+      return `${rounded}kg`;
+    } else {
+      const lbs = weightConverter.kgToLbs(weightInKg);
+      // Round lbs to 1 decimal place and remove trailing zeros
+      const rounded = Math.round(lbs * 10) / 10;
+      return `${rounded}lb`;  // Changed from "lbs" to "lb"
+    }
   }
 };
 

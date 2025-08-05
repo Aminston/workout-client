@@ -136,7 +136,8 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
             status: bestSession ? 'done' : 'pending',
             time: bestSession?.time?.value || null,
             timeUnit: bestSession?.time?.unit || 'seconds',
-            
+            elapsedTime: bestSession ? bestSession.elapsed_time : null, // ✅ This was the issue!
+
             // Keep baseline for comparison
             baselineReps: workout.reps,
             baselineWeight: workout.weight?.value || 0,

@@ -167,14 +167,25 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
       }
 
       const result = await response.json();
-      console.log('✅ Bulk save successful:', result);
+      console.log('✅ Save successful:', result);
       
-      if (!result.success || !result.sessions) {
-        throw new Error('Invalid bulk save response format');
+      // 🚀 FIXED: Handle both single workout and bulk workout response formats
+      let sessions;
+      let totalVolume;
+      
+      if (result.success && result.sessions) {
+        // Bulk response format
+        sessions = result.sessions;
+        totalVolume = result.totalVolume;
+        console.log(`📊 Bulk save stats: ${result.totalSessions} sessions, total volume: ${totalVolume}`);
+      } else if (result.scheduleId && result.savedSets) {
+        // Single workout response format - wrap it in array
+        sessions = [result];
+        totalVolume = result.totalVolume;
+        console.log(`📊 Single save stats: 1 session, total volume: ${totalVolume}`);
+      } else {
+        throw new Error('Invalid save response format');
       }
-      
-      const sessions = result.sessions;
-      console.log(`📊 Bulk save stats: ${result.totalSessions} sessions, total volume: ${result.totalVolume}`);
       
       // 🚀 ENHANCED: Update UI to mark sets as saved and preserve elapsed time from API response
       setExercises(prev => prev.map(exercise => {
@@ -645,13 +656,11 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     }, 100);
   };
 
-  // Render editable cell for weight and reps
+  // 🚀 ENHANCED: Render editable cell - ALL SETS EDITABLE
   const renderEditableCell = (exercise, set, field) => {
     const isEditing = editingCell?.exerciseId === exercise.id && 
                      editingCell?.setId === set.id && 
                      editingCell?.field === field;
-    
-    const isReadonly = set.status === 'done';
     
     if (isEditing) {
       const displayValue = field === 'weight' 
@@ -664,6 +673,8 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
           className="table-cell-input"
           defaultValue={displayValue}
           autoFocus
+          // ✅ FIX: Auto-select all text when input gains focus
+          onFocus={e => e.target.select()}
           onBlur={e => {
             let value = e.target.value;
             if (field === 'weight' && !useMetric) {
@@ -683,6 +694,9 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
               setEditingCell(null);
             }
           }}
+          min="0"
+          step={field === 'weight' ? '0.5' : '1'}
+          placeholder={field === 'weight' ? (useMetric ? 'kg' : 'lbs') : 'reps'}
         />
       );
     }
@@ -695,14 +709,10 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
       displayValue = set[field] || '-';
     }
     
-    let className = `editable-cell ${isReadonly ? 'cell-readonly' : ''} ${set.isFromSession ? 'from-session' : 'from-base'}`;
-    let title = '';
+    let className = `editable-cell ${set.isFromSession ? 'from-session' : 'from-base'}`;
+    if (set.isModified) className += ' modified';
     
-    if (isReadonly) {
-      title = 'From completed session - Read only';
-    } else {
-      title = 'Click to edit';
-    }
+    let title = `Click to edit ${field}. Current value: ${displayValue}${set.status === 'done' ? ' (completed set)' : ''}`;
     
     return (
       <span
@@ -715,35 +725,42 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     );
   };
 
-  // Handle cell click to start editing
+  // Allow editing all sets - no restrictions
   const handleCellClick = (exerciseId, setId, field) => {
-    const exercise = exercises.find(ex => ex.id === exerciseId);
-    const set = exercise?.sets.find(s => s.id === setId);
-    if (set?.status === 'done') return;
-    
     setEditingCell({ exerciseId, setId, field });
   };
 
-  // Handle cell edit completion
+  // Handle edit without immediate saving
   const handleCellEdit = async (exerciseId, setId, field, value) => {
     console.log(`✏️ Editing ${field} for exercise ${exerciseId}, set ${setId}: ${value}`);
     
+    // Basic value validation
+    let processedValue;
+    if (field === 'weight') {
+      processedValue = Math.max(0, parseFloat(value) || 0);
+      processedValue = Math.round(processedValue * 2) / 2; // Round to nearest 0.5
+    } else if (field === 'reps') {
+      processedValue = Math.max(0, parseInt(value) || 0);
+    } else {
+      processedValue = value;
+    }
+    
+    // Update local state only
     setExercises(prev => prev.map(exercise => {
       if (exercise.id !== exerciseId) return exercise;
       
       const updatedSets = exercise.sets.map(set => {
         if (set.id !== setId) return set;
-        if (set.status === 'done') return set;
+        
+        const updatedSet = { ...set, isModified: true };
         
         if (field === 'weight') {
-          const numericValue = parseFloat(value) || 0;
-          return { ...set, weight: numericValue, isModified: true };
+          updatedSet.weight = processedValue;
         } else if (field === 'reps') {
-          const numericValue = parseInt(value) || 0;
-          return { ...set, reps: numericValue, isModified: true };
+          updatedSet.reps = processedValue;
         }
         
-        return set;
+        return updatedSet;
       });
       
       return { ...exercise, sets: updatedSets };
@@ -751,6 +768,8 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     
     setEditingCell(null);
     setHasUnsavedChanges(true);
+    
+    console.log(`✅ ${field} updated to ${processedValue} for set ${setId} (will save at session end)`);
   };
 
   // Cleanup timers
@@ -912,7 +931,14 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
             <div className="exercise-header">
               <h3 
                 className="exercise-name exercise-clickable" 
-                onClick={() => { const link = document.createElement('a'); link.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(exercise.name)}&tbm=vid`; link.target = '_blank'; link.rel = 'noopener'; link.click(); }}                title="Click to watch exercise tutorial videos"
+                onClick={() => { 
+                  const link = document.createElement('a'); 
+                  link.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(exercise.name)}&tbm=vid`; 
+                  link.target = '_blank'; 
+                  link.rel = 'noopener'; 
+                  link.click(); 
+                }}                
+                title="Click to watch exercise tutorial videos"
               >
                 {exercise.name}
               </h3>

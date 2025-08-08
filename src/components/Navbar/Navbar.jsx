@@ -33,6 +33,10 @@ export default function AppNavbar({
   const navigate = useNavigate();
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [showUserModal, setShowUserModal] = useState(false);
+  
+  // ✅ RESTORED: Cache profile for validation without duplicate API calls
+  const [cachedProfile, setCachedProfile] = useState(null);
+  const [lastProfileFetch, setLastProfileFetch] = useState(0);
 
   const handleLogout = () => {
     localStorage.removeItem('jwt_token');
@@ -42,9 +46,103 @@ export default function AppNavbar({
     navigate('/');
   };
 
+  // ✅ RESTORED: Validate profile completeness with smart caching
+  const validateUserProfile = async () => {
+    const now = Date.now();
+    const CACHE_DURATION = 30000; // 30 seconds cache
+    
+    // Use cached profile if recent and valid
+    if (cachedProfile && (now - lastProfileFetch) < CACHE_DURATION) {
+      console.log('📋 Using cached profile for validation');
+      return validateProfileData(cachedProfile);
+    }
+
+    // Fetch fresh profile data
+    try {
+      console.log('🔍 Fetching fresh profile for validation...');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const profile = await response.json();
+      console.log('📋 Profile fetched for validation:', profile);
+
+      // Cache the profile
+      setCachedProfile(profile);
+      setLastProfileFetch(now);
+
+      return validateProfileData(profile);
+
+    } catch (error) {
+      console.error('❌ Profile validation error:', error);
+      throw new Error('Unable to validate profile. Please try again.');
+    }
+  };
+
+  // ✅ RESTORED: Profile validation logic
+  const validateProfileData = (profile) => {
+    const requiredFields = {
+      birthday: profile.birthday,
+      height: profile.height > 0 ? profile.height : null,
+      weight: profile.weight > 0 ? profile.weight : null,
+      training_goal: profile.training_goal,
+      training_experience: profile.training_experience
+    };
+
+    const missingFields = [];
+    
+    if (!requiredFields.birthday) missingFields.push('Birthday');
+    if (!requiredFields.height) missingFields.push('Height');
+    if (!requiredFields.weight) missingFields.push('Weight');
+    if (!requiredFields.training_goal) missingFields.push('Training Goal');
+    if (!requiredFields.training_experience) missingFields.push('Experience Level');
+
+    console.log('🔍 Profile Validation:', {
+      requiredFields,
+      missingFields,
+      isComplete: missingFields.length === 0
+    });
+
+    return {
+      isComplete: missingFields.length === 0,
+      missingFields,
+      profile
+    };
+  };
+
+  // ✅ RESTORED: Workout generation with validation
   const handleGetWorkout = async () => {
     setLoadingWorkout(true);
+    
     try {
+      // Step 1: Validate user profile first
+      console.log('🔍 Validating user profile...');
+      const validation = await validateUserProfile();
+      
+      if (!validation.isComplete) {
+        // Profile is incomplete - show helpful error message
+        const fieldList = validation.missingFields.join(', ');
+        
+        toast.show('warning', 
+          `⚠️ Please complete your profile first!\n\nMissing: ${fieldList}\n\nClick "Edit Profile" to add this information, then try "Get Workout" again.`
+        );
+        
+        console.log('❌ Profile incomplete. Missing fields:', validation.missingFields);
+        setLoadingWorkout(false);
+        return;
+      }
+
+      // Step 2: Profile is complete - proceed with workout generation
+      console.log('✅ Profile complete. Generating workout...');
+      
       const res = await fetch(`${import.meta.env.VITE_API_URL}/personalize/plan`, {
         method: 'POST',
         headers: {
@@ -60,11 +158,33 @@ export default function AppNavbar({
 
       toast.show('success', '✅ Personalized workout plan generated!');
       fetchSchedule?.();
+      
     } catch (error) {
+      console.error('❌ Get workout error:', error);
       toast.show('danger', '❌ ' + error.message);
     } finally {
       setLoadingWorkout(false);
     }
+  };
+
+  // ✅ ENHANCED: Handle profile modal and cache management
+  const handleEditProfile = () => {
+    setShowUserModal(true);
+  };
+
+  // ✅ RESTORED: Handle profile save success and invalidate cache
+  const handleProfileSaveSuccess = () => {
+    toast.show('success', '✅ Profile updated successfully!');
+    
+    // Invalidate cached profile so it gets re-fetched for validation
+    setCachedProfile(null);
+    setLastProfileFetch(0);
+    
+    // Optional: Automatically retry workout generation after profile completion
+    setTimeout(() => {
+      console.log('🔄 Auto-retrying workout generation after profile update...');
+      handleGetWorkout();
+    }, 1000);
   };
 
   const displayName = userName || meta?.user_name || '';
@@ -85,7 +205,7 @@ export default function AppNavbar({
                 <Dropdown.Menu>
                   {token && (
                     <>
-                      <Dropdown.Item onClick={() => setShowUserModal(true)}>
+                      <Dropdown.Item onClick={handleEditProfile}>
                         Edit Profile
                       </Dropdown.Item>
                       <Dropdown.Item onClick={handleGetWorkout} disabled={loadingWorkout}>
@@ -95,7 +215,7 @@ export default function AppNavbar({
                             <Spinner animation="border" size="sm" />
                           </>
                         ) : (
-                          'Get Workout'
+                          'Get Custom Workout'
                         )}
                       </Dropdown.Item>
                       <Dropdown.Divider />
@@ -126,7 +246,7 @@ export default function AppNavbar({
           onHide={() => setShowUserModal(false)}
           token={token}
           setUserName={setUserName}
-          onSaveSuccess={() => toast.show('success', '✅ Profile updated successfully!')}
+          onSaveSuccess={handleProfileSaveSuccess}
         />
       )}
     </>

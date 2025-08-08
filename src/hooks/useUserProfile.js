@@ -57,12 +57,33 @@ export default function useUserProfile() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // ✅ FIXED: Use more robust tracking for fetch status
   const hasFetchedRef = useRef(false);
+  const isCurrentlyFetchingRef = useRef(false);
+  const lastTokenRef = useRef(null);
 
   const fetchProfile = async (token, setUserName) => {
-    if (!token || hasFetchedRef.current) return;
+    // ✅ ENHANCED: Multiple protection layers against duplicate calls
+    if (!token) {
+      console.log('🚫 No token provided, skipping fetch');
+      return;
+    }
+    
+    if (isCurrentlyFetchingRef.current) {
+      console.log('🚫 Already fetching profile, ignoring duplicate call');
+      return;
+    }
+    
+    if (hasFetchedRef.current && lastTokenRef.current === token) {
+      console.log('🚫 Profile already fetched for this token, skipping');
+      return;
+    }
 
+    console.log('🔄 Fetching user profile...');
+    isCurrentlyFetchingRef.current = true;
     setLoading(true);
+    
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -89,20 +110,36 @@ export default function useUserProfile() {
       dispatch({ type: 'SET_FORM', payload: loadedForm });
       setUserName(data.name || '');
       localStorage.setItem('userName', data.name || '');
+      
+      // ✅ FIXED: Mark as fetched and remember the token
       hasFetchedRef.current = true;
+      lastTokenRef.current = token;
       setError('');
+      
+      console.log('✅ Profile fetched successfully');
     } catch (err) {
       console.error('❌ Profile fetch error:', err);
       setError(err.message || 'Unknown error');
+      // ✅ Don't mark as fetched if there was an error
+      hasFetchedRef.current = false;
+      lastTokenRef.current = null;
     } finally {
       setLoading(false);
+      isCurrentlyFetchingRef.current = false;
     }
   };
 
   const saveProfile = async (token) => {
+    if (isCurrentlyFetchingRef.current) {
+      console.log('🚫 Currently fetching, cannot save');
+      return { success: false };
+    }
+    
     setLoading(true);
     setError('');
+    
     try {
+      console.log('💾 Saving user profile...');
       const res = await fetch(`${import.meta.env.VITE_API_URL}/user-profile`, {
         method: 'PUT',
         headers: {
@@ -120,6 +157,7 @@ export default function useUserProfile() {
       if (!res.ok) throw new Error(data.error || 'Failed to update profile');
 
       dispatch({ type: 'SET_FORM', payload: state.form });
+      console.log('✅ Profile saved successfully');
       return { success: true };
     } catch (err) {
       console.error('❌ Profile save error:', err);
@@ -130,12 +168,27 @@ export default function useUserProfile() {
     }
   };
 
-  const resetForm = () => dispatch({ type: 'RESET' });
+  const resetForm = () => {
+    console.log('🔄 Resetting form to original');
+    dispatch({ type: 'RESET' });
+  };
 
   const clearAll = () => {
+    console.log('🧹 Clearing all profile data');
     dispatch({ type: 'CLEAR_ALL' });
+    
+    // ✅ FIXED: Reset all tracking refs when clearing
     hasFetchedRef.current = false;
+    isCurrentlyFetchingRef.current = false;
+    lastTokenRef.current = null;
     setError('');
+  };
+
+  // ✅ NEW: Helper function to check if profile needs to be fetched
+  const needsFetch = (token) => {
+    return token && 
+           !isCurrentlyFetchingRef.current && 
+           (!hasFetchedRef.current || lastTokenRef.current !== token);
   };
 
   return {
@@ -147,6 +200,8 @@ export default function useUserProfile() {
     saveProfile,
     resetForm,
     clearAll,
-    hasFetched: hasFetchedRef.current
+    hasFetched: hasFetchedRef.current,
+    isCurrentlyFetching: isCurrentlyFetchingRef.current, // ✅ NEW: Expose current fetch state
+    needsFetch // ✅ NEW: Helper to check if fetch is needed
   };
 }

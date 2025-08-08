@@ -656,121 +656,132 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     }, 100);
   };
 
-  // 🚀 ENHANCED: Render editable cell - ALL SETS EDITABLE
-  const renderEditableCell = (exercise, set, field) => {
-    const isEditing = editingCell?.exerciseId === exercise.id && 
-                     editingCell?.setId === set.id && 
-                     editingCell?.field === field;
-    
-    if (isEditing) {
-      const displayValue = field === 'weight' 
-        ? (useMetric ? set.weight : weightConverter.kgToLbs(set.weight || 0))
-        : set[field];
-        
-      return (
-        <input
-          type="number"
-          className="table-cell-input"
-          defaultValue={displayValue}
-          autoFocus
-          // ✅ FIX: Auto-select all text when input gains focus
-          onFocus={e => e.target.select()}
-          onBlur={e => {
-            let value = e.target.value;
-            if (field === 'weight' && !useMetric) {
-              value = weightConverter.lbsToKg(parseFloat(value) || 0);
-            }
-            handleCellEdit(exercise.id, set.id, field, value);
-          }}
-          onKeyDown={e => {
-            if (e.key === 'Enter') {
-              let value = e.target.value;
-              if (field === 'weight' && !useMetric) {
-                value = weightConverter.lbsToKg(parseFloat(value) || 0);
-              }
-              handleCellEdit(exercise.id, set.id, field, value);
-            }
-            if (e.key === 'Escape') {
-              setEditingCell(null);
-            }
-          }}
-          min="0"
-          step={field === 'weight' ? '0.5' : '1'}
-          placeholder={field === 'weight' ? (useMetric ? 'kg' : 'lbs') : 'reps'}
-        />
-      );
-    }
-    
-    // Display value based on field and unit preference
+
+// 🚀 ENHANCED: Render editable cell with proper lbs input handling
+const renderEditableCell = (exercise, set, field) => {
+  const isEditing = editingCell?.exerciseId === exercise.id && 
+                   editingCell?.setId === set.id && 
+                   editingCell?.field === field;
+  
+  if (isEditing) {
     let displayValue;
     if (field === 'weight') {
-      displayValue = weightConverter.display(set.weight, useMetric);
+      // 🚀 FIXED: Show the value in the user's preferred unit
+      displayValue = useMetric 
+        ? set.weight 
+        : Math.round(weightConverter.kgToLbs(set.weight || 0));
     } else {
-      displayValue = set[field] || '-';
+      displayValue = set[field];
     }
-    
-    let className = `editable-cell ${set.isFromSession ? 'from-session' : 'from-base'}`;
-    if (set.isModified) className += ' modified';
-    
-    let title = `Click to edit ${field}. Current value: ${displayValue}${set.status === 'done' ? ' (completed set)' : ''}`;
-    
+      
     return (
-      <span
-        className={className}
-        onClick={() => handleCellClick(exercise.id, set.id, field)}
-        title={title}
-      >
-        {displayValue}
-      </span>
+      <input
+        type="number"
+        className="table-cell-input"
+        defaultValue={displayValue}
+        autoFocus
+        onFocus={e => e.target.select()}
+        onBlur={e => {
+          // 🚀 FIXED: Don't double-convert - handleCellEdit will handle conversion
+          const value = e.target.value;
+          handleCellEdit(exercise.id, set.id, field, value);
+        }}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            // 🚀 FIXED: Don't double-convert - handleCellEdit will handle conversion
+            const value = e.target.value;
+            handleCellEdit(exercise.id, set.id, field, value);
+          }
+          if (e.key === 'Escape') {
+            setEditingCell(null);
+          }
+        }}
+        min="0"
+        step={field === 'weight' ? (useMetric ? '0.5' : '1') : '1'}
+        placeholder={field === 'weight' ? (useMetric ? 'kg' : 'lbs') : 'reps'}
+      />
     );
-  };
+  }
+  
+  // Display value based on field and unit preference
+  let displayValue;
+  if (field === 'weight') {
+    displayValue = weightConverter.display(set.weight, useMetric);
+  } else {
+    displayValue = set[field] || '-';
+  }
+  
+  let className = `editable-cell ${set.isFromSession ? 'from-session' : 'from-base'}`;
+  if (set.isModified) className += ' modified';
+  
+  let title = `Click to edit ${field}. Current value: ${displayValue}${set.status === 'done' ? ' (completed set)' : ''}`;
+  
+  return (
+    <span
+      className={className}
+      onClick={() => handleCellClick(exercise.id, set.id, field)}
+      title={title}
+    >
+      {displayValue}
+    </span>
+  );
+};
 
   // Allow editing all sets - no restrictions
   const handleCellClick = (exerciseId, setId, field) => {
     setEditingCell({ exerciseId, setId, field });
   };
 
-  // Handle edit without immediate saving
-  const handleCellEdit = async (exerciseId, setId, field, value) => {
-    console.log(`✏️ Editing ${field} for exercise ${exerciseId}, set ${setId}: ${value}`);
-    
-    // Basic value validation
-    let processedValue;
-    if (field === 'weight') {
+// Handle edit without immediate saving - FIXED for proper lbs handling
+const handleCellEdit = async (exerciseId, setId, field, value) => {
+  console.log(`✏️ Editing ${field} for exercise ${exerciseId}, set ${setId}: ${value} (unit: ${useMetric ? 'kg' : 'lbs'})`);
+  
+  // Basic value validation
+  let processedValue;
+  if (field === 'weight') {
+    if (useMetric) {
+      // User entered kg - store as kg with 0.5 precision
       processedValue = Math.max(0, parseFloat(value) || 0);
       processedValue = Math.round(processedValue * 2) / 2; // Round to nearest 0.5
-    } else if (field === 'reps') {
-      processedValue = Math.max(0, parseInt(value) || 0);
     } else {
-      processedValue = value;
+      // 🚀 FIXED: User entered lbs - convert to kg for internal storage
+      const lbsValue = Math.max(0, parseInt(value) || 0);
+      processedValue = weightConverter.lbsToKg(lbsValue);
+      console.log(`💡 User entered ${lbsValue} lbs → converting to ${processedValue} kg for storage`);
     }
+  } else if (field === 'reps') {
+    processedValue = Math.max(0, parseInt(value) || 0);
+  } else {
+    processedValue = value;
+  }
+  
+  // Update local state only
+  setExercises(prev => prev.map(exercise => {
+    if (exercise.id !== exerciseId) return exercise;
     
-    // Update local state only
-    setExercises(prev => prev.map(exercise => {
-      if (exercise.id !== exerciseId) return exercise;
+    const updatedSets = exercise.sets.map(set => {
+      if (set.id !== setId) return set;
       
-      const updatedSets = exercise.sets.map(set => {
-        if (set.id !== setId) return set;
-        
-        const updatedSet = { ...set, isModified: true };
-        
-        if (field === 'weight') {
-          updatedSet.weight = processedValue;
-        } else if (field === 'reps') {
-          updatedSet.reps = processedValue;
-        }
-        
-        return updatedSet;
-      });
+      const updatedSet = { ...set, isModified: true };
       
-      return { ...exercise, sets: updatedSets };
-    }));
+      if (field === 'weight') {
+        updatedSet.weight = processedValue; // Always stored in kg internally
+        console.log(`📝 Set ${setId} weight updated: ${processedValue} kg (display: ${weightConverter.display(processedValue, useMetric)})`);
+      } else if (field === 'reps') {
+        updatedSet.reps = processedValue;
+      }
+      
+      return updatedSet;
+    });
     
-    setEditingCell(null);
-    setHasUnsavedChanges(true);
-    
-    console.log(`✅ ${field} updated to ${processedValue} for set ${setId} (will save at session end)`);
-  };
+    return { ...exercise, sets: updatedSets };
+  }));
+  
+  setEditingCell(null);
+  setHasUnsavedChanges(true);
+  
+  console.log(`✅ ${field} updated successfully for set ${setId}`);
+};
 
   // Cleanup timers
   useEffect(() => {

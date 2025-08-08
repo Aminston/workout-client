@@ -6,7 +6,7 @@
  */
 export const weightConverter = {
   lbsToKg: (lbs) => Math.round(lbs * 0.453592 * 100) / 100,
-  kgToLbs: (kg) => Math.round(kg * 2.20462 * 100) / 100,
+  kgToLbs: (kg) => Math.round(kg * 2.20462), // 🚀 FIXED: Round to whole number
   
   // Normalize weight to kg for internal use
   normalize: (weightObj) => {
@@ -16,16 +16,16 @@ export const weightConverter = {
   
   // Display weight in preferred unit
   display: (weightInKg, useMetric = true) => {
+    if (weightInKg === null || weightInKg === undefined) return '0kg';
     
     if (useMetric) {
-      // Round kg to 1 decimal place and remove trailing zeros
+      // Keep kg with 1 decimal place for precision
       const rounded = Math.round(weightInKg * 10) / 10;
       return `${rounded}kg`;
     } else {
-      const lbs = weightConverter.kgToLbs(weightInKg);
-      // Round lbs to 1 decimal place and remove trailing zeros
-      const rounded = Math.round(lbs * 10) / 10;
-      return `${rounded}lb`;  // Changed from "lbs" to "lb"
+      // 🚀 FIXED: Always show whole numbers for pounds
+      const lbs = Math.round(weightInKg * 2.20462);
+      return `${lbs}lb`;
     }
   }
 };

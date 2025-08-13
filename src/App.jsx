@@ -42,7 +42,7 @@ export default function App() {
     console.log(`🔄 Fetching schedule data (reason: ${reason})...`);
     
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/schedule`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/schedule/v2`, {
         headers: { Authorization: `Bearer ${usedToken}` }
       });
 

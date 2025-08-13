@@ -1,0 +1,561 @@
+/* SplitSelectionModal.css - Fixed with proper scrolling */
+@import '../../styles/theme.css';
+
+/* ======================
+   MODAL OVERLAY & BASE
+   ====================== */
+.split-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+.split-modal-content {
+  background-color: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  /* ✅ FIXED: Ensure modal uses flexbox for proper layout */
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ======================
+   MODAL HEADER - FIXED
+   ====================== */
+.split-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  /* ✅ FIXED: Header stays at top */
+}
+
+.split-modal-title {
+  margin: 0;
+  color: var(--color-text-main);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.split-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease;
+}
+
+.split-modal-close:hover {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+}
+
+/* ======================
+   MODAL BODY - SCROLLABLE
+   ====================== */
+.split-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  /* ✅ FIXED: Body grows and scrolls independently */
+  min-height: 0;
+  /* ✅ FIXED: Allows flex child to shrink below content size */
+}
+
+/* Custom scrollbar styling */
+.split-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.split-modal-body::-webkit-scrollbar-track {
+  background: var(--color-bg-hover);
+  border-radius: 4px;
+}
+
+.split-modal-body::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.split-modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+/* Loading State */
+.split-modal-loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--color-text-secondary);
+}
+
+.split-modal-loading-icon {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+/* Error State */
+.split-modal-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.split-modal-error-retry {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.split-modal-error-retry:hover {
+  background-color: #dc2626;
+}
+
+/* Success Message */
+.split-modal-success {
+  background-color: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  color: #22c55e;
+  margin-bottom: 1rem;
+  animation: successSlideIn 0.3s ease-out;
+}
+
+@keyframes successSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Current Split Info */
+.split-modal-current-info {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  /* ✅ FIXED: Add visual separation */
+}
+
+.split-modal-current-title {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-main);
+  font-weight: 500;
+}
+
+.split-modal-current-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ======================
+   SPLIT SELECTION LIST - IMPROVED SCROLLING
+   ====================== */
+.split-selection-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* ✅ FIXED: Remove max-height, let parent handle scrolling */
+}
+
+.split-option {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  cursor: pointer;
+  background-color: var(--color-bg-main);
+  transition: all 0.2s ease;
+  position: relative;
+  /* ✅ FIXED: Better focus management */
+}
+
+.split-option:hover {
+  border-color: rgba(59, 130, 246, 0.5);
+  background-color: var(--color-bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.split-option.selected {
+  border: 2px solid #3b82f6;
+  background-color: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.split-option.selected:hover {
+  transform: none;
+  /* ✅ FIXED: Don't lift selected items on hover */
+}
+
+.split-option-content {
+  display: flex;
+  align-items: flex-start;
+}
+
+.split-option-radio {
+  margin-right: 1rem;
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.split-option-radio input[type="radio"] {
+  cursor: pointer;
+  transform: scale(1.1);
+  accent-color: #3b82f6;
+}
+
+.split-option-details {
+  flex: 1;
+  min-width: 0;
+  /* ✅ FIXED: Prevent text overflow */
+}
+
+.split-option-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.split-option-name {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text-main);
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.split-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.split-badge.default {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.split-badge.current {
+  background-color: #10b981;
+  color: white;
+}
+
+.split-option-description {
+  color: var(--color-text-secondary);
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.split-option-summary {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-weight: 500;
+}
+
+/* Empty State */
+.split-modal-empty {
+  background-color: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  color: #3b82f6;
+  text-align: center;
+}
+
+/* ======================
+   MODAL FOOTER - ALWAYS VISIBLE
+   ====================== */
+.split-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-shrink: 0;
+  background-color: var(--color-bg-card);
+  /* ✅ FIXED: Footer always visible at bottom */
+  position: sticky;
+  bottom: 0;
+  /* ✅ FIXED: Ensure footer sticks to bottom */
+}
+
+.split-modal-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 0.875rem;
+  min-width: 100px;
+  /* ✅ FIXED: Consistent button width */
+}
+
+.split-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.split-modal-btn.cancel {
+  background-color: var(--color-bg-hover);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border);
+}
+
+.split-modal-btn.cancel:hover:not(:disabled) {
+  background-color: var(--color-bg-main);
+  transform: translateY(-1px);
+}
+
+.split-modal-btn.primary {
+  background-color: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.split-modal-btn.primary:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.split-modal-btn.no-change {
+  background-color: #6b7280;
+  color: white;
+}
+
+.split-modal-btn.no-change:hover:not(:disabled) {
+  background-color: #4b5563;
+  transform: translateY(-1px);
+}
+
+/* Loading spinner for button */
+.split-modal-btn-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ======================
+   RESPONSIVE DESIGN
+   ====================== */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .split-modal-overlay {
+    padding: 0.5rem;
+  }
+  
+  .split-modal-content {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+  
+  .split-modal-header {
+    padding: 1.25rem;
+  }
+  
+  .split-modal-body {
+    padding: 1.25rem;
+  }
+  
+  .split-modal-footer {
+    padding: 1rem 1.25rem;
+  }
+  
+  .split-modal-title {
+    font-size: 1.125rem;
+  }
+  
+  .split-option {
+    padding: 0.875rem;
+  }
+  
+  .split-option-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .split-modal-overlay {
+    padding: 0.25rem;
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+  
+  .split-modal-content {
+    max-height: 98vh;
+    margin-top: 0;
+  }
+  
+  .split-modal-header {
+    padding: 1rem;
+  }
+  
+  .split-modal-body {
+    padding: 1rem;
+  }
+  
+  .split-modal-footer {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .split-modal-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem;
+    min-width: auto;
+  }
+  
+  .split-modal-title {
+    font-size: 1rem;
+  }
+  
+  .split-option {
+    padding: 0.75rem;
+  }
+  
+  .split-option-content {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .split-option-radio {
+    margin: 0;
+    align-self: flex-start;
+  }
+  
+  .split-option-details {
+    width: 100%;
+  }
+  
+  .split-option-header {
+    margin-bottom: 0.75rem;
+  }
+  
+  .split-modal-current-info {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+  
+  .split-modal-current-subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .split-modal-overlay {
+    padding: 0.125rem;
+  }
+  
+  .split-modal-title {
+    font-size: 0.95rem;
+  }
+  
+  .split-option-name {
+    font-size: 0.9rem;
+  }
+  
+  .split-option-description {
+    font-size: 0.8rem;
+  }
+  
+  .split-option-summary {
+    font-size: 0.75rem;
+  }
+  
+  .split-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* ======================
+   ACCESSIBILITY & FOCUS
+   ====================== */
+
+.split-option:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  outline: none;
+}
+
+.split-modal-btn:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.split-modal-close:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

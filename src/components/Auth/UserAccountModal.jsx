@@ -1,5 +1,4 @@
-// src/components/Auth/UserAccountModal.jsx
-
+// src/components/Auth/UserAccountModal.jsx - Complete Final Version
 import { useEffect } from 'react';
 import BaseModal from '@/components/BaseModal/BaseModal';
 import LoginForm from './LoginForm';
@@ -7,6 +6,7 @@ import RegisterForm from './RegisterForm';
 import UserProfileForm from '@/components/ProfileModal/UserProfileForm';
 import useUserProfile from '@/hooks/useUserProfile';
 import { toast } from '@/components/ToastManager';
+import './AuthModal.css'; // Import auth styles
 
 export default function UserAccountModal({
   show,
@@ -31,7 +31,7 @@ export default function UserAccountModal({
       fetchProfile(token, setUserName);
     }
     if (!show) clearAll();
-  }, [authMode, show, token]);
+  }, [authMode, show, token, hasFetched, fetchProfile, setUserName, clearAll]);
 
   const handleChange = e => {
     dispatch({ type: 'CHANGE_FIELD', field: e.target.name, value: e.target.value });
@@ -64,16 +64,41 @@ export default function UserAccountModal({
     form.training_goal &&
     form.training_experience;
 
+  // Enhanced login success handler
+  const handleAuthSuccess = () => {
+    console.log('✅ Auth success - closing modal');
+    onHide();
+    onLoginSuccess?.();
+  };
+
+  // Get modal title based on auth mode
+  const getModalTitle = () => {
+    switch (authMode) {
+      case 'login':
+        return 'Welcome Back';
+      case 'register':
+        return 'Create Account';
+      case 'profile':
+        return 'Edit Profile';
+      default:
+        return 'User Account';
+    }
+  };
+
+  // Determine if we should show footer buttons (only for profile mode)
+  const showFooterButtons = authMode === 'profile';
+
   return (
     <BaseModal
       show={show}
       onHide={onHide}
-      title="User Account"
-      onCancel={handleCancel}
-      onSubmit={handleSubmit}
-      canSubmit={authMode === 'profile' ? isDirty && isProfileValid : undefined}
+      title={getModalTitle()}
+      onCancel={showFooterButtons ? handleCancel : undefined}
+      onSubmit={showFooterButtons ? handleSubmit : undefined}
+      canSubmit={showFooterButtons ? isDirty && isProfileValid : undefined}
       isSubmitting={loading}
-      confirmLabel={authMode === 'profile' ? 'Save' : undefined}
+      confirmLabel={showFooterButtons ? 'Save' : undefined}
+      className="user-account-modal" // Add class for CSS targeting
     >
       {authMode === 'profile' && token ? (
         <UserProfileForm
@@ -87,18 +112,14 @@ export default function UserAccountModal({
         />
       ) : authMode === 'login' ? (
         <LoginForm
-          show={show}
-          onHide={onHide}
           setToken={setToken}
-          onLoginSuccess={onLoginSuccess}
+          onLoginSuccess={handleAuthSuccess}
           setAuthMode={setAuthMode}
         />
       ) : (
         <RegisterForm
-          show={show}
-          onHide={onHide}
           setToken={setToken}
-          onLoginSuccess={onLoginSuccess}
+          onLoginSuccess={handleAuthSuccess}
           setAuthMode={setAuthMode}
         />
       )}

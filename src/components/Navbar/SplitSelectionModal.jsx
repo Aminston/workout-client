@@ -141,6 +141,32 @@ export default function SplitSelectionModal({
     return descriptions[splitType] || 'Structured workout routine';
   };
 
+  // ✅ NEW: Get clean split title with status indicator
+  const getSplitTitle = (split) => {
+    const isDefault = split.is_default;
+    const isCurrent = split.id === currentSplit?.id;
+    
+    if (isCurrent) {
+      return (
+        <>
+          {split.name}
+          <span className="status-indicator current">(current)</span>
+        </>
+      );
+    }
+    
+    if (isDefault) {
+      return (
+        <>
+          {split.name}
+          <span className="status-indicator">(default)</span>
+        </>
+      );
+    }
+    
+    return split.name;
+  };
+
   if (!show) return null;
 
   return (
@@ -206,20 +232,11 @@ export default function SplitSelectionModal({
                         />
                       </div>
                       <div className="split-option-details">
+                        {/* ✅ SIMPLIFIED: Clean header without badges */}
                         <div className="split-option-header">
                           <h6 className="split-option-name">
-                            {split.name}
+                            {getSplitTitle(split)}
                           </h6>
-                          {split.is_default && (
-                            <span className="split-badge default">
-                              Default
-                            </span>
-                          )}
-                          {split.id === currentSplit?.id && (
-                            <span className="split-badge current">
-                              Current
-                            </span>
-                          )}
                         </div>
                         
                         <p className="split-option-description">

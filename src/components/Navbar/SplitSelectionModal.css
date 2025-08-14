@@ -1,4 +1,4 @@
-/* SplitSelectionModal.css - Fixed with proper scrolling */
+/* SplitSelectionModal.css - FIXED RESPONSIVE DESIGN */
 @import '../../styles/theme.css';
 
 /* ======================
@@ -28,7 +28,6 @@
   animation: modalSlideIn 0.3s ease-out;
   display: flex;
   flex-direction: column;
-  /* ✅ FIXED: Ensure modal uses flexbox for proper layout */
 }
 
 @keyframes modalSlideIn {
@@ -52,7 +51,6 @@
   justify-content: space-between;
   align-items: center;
   flex-shrink: 0;
-  /* ✅ FIXED: Header stays at top */
 }
 
 .split-modal-title {
@@ -85,9 +83,7 @@
   padding: 1.5rem;
   overflow-y: auto;
   flex: 1;
-  /* ✅ FIXED: Body grows and scrolls independently */
   min-height: 0;
-  /* ✅ FIXED: Allows flex child to shrink below content size */
 }
 
 /* Custom scrollbar styling */
@@ -174,7 +170,6 @@
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
-  /* ✅ FIXED: Add visual separation */
 }
 
 .split-modal-current-title {
@@ -191,13 +186,12 @@
 }
 
 /* ======================
-   SPLIT SELECTION LIST - IMPROVED SCROLLING
+   SPLIT SELECTION LIST
    ====================== */
 .split-selection-list {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  /* ✅ FIXED: Remove max-height, let parent handle scrolling */
 }
 
 .split-option {
@@ -208,7 +202,6 @@
   background-color: var(--color-bg-main);
   transition: all 0.2s ease;
   position: relative;
-  /* ✅ FIXED: Better focus management */
 }
 
 .split-option:hover {
@@ -226,18 +219,17 @@
 
 .split-option.selected:hover {
   transform: none;
-  /* ✅ FIXED: Don't lift selected items on hover */
 }
 
 .split-option-content {
   display: flex;
   align-items: flex-start;
+  gap: 1rem;
 }
 
 .split-option-radio {
-  margin-right: 1rem;
-  margin-top: 0.25rem;
   flex-shrink: 0;
+  margin-top: 0.25rem;
 }
 
 .split-option-radio input[type="radio"] {
@@ -249,15 +241,11 @@
 .split-option-details {
   flex: 1;
   min-width: 0;
-  /* ✅ FIXED: Prevent text overflow */
 }
 
+/* ✅ SIMPLIFIED: Clean header without badges */
 .split-option-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .split-option-name {
@@ -265,32 +253,27 @@
   font-weight: 600;
   color: var(--color-text-main);
   font-size: 1rem;
-  line-height: 1.2;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.split-badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 1rem;
-  font-size: 0.75rem;
+/* ✅ NEW: Simple status indicators */
+.split-option-name .status-indicator {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.split-option-name .status-indicator.current {
+  color: #10b981;
   font-weight: 500;
-  text-transform: uppercase;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.split-badge.default {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.split-badge.current {
-  background-color: #10b981;
-  color: white;
 }
 
 .split-option-description {
   color: var(--color-text-secondary);
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.75rem 0;
   font-size: 0.875rem;
   line-height: 1.4;
 }
@@ -318,17 +301,15 @@
    MODAL FOOTER - ALWAYS VISIBLE
    ====================== */
 .split-modal-footer {
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
   flex-shrink: 0;
   background-color: var(--color-bg-card);
-  /* ✅ FIXED: Footer always visible at bottom */
   position: sticky;
   bottom: 0;
-  /* ✅ FIXED: Ensure footer sticks to bottom */
 }
 
 .split-modal-btn {
@@ -340,7 +321,7 @@
   border: none;
   font-size: 0.875rem;
   min-width: 100px;
-  /* ✅ FIXED: Consistent button width */
+  flex: 0 0 auto;
 }
 
 .split-modal-btn:disabled {
@@ -401,18 +382,18 @@
 }
 
 /* ======================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - FIXED
    ====================== */
 
-/* Tablet */
+/* Large Mobile / Small Tablet (up to 768px) */
 @media (max-width: 768px) {
   .split-modal-overlay {
-    padding: 0.5rem;
+    padding: 0.75rem;
   }
   
   .split-modal-content {
     max-width: 100%;
-    max-height: 95vh;
+    max-height: 92vh;
   }
   
   .split-modal-header {
@@ -423,35 +404,34 @@
     padding: 1.25rem;
   }
   
-  .split-modal-footer {
-    padding: 1rem 1.25rem;
-  }
-  
   .split-modal-title {
     font-size: 1.125rem;
   }
   
   .split-option {
-    padding: 0.875rem;
+    padding: 1rem;
   }
   
+  /* ✅ SIMPLIFIED: No badge-specific responsive rules needed */
   .split-option-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .split-option-name {
+    font-size: 0.95rem;
   }
 }
 
-/* Mobile */
+/* Mobile (up to 480px) */
 @media (max-width: 480px) {
   .split-modal-overlay {
-    padding: 0.25rem;
+    padding: 0.5rem;
     align-items: flex-start;
     padding-top: 1rem;
   }
   
   .split-modal-content {
-    max-height: 98vh;
+    max-height: 95vh;
     margin-top: 0;
   }
   
@@ -463,80 +443,109 @@
     padding: 1rem;
   }
   
-  .split-modal-footer {
-    padding: 1rem;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .split-modal-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 0.875rem;
-    min-width: auto;
-  }
-  
   .split-modal-title {
     font-size: 1rem;
   }
   
   .split-option {
-    padding: 0.75rem;
+    padding: 0.875rem;
   }
   
+  /* ✅ SIMPLIFIED: Clean mobile layout */
   .split-option-content {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .split-option-radio {
-    margin: 0;
-    align-self: flex-start;
-  }
-  
-  .split-option-details {
-    width: 100%;
+    gap: 0.75rem;
   }
   
   .split-option-header {
     margin-bottom: 0.75rem;
   }
   
-  .split-modal-current-info {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-  }
-  
-  .split-modal-current-subtitle {
-    font-size: 0.8rem;
-  }
-}
-
-/* Very small screens */
-@media (max-width: 360px) {
-  .split-modal-overlay {
-    padding: 0.125rem;
-  }
-  
-  .split-modal-title {
-    font-size: 0.95rem;
-  }
-  
   .split-option-name {
-    font-size: 0.9rem;
+    font-size: 0.925rem;
+    line-height: 1.3;
+    width: 100%;
   }
   
   .split-option-description {
     font-size: 0.8rem;
+    margin-bottom: 0.5rem;
   }
   
   .split-option-summary {
     font-size: 0.75rem;
   }
   
-  .split-badge {
+  /* ✅ FIXED: Keep buttons in row when there's space */
+  .split-modal-footer {
+    padding: 1rem;
+    gap: 0.5rem;
+    /* Keep flex-direction: row for side-by-side buttons */
+  }
+  
+  .split-modal-btn {
+    flex: 1;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    min-width: 80px;
+  }
+}
+
+/* Very Small Mobile (up to 360px) */
+@media (max-width: 360px) {
+  .split-modal-overlay {
+    padding: 0.25rem;
+  }
+  
+  .split-modal-header {
+    padding: 0.875rem;
+  }
+  
+  .split-modal-body {
+    padding: 0.875rem;
+  }
+  
+  .split-modal-title {
+    font-size: 0.95rem;
+  }
+  
+  .split-option {
+    padding: 0.75rem;
+  }
+  
+  .split-option-name {
+    font-size: 0.875rem;
+  }
+  
+  .split-option-description {
+    font-size: 0.775rem;
+  }
+  
+  .split-option-summary {
     font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
+  }
+  
+  /* ✅ FIXED: Only stack buttons on very small screens if needed */
+  .split-modal-footer {
+    padding: 0.875rem;
+  }
+  
+  .split-modal-btn {
+    font-size: 0.75rem;
+    padding: 0.625rem 0.375rem;
+    min-width: 70px;
+  }
+}
+
+/* ✅ NEW: Only stack buttons on extremely narrow screens */
+@media (max-width: 320px) {
+  .split-modal-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .split-modal-btn {
+    width: 100%;
+    flex: none;
   }
 }
 

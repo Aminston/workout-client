@@ -51,13 +51,13 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     };
   };
 
-  // 🚀 ENHANCED: Calculate elapsed time for a set
+  // Calculate elapsed time for a set
   const calculateElapsedTime = (startTime, endTime) => {
     if (!startTime || !endTime) return null;
     const start = new Date(startTime);
     const end = new Date(endTime);
     const elapsedMs = end - start;
-    return Math.round(elapsedMs / 100) / 10; // Round to 1 decimal place (e.g., 45.5 seconds)
+    return Math.round(elapsedMs / 100) / 10; // Round to 1 decimal place
   };
 
   // Simple elapsed time formatter
@@ -72,7 +72,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     }
   };
 
-  // 🚀 ENHANCED: Updated handleManualSave with elapsed time support
+  // Enhanced handleManualSave with elapsed time support
   const handleManualSave = async () => {
     if (!hasUnsavedChanges || isSaving) return;
     
@@ -113,7 +113,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
 
       console.log(`💾 Bulk saving ${exercisesToSave.length} exercises with changes`);
 
-      // 🚀 ENHANCED: Build bulk workoutSessions array with elapsed time
+      // Build bulk workoutSessions array with elapsed time
       const workoutSessions = exercisesToSave.map(exercise => {
         const setsToSave = exercise.sets.filter(set => {
           const isNewlyCompleted = set.status === 'done' && !set.isFromSession;
@@ -122,7 +122,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
         });
         
         const performedSets = setsToSave.map(set => {
-          // 🚀 NEW: Calculate and include elapsed time
+          // Calculate and include elapsed time
           const elapsedTime = calculateElapsedTime(set.startTime, set.completedAt);
           
           const performedSet = {
@@ -132,7 +132,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
             weightUnit: set.weightUnit || 'kg'
           };
 
-          // 🚀 NEW: Add elapsed time if available
+          // Add elapsed time if available
           if (elapsedTime !== null) {
             performedSet.elapsedTime = elapsedTime;
             console.log(`⏱️ Set ${set.id} elapsed time: ${elapsedTime}s`);
@@ -169,7 +169,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
       const result = await response.json();
       console.log('✅ Save successful:', result);
       
-      // 🚀 FIXED: Handle both single workout and bulk workout response formats
+      // Handle both single workout and bulk workout response formats
       let sessions;
       let totalVolume;
       
@@ -187,7 +187,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
         throw new Error('Invalid save response format');
       }
       
-      // 🚀 ENHANCED: Update UI to mark sets as saved and preserve elapsed time from API response
+      // Update UI to mark sets as saved and preserve elapsed time from API response
       setExercises(prev => prev.map(exercise => {
         const exerciseResult = sessions.find(session => session.scheduleId === exercise.scheduleId);
         if (!exerciseResult) return exercise;
@@ -204,7 +204,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
             isModified: false,
             lastSaved: new Date().toISOString(),
             isFromSession: set.status === 'done' ? true : set.isFromSession,
-            // 🚀 NEW: Preserve elapsed time from API response
+            // Preserve elapsed time from API response
             elapsedTime: savedSet.elapsedTime || set.elapsedTime || calculateElapsedTime(set.startTime, set.completedAt)
           };
         });
@@ -245,7 +245,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     };
   }, [hasUnsavedChanges]);
 
-  // 🚀 ENHANCED: Fetch fresh data with elapsed time support
+  // Enhanced: Fetch fresh data with elapsed time support
   useEffect(() => {
     let isMounted = true;
     
@@ -254,294 +254,75 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
         setLoading(true);
         setError(null);
 
-        console.log('🔍 FULL DEBUG: location:', location);
-        console.log('🔍 FULL DEBUG: location.state:', location.state);
-        console.log('🔍 FULL DEBUG: location.state keys:', location.state ? Object.keys(location.state) : 'null');
+        console.log('🔍 Location state:', location.state);
 
-        // Get data from different possible sources
-        const dayData = location.state?.workoutData;
-        const scheduleId = location.state?.scheduleId || location.state?.workoutData?.scheduleId;
-        const directWorkoutData = location.state?.workout;
+        // Get data from different possible sources - prefer raw API data
+        const rawApiData = location.state?.originalApiData;
+        const workoutData = location.state?.workoutData;
+        const dayData = location.state?.dayData;
         
-        console.log('🔍 DEBUG: dayData exists:', !!dayData);
-        console.log('🔍 DEBUG: scheduleId:', scheduleId);
-        console.log('🔍 DEBUG: directWorkoutData:', !!directWorkoutData);
+        console.log('🔍 DEBUG: Available data sources:', { 
+          rawApiData: !!rawApiData, 
+          workoutData: !!workoutData,
+          dayData: !!dayData 
+        });
 
-        // Method 1: Use day data with originalApiData
-        if (dayData && dayData.originalApiData && dayData.originalApiData.workouts) {
-          console.log('✅ Method 1: Using passed day data with originalApiData');
+        // Method 1: Use raw API data (new format)
+        if (rawApiData && rawApiData.workouts) {
+          console.log('✅ Method 1: Using raw API data');
           
-          const apiData = dayData.originalApiData;
-          const workoutData = {
-            day: apiData.day,
-            category: apiData.category
-          };
-
-          // Transform ALL workouts from the day's data
-          const exercises = apiData.workouts.map((workout) => {
-            console.log(`🔄 Processing workout: ${workout.name} (${workout.sets} sets)`);
-            console.log(`🔄 All sessions for ${workout.name}:`, workout.sessions);
-            
-            // 🚀 ENHANCED: Create session lookup by set_number, handling duplicates
-            const sessionsBySetNumber = {};
-            if (workout.sessions && workout.sessions.length > 0) {
-              workout.sessions.forEach(session => {
-                console.log(`🔍 Checking session:`, {
-                  session_id: session.session_id,
-                  set_number: session.set_number,
-                  set_status: session.set_status,
-                  reps: session.reps,
-                  weight: session.weight,
-                  elapsed_time: session.elapsed_time,
-                  created_at: session.created_at
-                });
-                
-                // Only use sessions with actual set_number and completed status
-                if (session.set_number !== null && session.set_status === 'completed') {
-                  // 🚀 NEW: Handle duplicate sessions - keep the most recent one
-                  const existingSession = sessionsBySetNumber[session.set_number];
-                  if (!existingSession || new Date(session.created_at) > new Date(existingSession.created_at)) {
-                    sessionsBySetNumber[session.set_number] = session;
-                    console.log(`✅ Added/Updated session for set ${session.set_number}:`, {
-                      session_id: session.session_id,
-                      elapsed_time: session.elapsed_time,
-                      created_at: session.created_at
-                    });
-                  } else {
-                    console.log(`⏭️ Skipped older session for set ${session.set_number}`);
-                  }
-                }
-              });
-              console.log(`📋 Final sessions lookup for ${workout.name}:`, sessionsBySetNumber);
-            }
-
-            // Build sets array merging base program with session data
-            const sets = [];
-            const totalSets = workout.sets || 3;
-            
-            for (let setNum = 1; setNum <= totalSets; setNum++) {
-              const session = sessionsBySetNumber[setNum];
-              
-              if (session) {
-                console.log(`🎯 Found completed session for set ${setNum}:`, session);
-                sets.push({
-                  id: setNum,
-                  reps: session.reps,
-                  weight: weightConverter.normalize(session.weight) || 0,
-                  weightUnit: session.weight?.unit || 'kg',
-                  time: session.time?.value || null,
-                  duration: session.time?.value || null,
-                  // 🚀 NEW: Include elapsed time from session
-                  elapsedTime: session.elapsed_time || null,
-                  status: 'done',
-                  completedAt: session.created_at,
-                  isFromSession: true
-                });
-                console.log(`✅ Set ${setNum} marked as DONE for ${workout.name} with elapsed time: ${session.elapsed_time}s`);
-              } else {
-                console.log(`⏸️ No session found for set ${setNum}, using base workout data`);
-                sets.push({
-                  id: setNum,
-                  reps: workout.reps || 10,
-                  weight: weightConverter.normalize(workout.weight) || 0,
-                  weightUnit: workout.weight?.unit || 'kg',
-                  time: null,
-                  duration: null,
-                  elapsedTime: null, // 🚀 NEW: No elapsed time for pending sets
-                  status: 'pending',
-                  completedAt: null,
-                  isFromSession: false
-                });
-                console.log(`⏸️ Set ${setNum} marked as PENDING for ${workout.name}`);
-              }
-            }
-
-            const exercise = {
-              id: workout.scheduleId,
-              scheduleId: workout.scheduleId,
-              workout_id: workout.workout_id,
-              name: workout.name,
-              category: workout.category || apiData.category,
-              type: workout.type,
-              sets: sets,
-              status: sets.every(s => s.status === 'done') ? 'done' : 
-                     sets.some(s => s.status === 'done') ? 'in-progress' : 'pending'
-            };
-
-            console.log(`📊 Final exercise for ${workout.name}:`, {
-              name: exercise.name,
-              status: exercise.status,
-              sets: sets.map(s => ({ 
-                id: s.id, 
-                status: s.status, 
-                isFromSession: s.isFromSession, 
-                reps: s.reps, 
-                weight: s.weight,
-                elapsedTime: s.elapsedTime // 🚀 NEW: Log elapsed time
-              }))
-            });
-
-            return exercise;
-          });
-
+          const processed = processRawApiData(rawApiData);
+          
           if (!isMounted) return;
 
-          console.log(`✅ Method 1 Success: Processed ${exercises.length} exercises`);
-          setWorkoutData(workoutData);
-          setExercises(exercises);
-          
-          const totalSetsCount = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-          const completedSetsCount = exercises.reduce((sum, ex) => 
-            sum + ex.sets.filter(s => s.status === 'done').length, 0);
-          
-          setTotalSets(totalSetsCount);
-          setCompletedSets(completedSetsCount);
+          setWorkoutData({
+            day: processed.day,
+            category: processed.category
+          });
+          setExercises(processed.exercises);
+          setTotalSets(processed.totalSets);
+          setCompletedSets(processed.completedSets);
           setLoading(false);
           return;
         }
 
-        // Method 2: Use pre-transformed exercises data
-        if (dayData && dayData.exercises && Array.isArray(dayData.exercises)) {
-          console.log('✅ Method 2: Using pre-transformed exercises data');
+        // Method 2: Use direct day data (new format)
+        if (dayData && dayData.workouts) {
+          console.log('✅ Method 2: Using day data');
           
-          const workoutData = {
-            day: dayData.day,
-            category: dayData.category
-          };
-
+          const processed = processRawApiData(dayData);
+          
           if (!isMounted) return;
 
-          setWorkoutData(workoutData);
-          setExercises(dayData.exercises);
+          setWorkoutData({
+            day: processed.day,
+            category: processed.category
+          });
+          setExercises(processed.exercises);
+          setTotalSets(processed.totalSets);
+          setCompletedSets(processed.completedSets);
+          setLoading(false);
+          return;
+        }
+
+        // Method 3: Use pre-transformed exercises data (old format)
+        if (workoutData && workoutData.exercises && Array.isArray(workoutData.exercises)) {
+          console.log('✅ Method 3: Using pre-transformed exercises data');
           
-          const totalSetsCount = dayData.exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
-          const completedSetsCount = dayData.exercises.reduce((sum, ex) => 
+          if (!isMounted) return;
+
+          setWorkoutData({
+            day: workoutData.day,
+            category: workoutData.category
+          });
+          setExercises(workoutData.exercises);
+          
+          const totalSetsCount = workoutData.exercises.reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
+          const completedSetsCount = workoutData.exercises.reduce((sum, ex) => 
             sum + (ex.sets?.filter(s => s.status === 'done').length || 0), 0);
           
           setTotalSets(totalSetsCount);
           setCompletedSets(completedSetsCount);
-          setLoading(false);
-          return;
-        }
-
-        // Method 3: Fetch from API using scheduleId
-        if (scheduleId) {
-          console.log('🔄 Method 3: Fetching from API with scheduleId:', scheduleId);
-          
-          const token = localStorage.getItem('jwt_token') || localStorage.getItem('X-API-Token');
-          
-          if (!token) {
-            throw new Error('No authentication token found');
-          }
-
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/schedule`, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch schedule: ${response.status}`);
-          }
-
-          const scheduleData = await response.json();
-          
-          // Find the specific workout by scheduleId
-          let foundWorkout = null;
-          let foundDay = null;
-          
-          if (scheduleData.schedule) {
-            for (const daySchedule of scheduleData.schedule) {
-              const workout = daySchedule.workouts?.find(w => w.scheduleId === scheduleId);
-              if (workout) {
-                foundWorkout = workout;
-                foundDay = daySchedule;
-                break;
-              }
-            }
-          }
-          
-          if (!foundWorkout) {
-            throw new Error('Workout not found in schedule');
-          }
-
-          // Process single workout
-          const workoutData = {
-            day: foundDay.day,
-            category: foundDay.category
-          };
-
-          const sessionsBySetNumber = {};
-          if (foundWorkout.sessions && foundWorkout.sessions.length > 0) {
-            foundWorkout.sessions.forEach(session => {
-              // Only use sessions with actual set_number and completed status  
-              if (session.set_number !== null && session.set_status === 'completed') {
-                // Handle duplicate sessions - keep the most recent one
-                const existingSession = sessionsBySetNumber[session.set_number];
-                if (!existingSession || new Date(session.created_at) > new Date(existingSession.created_at)) {
-                  sessionsBySetNumber[session.set_number] = session;
-                }
-              }
-            });
-            console.log('📋 Session data for single workout:', sessionsBySetNumber);
-          }
-
-          const sets = [];
-          const totalSets = foundWorkout.sets || 3;
-          
-          for (let setNum = 1; setNum <= totalSets; setNum++) {
-            const session = sessionsBySetNumber[setNum];
-            
-            if (session) {
-              sets.push({
-                id: setNum,
-                reps: session.reps,
-                weight: weightConverter.normalize(session.weight) || 0,
-                weightUnit: session.weight?.unit || 'kg',
-                time: session.time?.value || null,
-                duration: session.time?.value || null,
-                // 🚀 ENHANCED: Handle both numeric and null elapsed_time values
-                elapsedTime: typeof session.elapsed_time === 'number' ? session.elapsed_time : null,
-                status: 'done',
-                completedAt: session.created_at,
-                isFromSession: true
-              });
-            } else {
-              sets.push({
-                id: setNum,
-                reps: foundWorkout.reps || 10,
-                weight: weightConverter.normalize(foundWorkout.weight) || 0,
-                weightUnit: foundWorkout.weight?.unit || 'kg',
-                time: null,
-                duration: null,
-                elapsedTime: null, // 🚀 NEW: No elapsed time for pending sets
-                status: 'pending',
-                completedAt: null,
-                isFromSession: false
-              });
-            }
-          }
-
-          const exercise = {
-            id: foundWorkout.scheduleId,
-            scheduleId: foundWorkout.scheduleId,
-            workout_id: foundWorkout.workout_id,
-            name: foundWorkout.name,
-            category: foundWorkout.category || foundDay.category,
-            type: foundWorkout.type,
-            sets: sets,
-            status: sets.every(s => s.status === 'done') ? 'done' : 
-                   sets.some(s => s.status === 'done') ? 'in-progress' : 'pending'
-          };
-
-          if (!isMounted) return;
-
-          console.log('✅ Method 3 Success: Single workout processed');
-          setWorkoutData(workoutData);
-          setExercises([exercise]);
-          setTotalSets(sets.length);
-          setCompletedSets(sets.filter(s => s.status === 'done').length);
           setLoading(false);
           return;
         }
@@ -597,7 +378,98 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     };
   }, [location.state]);
 
-  // 🚀 ENHANCED: Simple set action handler with elapsed time tracking
+  // Process raw API data (new format)
+  const processRawApiData = (apiData) => {
+    console.log('🔄 Processing raw API data:', apiData);
+
+    let totalSetCount = 0;
+    let completedSetCount = 0;
+
+    const processedExercises = apiData.workouts.map(workout => {
+      console.log(`🔄 Processing: ${workout.name}`);
+      
+      // Create session lookup by set_number, handling duplicates
+      const sessionsBySetNumber = {};
+      if (workout.sessions && workout.sessions.length > 0) {
+        workout.sessions.forEach(session => {
+          // Only use sessions with actual set_number and completed status
+          if (session.set_number !== null && session.set_status === 'completed') {
+            // Handle duplicate sessions - keep the most recent one
+            const existingSession = sessionsBySetNumber[session.set_number];
+            if (!existingSession || new Date(session.created_at) > new Date(existingSession.created_at)) {
+              sessionsBySetNumber[session.set_number] = session;
+            }
+          }
+        });
+        console.log(`📋 Session lookup for ${workout.name}:`, sessionsBySetNumber);
+      }
+
+      // Build sets array merging base program with session data
+      const sets = [];
+      const totalSets = workout.sets || 3;
+      totalSetCount += totalSets;
+      
+      for (let setNum = 1; setNum <= totalSets; setNum++) {
+        const session = sessionsBySetNumber[setNum];
+        
+        if (session) {
+          sets.push({
+            id: setNum,
+            reps: session.reps,
+            weight: weightConverter.normalize(session.weight) || 0,
+            weightUnit: session.weight?.unit || 'kg',
+            time: session.time?.value || null,
+            duration: session.time?.value || null,
+            // Include elapsed time from session
+            elapsedTime: session.elapsed_time || null,
+            status: 'done',
+            completedAt: session.created_at,
+            isFromSession: true
+          });
+          completedSetCount++;
+          console.log(`✅ Set ${setNum} marked as DONE for ${workout.name} with elapsed time: ${session.elapsed_time}s`);
+        } else {
+          console.log(`⏸️ No session found for set ${setNum}, using base workout data`);
+          sets.push({
+            id: setNum,
+            reps: workout.reps || 10,
+            weight: weightConverter.normalize(workout.weight) || 0,
+            weightUnit: workout.weight?.unit || 'kg',
+            time: null,
+            duration: null,
+            elapsedTime: null, // No elapsed time for pending sets
+            status: 'pending',
+            completedAt: null,
+            isFromSession: false
+          });
+        }
+      }
+
+      const exercise = {
+        id: workout.scheduleId,
+        scheduleId: workout.scheduleId,
+        workout_id: workout.workout_id,
+        name: workout.name,
+        category: workout.category || apiData.category,
+        type: workout.type,
+        sets: sets,
+        status: sets.every(s => s.status === 'done') ? 'done' : 
+               sets.some(s => s.status === 'done') ? 'in-progress' : 'pending'
+      };
+
+      return exercise;
+    });
+
+    return {
+      day: apiData.day_name || apiData.day,
+      category: apiData.day_name || apiData.category,
+      exercises: processedExercises,
+      totalSets: totalSetCount,
+      completedSets: completedSetCount
+    };
+  };
+
+  // Simple set action handler with elapsed time tracking
   const handleSetAction = (exerciseId, setId, action) => {
     console.log(`🎯 Set action: ${action} for exercise ${exerciseId}, set ${setId}`);
     
@@ -614,7 +486,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
           }
           if (action === 'complete') {
             const endTime = new Date().toISOString();
-            // 🚀 ENHANCED: Calculate elapsed time more precisely
+            // Calculate elapsed time more precisely
             const elapsedTime = calculateElapsedTime(set.startTime, endTime);
             
             console.log(`✅ Completing set ${setId} for ${exercise.name} - elapsed time: ${elapsedTime}s`);
@@ -626,7 +498,7 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
               ...set, 
               status: 'done', 
               isFromSession: false, // Mark as NOT from session (newly completed)
-              elapsedTime, // 🚀 NEW: Store calculated elapsed time
+              elapsedTime, // Store calculated elapsed time
               completedAt: endTime
             };
           }
@@ -656,132 +528,129 @@ export default function WorkoutDetailView({ onWorkoutComplete }) {
     }, 100);
   };
 
-
-// 🚀 ENHANCED: Render editable cell with proper lbs input handling
-const renderEditableCell = (exercise, set, field) => {
-  const isEditing = editingCell?.exerciseId === exercise.id && 
-                   editingCell?.setId === set.id && 
-                   editingCell?.field === field;
-  
-  if (isEditing) {
-    let displayValue;
-    if (field === 'weight') {
-      // 🚀 FIXED: Show the value in the user's preferred unit
-      displayValue = useMetric 
-        ? set.weight 
-        : Math.round(weightConverter.kgToLbs(set.weight || 0));
-    } else {
-      displayValue = set[field];
-    }
-      
-    return (
-      <input
-        type="number"
-        className="table-cell-input"
-        defaultValue={displayValue}
-        autoFocus
-        onFocus={e => e.target.select()}
-        onBlur={e => {
-          // 🚀 FIXED: Don't double-convert - handleCellEdit will handle conversion
-          const value = e.target.value;
-          handleCellEdit(exercise.id, set.id, field, value);
-        }}
-        onKeyDown={e => {
-          if (e.key === 'Enter') {
-            // 🚀 FIXED: Don't double-convert - handleCellEdit will handle conversion
+  // Render editable cell with proper lbs input handling
+  const renderEditableCell = (exercise, set, field) => {
+    const isEditing = editingCell?.exerciseId === exercise.id && 
+                     editingCell?.setId === set.id && 
+                     editingCell?.field === field;
+    
+    if (isEditing) {
+      let displayValue;
+      if (field === 'weight') {
+        // Show the value in the user's preferred unit
+        displayValue = useMetric 
+          ? set.weight 
+          : Math.round(weightConverter.kgToLbs(set.weight || 0));
+      } else {
+        displayValue = set[field];
+      }
+        
+      return (
+        <input
+          type="number"
+          className="table-cell-input"
+          defaultValue={displayValue}
+          autoFocus
+          onFocus={e => e.target.select()}
+          onBlur={e => {
             const value = e.target.value;
             handleCellEdit(exercise.id, set.id, field, value);
-          }
-          if (e.key === 'Escape') {
-            setEditingCell(null);
-          }
-        }}
-        min="0"
-        step={field === 'weight' ? (useMetric ? '0.5' : '1') : '1'}
-        placeholder={field === 'weight' ? (useMetric ? 'kg' : 'lbs') : 'reps'}
-      />
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              const value = e.target.value;
+              handleCellEdit(exercise.id, set.id, field, value);
+            }
+            if (e.key === 'Escape') {
+              setEditingCell(null);
+            }
+          }}
+          min="0"
+          step={field === 'weight' ? (useMetric ? '0.5' : '1') : '1'}
+          placeholder={field === 'weight' ? (useMetric ? 'kg' : 'lbs') : 'reps'}
+        />
+      );
+    }
+    
+    // Display value based on field and unit preference
+    let displayValue;
+    if (field === 'weight') {
+      displayValue = weightConverter.display(set.weight, useMetric);
+    } else {
+      displayValue = set[field] || '-';
+    }
+    
+    let className = `editable-cell ${set.isFromSession ? 'from-session' : 'from-base'}`;
+    if (set.isModified) className += ' modified';
+    
+    let title = `Click to edit ${field}. Current value: ${displayValue}${set.status === 'done' ? ' (completed set)' : ''}`;
+    
+    return (
+      <span
+        className={className}
+        onClick={() => handleCellClick(exercise.id, set.id, field)}
+        title={title}
+      >
+        {displayValue}
+      </span>
     );
-  }
-  
-  // Display value based on field and unit preference
-  let displayValue;
-  if (field === 'weight') {
-    displayValue = weightConverter.display(set.weight, useMetric);
-  } else {
-    displayValue = set[field] || '-';
-  }
-  
-  let className = `editable-cell ${set.isFromSession ? 'from-session' : 'from-base'}`;
-  if (set.isModified) className += ' modified';
-  
-  let title = `Click to edit ${field}. Current value: ${displayValue}${set.status === 'done' ? ' (completed set)' : ''}`;
-  
-  return (
-    <span
-      className={className}
-      onClick={() => handleCellClick(exercise.id, set.id, field)}
-      title={title}
-    >
-      {displayValue}
-    </span>
-  );
-};
+  };
 
   // Allow editing all sets - no restrictions
   const handleCellClick = (exerciseId, setId, field) => {
     setEditingCell({ exerciseId, setId, field });
   };
 
-// Handle edit without immediate saving - FIXED for proper lbs handling
-const handleCellEdit = async (exerciseId, setId, field, value) => {
-  console.log(`✏️ Editing ${field} for exercise ${exerciseId}, set ${setId}: ${value} (unit: ${useMetric ? 'kg' : 'lbs'})`);
-  
-  // Basic value validation
-  let processedValue;
-  if (field === 'weight') {
-    if (useMetric) {
-      // User entered kg - store as kg with 0.5 precision
-      processedValue = Math.max(0, parseFloat(value) || 0);
-      processedValue = Math.round(processedValue * 2) / 2; // Round to nearest 0.5
-    } else {
-      // 🚀 FIXED: User entered lbs - convert to kg for internal storage
-      const lbsValue = Math.max(0, parseInt(value) || 0);
-      processedValue = weightConverter.lbsToKg(lbsValue);
-      console.log(`💡 User entered ${lbsValue} lbs → converting to ${processedValue} kg for storage`);
-    }
-  } else if (field === 'reps') {
-    processedValue = Math.max(0, parseInt(value) || 0);
-  } else {
-    processedValue = value;
-  }
-  
-  // Update local state only
-  setExercises(prev => prev.map(exercise => {
-    if (exercise.id !== exerciseId) return exercise;
+  // Handle edit without immediate saving - FIXED for proper lbs handling
+  const handleCellEdit = async (exerciseId, setId, field, value) => {
+    console.log(`✏️ Editing ${field} for exercise ${exerciseId}, set ${setId}: ${value} (unit: ${useMetric ? 'kg' : 'lbs'})`);
     
-    const updatedSets = exercise.sets.map(set => {
-      if (set.id !== setId) return set;
-      
-      const updatedSet = { ...set, isModified: true };
-      
-      if (field === 'weight') {
-        updatedSet.weight = processedValue; // Always stored in kg internally
-        console.log(`📝 Set ${setId} weight updated: ${processedValue} kg (display: ${weightConverter.display(processedValue, useMetric)})`);
-      } else if (field === 'reps') {
-        updatedSet.reps = processedValue;
+    // Basic value validation
+    let processedValue;
+    if (field === 'weight') {
+      if (useMetric) {
+        // User entered kg - store as kg with 0.5 precision
+        processedValue = Math.max(0, parseFloat(value) || 0);
+        processedValue = Math.round(processedValue * 2) / 2; // Round to nearest 0.5
+      } else {
+        // User entered lbs - convert to kg for internal storage
+        const lbsValue = Math.max(0, parseInt(value) || 0);
+        processedValue = weightConverter.lbsToKg(lbsValue);
+        console.log(`💡 User entered ${lbsValue} lbs → converting to ${processedValue} kg for storage`);
       }
-      
-      return updatedSet;
-    });
+    } else if (field === 'reps') {
+      processedValue = Math.max(0, parseInt(value) || 0);
+    } else {
+      processedValue = value;
+    }
     
-    return { ...exercise, sets: updatedSets };
-  }));
-  
-  setEditingCell(null);
-  setHasUnsavedChanges(true);
-  
-  console.log(`✅ ${field} updated successfully for set ${setId}`);
-};
+    // Update local state only
+    setExercises(prev => prev.map(exercise => {
+      if (exercise.id !== exerciseId) return exercise;
+      
+      const updatedSets = exercise.sets.map(set => {
+        if (set.id !== setId) return set;
+        
+        const updatedSet = { ...set, isModified: true };
+        
+        if (field === 'weight') {
+          updatedSet.weight = processedValue; // Always stored in kg internally
+          console.log(`📝 Set ${setId} weight updated: ${processedValue} kg (display: ${weightConverter.display(processedValue, useMetric)})`);
+        } else if (field === 'reps') {
+          updatedSet.reps = processedValue;
+        }
+        
+        return updatedSet;
+      });
+      
+      return { ...exercise, sets: updatedSets };
+    }));
+    
+    setEditingCell(null);
+    setHasUnsavedChanges(true);
+    
+    console.log(`✅ ${field} updated successfully for set ${setId}`);
+  };
 
   // Cleanup timers
   useEffect(() => {
@@ -953,9 +822,9 @@ const handleCellEdit = async (exerciseId, setId, field, value) => {
               >
                 {exercise.name}
               </h3>
-              {exercise.status === 'done' && (
-                <span className="exercise-done-icon emoji" title="Done">✅</span>
-              )}
+              <span className={`exercise-status-badge ${exercise.status}`}>
+                {exercise.status}
+              </span>
             </div>
 
             <div className="sets-table">

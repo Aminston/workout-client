@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './SplitSelectionModal.css';
 
 export default function SplitSelectionModal({ 
@@ -10,19 +10,54 @@ export default function SplitSelectionModal({
   const [splits, setSplits] = useState([]);
   const [currentSplit, setCurrentSplit] = useState(null);
   const [selectedSplitId, setSelectedSplitId] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  
+  // ✅ BETTER: Single cache object with all data
+  const cacheRef = useRef({
+    data: null,
+    token: null,
+    timestamp: 0,
+    isLoading: false
+  });
+  
+  // ✅ BETTER: Cache duration
+  const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
-  // Fetch available splits and current user preference
-  useEffect(() => {
-    if (show && token) {
-      fetchData();
+  // ✅ BETTER: Check if cache is valid without causing re-renders
+  const isCacheValid = useCallback((currentToken) => {
+    const cache = cacheRef.current;
+    const now = Date.now();
+    
+    return cache.data && 
+           cache.token === currentToken && 
+           (now - cache.timestamp) < CACHE_DURATION &&
+           !cache.isLoading;
+  }, [CACHE_DURATION]);
+
+  // ✅ BETTER: Single fetch function that prevents duplicate calls
+  const fetchData = useCallback(async (currentToken) => {
+    const cache = cacheRef.current;
+    
+    // Prevent duplicate calls - check if already loading for this token
+    if (cache.isLoading && cache.token === currentToken) {
+      console.log('📋 Fetch already in progress for this token');
+      return cache.data;
     }
-  }, [show, token]);
+    
+    // Use cache if valid
+    if (isCacheValid(currentToken)) {
+      console.log('📋 Using cached data');
+      return cache.data;
+    }
 
-  const fetchData = async () => {
+    console.log('📋 Starting fresh fetch');
+    
+    // Mark as loading
+    cache.isLoading = true;
+    cache.token = currentToken;
     setLoading(true);
     setError(null);
     
@@ -31,13 +66,13 @@ export default function SplitSelectionModal({
       const [splitsResponse, userPreferenceResponse] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/splits`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         }),
         fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/user/split-preference`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         })
@@ -57,19 +92,82 @@ export default function SplitSelectionModal({
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
 
-      setSplits(splitsData.available_splits || []);
-      setCurrentSplit(userPreferenceData.current_split);
-      setSelectedSplitId(userPreferenceData.current_split?.id);
+      // ✅ BETTER: Store in cache and component state
+      const fetchedData = {
+        splits: splitsData.available_splits || [],
+        currentSplit: userPreferenceData.current_split
+      };
+
+      // Update cache
+      cache.data = fetchedData;
+      cache.timestamp = Date.now();
+      cache.isLoading = false;
+
+      // Update component state
+      setSplits(fetchedData.splits);
+      setCurrentSplit(fetchedData.currentSplit);
+      setSelectedSplitId(fetchedData.currentSplit?.id);
+
+      return fetchedData;
 
     } catch (err) {
       console.error('❌ Error fetching split data:', err);
+      
+      // Clear loading state in cache
+      cache.isLoading = false;
+      
       setError(err.message);
+      throw err;
     } finally {
       setLoading(false);
     }
-  };
+  }, [isCacheValid]);
 
-  const handleSplitSelection = async () => {
+  // ✅ BETTER: Simple effect that only runs when absolutely necessary
+  useEffect(() => {
+    if (!show) {
+      // Reset UI states when modal closes (but keep cache)
+      setError(null);
+      setSuccessMessage('');
+      return;
+    }
+
+    if (!token) {
+      return;
+    }
+
+    // ✅ KEY IMPROVEMENT: Check cache WITHOUT triggering effect dependencies
+    if (isCacheValid(token)) {
+      const cachedData = cacheRef.current.data;
+      console.log('📋 Modal opened - loading from cache');
+      
+      setSplits(cachedData.splits);
+      setCurrentSplit(cachedData.currentSplit);
+      setSelectedSplitId(cachedData.currentSplit?.id);
+      setLoading(false);
+    } else {
+      console.log('📋 Modal opened - need to fetch');
+      fetchData(token);
+    }
+  }, [show, token]); // ✅ STABLE: Only show and token as dependencies
+
+  // ✅ BETTER: Force refresh function that bypasses cache
+  const handleRetry = useCallback(() => {
+    // Clear cache to force fresh fetch
+    cacheRef.current = {
+      data: null,
+      token: null,
+      timestamp: 0,
+      isLoading: false
+    };
+    
+    if (token) {
+      fetchData(token);
+    }
+  }, [token, fetchData]);
+
+  // ✅ OPTIMIZED: Memoized split selection handler
+  const handleSplitSelection = useCallback(async () => {
     if (!selectedSplitId || selectedSplitId === currentSplit?.id) {
       onHide();
       return;
@@ -106,6 +204,11 @@ export default function SplitSelectionModal({
       setCurrentSplit(newSplit);
       setSuccessMessage(`Workout split changed to "${newSplit?.name}". This will apply to your next workout program.`);
       
+      // ✅ BETTER: Update cache with new current split
+      if (cacheRef.current.data) {
+        cacheRef.current.data.currentSplit = newSplit;
+      }
+      
       // Notify parent component
       if (onSplitChanged) {
         onSplitChanged(newSplit);
@@ -122,16 +225,17 @@ export default function SplitSelectionModal({
     } finally {
       setSaving(false);
     }
-  };
+  }, [selectedSplitId, currentSplit?.id, token, splits, onSplitChanged, onHide]);
 
-  const getSplitSummary = (split) => {
+  // ✅ OPTIMIZED: Memoized utility functions
+  const getSplitSummary = useCallback((split) => {
     if (!split.summary) return '';
     
     const { workout_days, total_exercises, exercises_per_day } = split.summary;
     return `${workout_days} workout days • ${total_exercises} exercises • ~${exercises_per_day} per day`;
-  };
+  }, []);
 
-  const getSplitDescription = (splitType) => {
+  const getSplitDescription = useCallback((splitType) => {
     const descriptions = {
       'upper_lower': 'Alternates between upper body and lower body focus days',
       'push_pull_legs': 'Separates pushing, pulling, and leg movements',
@@ -139,10 +243,10 @@ export default function SplitSelectionModal({
       'full_body': 'Works all major muscle groups each session'
     };
     return descriptions[splitType] || 'Structured workout routine';
-  };
+  }, []);
 
-  // ✅ NEW: Get clean split title with status indicator
-  const getSplitTitle = (split) => {
+  // ✅ OPTIMIZED: Memoized split title function
+  const getSplitTitle = useCallback((split) => {
     const isDefault = split.is_default;
     const isCurrent = split.id === currentSplit?.id;
     
@@ -165,8 +269,9 @@ export default function SplitSelectionModal({
     }
     
     return split.name;
-  };
+  }, [currentSplit?.id]);
 
+  // Don't render if modal is not shown
   if (!show) return null;
 
   return (
@@ -193,7 +298,7 @@ export default function SplitSelectionModal({
             <div className="split-modal-error">
               <strong>Error:</strong> {error}
               <div>
-                <button className="split-modal-error-retry" onClick={fetchData}>
+                <button className="split-modal-error-retry" onClick={handleRetry}>
                   Try Again
                 </button>
               </div>
@@ -232,7 +337,6 @@ export default function SplitSelectionModal({
                         />
                       </div>
                       <div className="split-option-details">
-                        {/* ✅ SIMPLIFIED: Clean header without badges */}
                         <div className="split-option-header">
                           <h6 className="split-option-name">
                             {getSplitTitle(split)}

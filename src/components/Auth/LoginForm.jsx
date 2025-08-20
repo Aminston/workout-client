@@ -1,6 +1,6 @@
 // src/components/Auth/LoginForm.jsx - Complete with React Icons
 import React, { useState } from 'react';
-import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { Modal, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import { IoEye, IoEyeOff } from 'react-icons/io5';
 import './AuthModal.css';
 
@@ -63,14 +63,15 @@ export default function LoginForm({
     try {
       console.log('🔐 Attempting login for:', formData.email);
 
-      const basicAuth = btoa(`${formData.email}:${formData.password}`);
-
       const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${basicAuth}`
-        }
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase().trim(),
+          password: formData.password
+        }),
       });
 
       const data = await response.json();

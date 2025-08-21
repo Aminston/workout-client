@@ -1,8 +1,7 @@
-/* WeeklyWorkout.jsx - Fixed with completed workout support */
+/* WeeklyWorkout.jsx - Updated for New Day_Number Format with Rest Days */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './WeeklyWorkout.css'; 
-import { CATEGORY_CLASSES } from '../../../constants/enums';
+import './WeeklyWorkout.css';
 
 export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized, loadingWorkout = false }) {
   const navigate = useNavigate();
@@ -44,7 +43,6 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
   };
 
   // Helper function to calculate workout completion status
-  // Make /schedule the single source of truth
   const getWorkoutStatus = (workouts) => {
     let totalSets = 0;
     let completedSets = 0;
@@ -52,7 +50,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
     let lastActivityDate = null;
 
     workouts.forEach(workout => {
-      totalSets += workout.sets;
+      totalSets += workout.sets || 0;
       
       // Count completed sets based on sessions
       const allSessions = workout.sessions || [];
@@ -79,83 +77,88 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
 
     const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
     
-    // More nuanced status detection
-    const isCompleted = progress === 100;
-    const isPartiallyCompleted = progress > 0 && progress < 100;
-    const isStarted = hasAnyActivity || progress > 0;
-    
-    // If we have recent activity but low completion, might be a session sync issue
-    const hasRecentActivity = lastActivityDate && (Date.now() - lastActivityDate < 24 * 60 * 60 * 1000); // Within 24 hours
-    const mightBeCompleted = hasRecentActivity && progress > 50; // If recent activity and >50%, might be completed
-    
-    console.log(`📊 Workout Status Analysis:`, {
-      totalSets,
-      completedSets,
-      progress: `${progress.toFixed(1)}%`,
-      hasAnyActivity,
-      hasRecentActivity,
-      mightBeCompleted,
-      lastActivityDate: lastActivityDate ? new Date(lastActivityDate).toLocaleString() : null
-    });
-    
     return {
       totalSets,
       completedSets,
-      progress,
-      isCompleted,
-      isStarted,
-      isPartiallyCompleted,
-      hasActivity: hasAnyActivity,
-      hasRecentActivity,
-      mightBeCompleted,
-      lastActivityDate
+      progress: Math.round(progress),
+      isCompleted: progress >= 100,
+      isPartiallyCompleted: progress > 0 && progress < 100,
+      isStarted: hasAnyActivity,
+      mightBeCompleted: progress >= 80, // Consider 80%+ as potentially completed
+      lastActivity: lastActivityDate ? new Date(lastActivityDate) : null
     };
   };
 
-  const handleStartWorkout = (day, category, workouts, workoutStatus) => {
-    console.log('🚀 Starting/Reviewing workout with data:', { day, category, workouts, workoutStatus });
-    
-    try {
-      // Transform workouts using session data
-      const exercises = workouts.map((workout, index) => {
-        console.log('Processing workout:', workout);
-        
-        const setsCount = workout.sets || 3;
-        
-        // Create sets with session data if available
-        const sets = Array.from({ length: setsCount }, (_, setIndex) => {
-          const setNumber = setIndex + 1;
-          const bestSession = getBestSessionForSet(workout.sessions || [], setNumber);
-          
-          return {
-            id: setNumber,
-            // Use session data if available, otherwise baseline
-            reps: bestSession ? bestSession.reps : workout.reps,
-            weight: bestSession ? bestSession.weight.value : workout.weight?.value || 0,
-            weightUnit: workout.weight?.unit || 'kg',
-            status: bestSession ? 'done' : 'pending',
-            time: bestSession?.time?.value || null,
-            timeUnit: bestSession?.time?.unit || 'seconds',
-            elapsedTime: bestSession ? bestSession.elapsed_time : null, // ✅ This was the issue!
+  // Generate complete schedule including rest days
+  const generateCompleteSchedule = (workoutDays) => {
+    if (!workoutDays || workoutDays.length === 0) return [];
 
-            // Keep baseline for comparison
-            baselineReps: workout.reps,
-            baselineWeight: workout.weight?.value || 0,
-            isModified: bestSession ? bestSession.is_modified : false,
+    // Find the maximum day_number to determine total days in split
+    const maxDayNumber = Math.max(...workoutDays.map(day => day.day_number));
+    const completeSchedule = [];
+
+    // Generate all days from 1 to maxDayNumber
+    for (let dayNum = 1; dayNum <= maxDayNumber; dayNum++) {
+      const workoutDay = workoutDays.find(day => day.day_number === dayNum);
+      
+      if (workoutDay) {
+        // This is a workout day
+        completeSchedule.push({
+          day_number: dayNum,
+          day_name: workoutDay.day_name,
+          workouts: workoutDay.workouts,
+          isRestDay: false
+        });
+      } else {
+        // This is a rest day (missing from workout data)
+        completeSchedule.push({
+          day_number: dayNum,
+          day_name: 'Rest Day',
+          workouts: [],
+          isRestDay: true
+        });
+      }
+    }
+
+    return completeSchedule;
+  };
+
+  // Handle workout/rest day navigation
+  const handleDayClick = (dayData) => {
+    if (dayData.isRestDay) {
+      // Could navigate to rest day info or just return
+      console.log('Rest day clicked - no action needed');
+      return;
+    }
+
+    try {
+      const workouts = dayData.workouts || [];
+      const workoutStatus = getWorkoutStatus(workouts);
+
+      // Generate exercise data for WorkoutDetailView
+      const exercises = workouts.map((workout, index) => {
+        const sets = [];
+        const maxSets = workout.sets || 3; // Default to 3 sets if not specified
+        
+        for (let i = 1; i <= maxSets; i++) {
+          const bestSession = getBestSessionForSet(workout.sessions || [], i);
+          sets.push({
+            setNumber: i,
+            targetReps: workout.reps || 12,
+            targetWeight: workout.weight?.value || 0,
+            actualReps: bestSession?.reps || null,
+            actualWeight: bestSession?.weight?.value || null,
+            status: bestSession ? 'done' : 'pending',
+            isModified: bestSession?.is_modified || false,
             modificationType: bestSession?.modification_type || 'unchanged',
-            
-            // Session metadata
             sessionId: bestSession?.session_id || null,
             lastUpdated: bestSession ? new Date(bestSession.created_at) : null,
-            
-            // Additional fields for WorkoutDetailView
             startTime: bestSession ? new Date(bestSession.created_at) : null,
             endTime: bestSession ? new Date(bestSession.created_at) : null,
             duration: bestSession?.time?.value || null
-          };
-        });
+          });
+        }
 
-        // Determine exercise status
         const completedSetsCount = sets.filter(s => s.status === 'done').length;
         const hasStarted = hasWorkoutStarted(workout.sessions || []);
         
@@ -166,18 +169,14 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
           exerciseStatus = 'in-progress';
         }
 
-        console.log('Generated sets for', workout.name, ':', sets);
-
         return {
-          id: workout.scheduleId, // Use scheduleId as exercise ID
+          id: workout.scheduleId || `temp-${index}`,
           scheduleId: workout.scheduleId,
           name: workout.name,
           category: workout.category,
           type: workout.type,
           sets: sets,
           status: exerciseStatus,
-          
-          // Additional metadata
           isModified: workout.is_modified,
           totalSessions: (workout.sessions || []).length,
           lastActivity: (workout.sessions || []).length > 0 ? 
@@ -186,8 +185,8 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
       });
 
       const workoutDetailData = {
-        day: day,
-        category: category,
+        day: dayData.day_name, // Use day_name instead of calendar day
+        category: '', // Remove category since we're not using it
         scheduleId: workouts[0]?.scheduleId,
         exercises: exercises,
         
@@ -198,7 +197,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
         
         // Workout state
         isCompleted: workoutStatus.isCompleted,
-        isReviewMode: workoutStatus.isCompleted, // Enable review mode for completed workouts
+        isReviewMode: workoutStatus.isCompleted,
         
         // Program metadata
         programId: meta.program_id,
@@ -207,16 +206,14 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
         userName: meta.user_name
       };
 
-      console.log('🎯 Final workout detail data:', workoutDetailData);
-      console.log('📊 Workout Status:', workoutStatus);
+      console.log('🎯 Navigating to workout:', workoutDetailData);
 
-      // Navigate to workout detail page with data
+      // Navigate to workout detail page
       navigate('/workout-detail', { 
         state: { 
           workoutData: workoutDetailData,
           meta: meta,
-          // Keep original API data for debugging
-          originalApiData: { day, category, workouts }
+          originalApiData: dayData
         } 
       });
     } catch (error) {
@@ -224,6 +221,9 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
       alert('Error loading workout. Please try again.');
     }
   };
+
+  // Generate complete schedule with rest days
+  const completeSchedule = generateCompleteSchedule(personalized);
 
   return (
     <div className="workout-container">
@@ -234,28 +234,38 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
         </div>
       ) : (
         <div className="workout-days-container">
-          {personalized.map(({ day, category, workouts }) => {
-            // Calculate workout status
+          {completeSchedule.map((dayData) => {
+            if (dayData.isRestDay) {
+              // REST DAY CARD - Compact version
+              return (
+                <div key={dayData.day_number} className="workout-day-card rest-day-card">
+                  <div className="day-header">
+                    <div className="day-info">
+                      <span className="day-title">{dayData.day_name}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="workout-day-footer">
+                    <button className="rest-day-btn" disabled>
+                      🛌 Rest Day
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // WORKOUT DAY CARD
+            const workouts = dayData.workouts || [];
             const workoutStatus = getWorkoutStatus(workouts);
             
-            // Enhanced logging for debugging
-            console.log(`📅 ${day} Workout Status:`, {
-              ...workoutStatus,
-              exercisesWithSessions: workouts.filter(w => w.sessions && w.sessions.length > 0).length,
-              totalExercises: workouts.length
-            });
-            
             return (
-              <div key={day} className="workout-day-card">
-                {/* Day Header - FIXED STRUCTURE */}
+              <div key={dayData.day_number} className="workout-day-card">
+                {/* Day Header - Clean with descriptive name as title */}
                 <div className="day-header">
                   <div className="day-info">
-                    <span className="day-title">{day}</span>
+                    <span className="day-title">{dayData.day_name}</span>
                     <span className="workout-summary">{workouts.length} exercises</span>
                   </div>
-                  <span className={`category-badge ${CATEGORY_CLASSES[category] || 'category-badge--default'}`}>
-                    {category}
-                  </span>
                 </div>
 
                 {/* Progress bar only - no text */}
@@ -283,15 +293,15 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
                       workoutStatus.isPartiallyCompleted ? 'partial' :
                       workoutStatus.isStarted ? 'resume' : 'start'
                     }`}
-                    onClick={() => handleStartWorkout(day, category, workouts, workoutStatus)}
+                    onClick={() => handleDayClick(dayData)}
                   >
                     {workoutStatus.isCompleted 
                       ? '📋 Review Workout' 
-                        : workoutStatus.isPartiallyCompleted
-                          ? '⚠️ Continue Workout'
-                          : workoutStatus.isStarted 
-                            ? '▶️ Resume Workout' 
-                            : '🏋️ Start Workout'
+                      : workoutStatus.isPartiallyCompleted
+                        ? '⚡ Continue Workout'
+                        : workoutStatus.isStarted
+                          ? '🔥 Resume Workout'
+                          : '🏋️ Start Workout'
                     }
                   </button>
                 </div>

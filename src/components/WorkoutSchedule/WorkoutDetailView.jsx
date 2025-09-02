@@ -1,19 +1,186 @@
-import React, { useEffect, useRef, useState } from "react";
+// src/components/WorkoutSchedule/WorkoutDetailView.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 
-/* ================== helpers ================== */
+/* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
-const num = (v, fallback = 0) => Number(v ?? fallback); // NaN-safe numeric fallback
+const nnum = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
+const numOr = (v, fb = 0) => (Number.isFinite(Number(v)) ? Number(v) : fb);
 
-const calcElapsed = (startTime, endTime) => {
-  if (!startTime || !endTime) return null;
-  const t = new Date(endTime) - new Date(startTime);
-  if (!Number.isFinite(t)) return null;
-  return Math.round(t / 100) / 10; // tenths of a second
+/* ---- tolerant session field readers (backend varies slightly) ---- */
+const isCompleted = (s) => {
+  const v = s?.set_status ?? s?.status ?? s?.state ?? null;
+  if (v == null) return false;
+  if (typeof v === "number") return v === 1;
+  const sv = String(v).toLowerCase();
+  return sv === "completed" || sv === "done" || sv === "complete";
+};
+const getSetNumber = (s) =>
+  Number(s.set_number ?? s.setNumber ?? s.set_index ?? s.setIndex ?? NaN);
+const getCreatedAt = (s) =>
+  s.created_at || s.createdAt || s.saved_at || s.savedAt || null;
+
+/* ================== transform day -> exercises ================== */
+/** Normalize raw sessions to a consistent shape; do NOT inject base fallbacks. */
+function normalizeSessions(raw) {
+  const sessions = Array.isArray(raw) ? raw : [];
+  return sessions
+    .map((s) => {
+      const sn = getSetNumber(s);
+      if (!Number.isInteger(sn) || sn < 1) return null;
+
+      // normalize weight to object with value+unit if possible
+      const weight =
+        s.weight?.value != null
+          ? { value: nnum(s.weight.value), unit: s.weight.unit || "kg" }
+          : s.weight_value != null
+          ? { value: nnum(s.weight_value), unit: s.weight_unit || "kg" }
+          : s.weight || null;
+
+      return {
+        ...s,
+        set_number: sn,
+        created_at: getCreatedAt(s),
+        weight,
+        reps: nnum(s.reps),
+        time: s.time || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Build exercises WITHOUT fabricating base reps/weight:
+ * - total sets = provided base `sets` OR max set_number in sessions OR 0
+ * - completed sets come from sessions only
+ * - others are pending (0/0)
+ */
+function buildExercisesFromDay(dayData) {
+  if (!dayData || !Array.isArray(dayData.workouts)) {
+    throw new Error("Invalid workout data: missing workouts array.");
+  }
+
+  return dayData.workouts.map((w) => {
+    const {
+      scheduleId,
+      workout_id,
+      name,
+      category,
+      type,
+      sets: baseSets, // may be null
+      sessions: rawSessions,
+    } = w;
+
+    const sessions = normalizeSessions(rawSessions);
+
+    // Determine total sets
+    const maxSessionSet = sessions.reduce(
+      (m, s) => Math.max(m, Number(s.set_number || 0)),
+      0
+    );
+    const totalSets =
+      Number.isInteger(baseSets) && baseSets > 0 ? baseSets : maxSessionSet;
+
+    // Pick latest completed per set_number (created_at desc, then session_id)
+    const latestBySet = {};
+    for (const s of sessions) {
+      const sn = s.set_number;
+      const existing = latestBySet[sn];
+      if (!existing) {
+        latestBySet[sn] = s;
+        continue;
+      }
+      const a = new Date(toIso(getCreatedAt(existing))).getTime() || 0;
+      const b = new Date(toIso(getCreatedAt(s))).getTime() || 0;
+      if (b > a) latestBySet[sn] = s;
+      else if (b === a) {
+        const ea = Number(existing.session_id ?? existing.sessionId ?? 0);
+        const eb = Number(s.session_id ?? s.sessionId ?? 0);
+        if (eb > ea) latestBySet[sn] = s;
+      }
+    }
+
+    const sets = [];
+    for (let i = 1; i <= totalSets; i++) {
+      const s = latestBySet[i];
+      if (s && isCompleted(s)) {
+        const weightKg = weightConverter.normalize(s.weight);
+        sets.push({
+          id: i,
+          reps: numOr(s.reps, 0),
+          weight: numOr(weightKg, 0),
+          weightUnit: s.weight?.unit || "kg",
+          duration: s.elapsed_time != null ? Number(s.elapsed_time) : (s.time?.value ?? null),
+          status: "done",
+          completedAt: getCreatedAt(s),
+          isFromSession: true,
+          isSynced: true,
+        });
+      } else {
+      // Pending - use program defaults (base reps & weight)
+      sets. push ({
+        id: i,
+        reps: numOr(w. reps, 0), weight: numOr(w.weight?. value, 0), weightUnit: w.weight?.unit || "kg", duration: null, status: "pending", completedAt: null, isFromSession: false, isSynced: false,
+        }) ;
+      }
+    }
+
+    const done = sets.filter((x) => x.status === "done").length;
+    const status =
+      done === sets.length && sets.length > 0
+        ? "done"
+        : done > 0
+        ? "in-progress"
+        : "pending";
+
+    return {
+      id: scheduleId,
+      scheduleId,
+      workout_id,
+      name,
+      category,
+      type,
+      sets,
+      status,
+    };
+  });
+}
+
+/* ================== API helpers ================== */
+const getApiUrl = (endpoint) => {
+  const base = import.meta.env.VITE_API_URL || "http://localhost:3000";
+  return `${base}${endpoint}`;
+};
+const getAuthHeaders = () => {
+  const token =
+    localStorage.getItem("jwt_token") || localStorage.getItem("X-API-Token");
+  return {
+    "Content-Type": "application/json",
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
 };
 
+/** Build the camelCase payload expected by /sessions/save */
+function toApiSession(exercise, sets) {
+  return {
+    scheduleId: exercise.scheduleId,
+    status: "completed",
+    performedSets: sets.map((s) => {
+      const out = {
+        setNumber: s.id,
+        weightUnit: s.weightUnit || "kg",
+      };
+      if (Number.isFinite(Number(s.reps))) out.reps = Number(s.reps);
+      if (Number.isFinite(Number(s.weight))) out.weight = Number(s.weight);
+      if (Number.isFinite(Number(s.duration))) out.elapsedTime = Number(s.duration);
+      return out;
+    }),
+  };
+}
+
+/* ================== UI helpers ================== */
 const fmtElapsed = (sec) => {
   if (sec == null) return "-";
   if (sec < 60) return sec % 1 === 0 ? `${sec}s` : `${sec.toFixed(1)}s`;
@@ -22,139 +189,46 @@ const fmtElapsed = (sec) => {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 };
 
-/** Build sets STRICTLY by position 1..N.
- *  - Picks latest completed session per set_number (created_at desc, then session_id desc)
- *  - Fills gaps as pending
- */
-function buildSetsFromWorkout(workout) {
-  const latestBySet = {};
-  if (Array.isArray(workout.sessions)) {
-    for (const s of workout.sessions) {
-      if (s?.set_status !== "completed") continue;
-      const sn = Number(s.set_number);
-      if (!Number.isInteger(sn)) continue;
-
-      const total = num(workout.sets, 0);
-      if (sn < 1 || (total > 0 && sn > total)) continue;
-
-      const curr = latestBySet[sn];
-      if (!curr) {
-        latestBySet[sn] = s;
-      } else {
-        const currTs = new Date(toIso(curr.created_at)).getTime() || 0;
-        const nextTs = new Date(toIso(s.created_at)).getTime() || 0;
-        if (nextTs > currTs) latestBySet[sn] = s;
-        else if (nextTs === currTs) {
-          const currId = num(curr.session_id, 0);
-          const nextId = num(s.session_id, 0);
-          if (nextId > currId) latestBySet[sn] = s;
-        }
-      }
-    }
-  }
-
-  const sets = [];
-  const total = num(workout.sets, 3);
-
-  for (let setNum = 1; setNum <= total; setNum++) {
-    const session = latestBySet[setNum];
-
-    if (session) {
-      sets.push({
-        id: setNum,
-        reps: num(session.reps, workout.reps),
-        weight: num(session.weight?.value, workout.weight?.value),
-        weightUnit: session.weight?.unit || workout.weight?.unit || "kg",
-        elapsedTime: session.elapsed_time ?? null,
-        status: "done",
-        completedAt: session.created_at,
-        isFromSession: true,
-        isSynced: true,
-      });
-    } else {
-      sets.push({
-        id: setNum,
-        reps: num(workout.reps, 0),
-        weight: num(workout.weight?.value, 0),
-        weightUnit: workout.weight?.unit || "kg",
-        elapsedTime: null,
-        status: "pending",
-        completedAt: null,
-        isFromSession: false,
-        isSynced: false,
-      });
-    }
-  }
-
-  const done = sets.filter((s) => s.status === "done").length;
-  const status =
-    done === sets.length && sets.length > 0
-      ? "done"
-      : done > 0
-      ? "in-progress"
-      : "pending";
-
-  return { sets, status };
-}
-
-/* ================== component ================== */
+/* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Core state
+  // state
   const [exercises, setExercises] = useState([]);
-  const [totalSets, setTotalSets] = useState(0);
-  const [completedSets, setCompletedSets] = useState(0);
-  const [workoutData, setWorkoutData] = useState(null);
+  const [workoutMeta, setWorkoutMeta] = useState(null);
+  const [useMetric, setUseMetric] = useState(true);
+  const [editing, setEditing] = useState(null); // {exerciseId,setId,field}
+  const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // UI state
-  const [editingCell, setEditingCell] = useState(null);
-  const [useMetric, setUseMetric] = useState(true);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
+  const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
 
-  // Prevent duplicate POSTs per set
-  const inFlightSaves = useRef(new Set()); // keys like `${exerciseId}-${setId}`
+  // derived
+  const totalSets = useMemo(
+    () => exercises.reduce((sum, e) => sum + e.sets.length, 0),
+    [exercises]
+  );
+  const completedSets = useMemo(
+    () => exercises.flatMap((e) => e.sets).filter((s) => s.status === "done").length,
+    [exercises]
+  );
+  const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
 
-  /* ---------- API helpers ---------- */
-  const getApiUrl = (endpoint) => {
-    const base = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    return `${base}${endpoint}`;
-  };
-  const getAuthHeaders = () => {
-    const token =
-      localStorage.getItem("jwt_token") || localStorage.getItem("X-API-Token");
-    return {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
-  };
-
-  /* ---------- counters derived from state ---------- */
+  /* ---------- load day data from router state ---------- */
   useEffect(() => {
-    const all = exercises.flatMap((e) => e.sets);
-    setCompletedSets(all.filter((s) => s.status === "done").length);
-    setTotalSets(exercises.reduce((sum, e) => sum + e.sets.length, 0));
-  }, [exercises]);
+    let mounted = true;
 
-  /* ---------- data loader ---------- */
-  useEffect(() => {
-    let isMounted = true;
-
-    const processWorkoutData = async () => {
+    (async () => {
       try {
-        // Hard reset first (prevents stale merges with previous view)
-        setExercises([]);
-        setTotalSets(0);
-        setCompletedSets(0);
-        setHasUnsavedChanges(false);
-        setSaveStatus(null);
         setLoading(true);
         setError(null);
+        setExercises([]);
+        setHasUnsaved(false);
+        setSaveStatus(null);
 
         const originalApiData = location.state?.originalApiData;
         const passedWorkoutData = location.state?.workoutData;
@@ -162,132 +236,158 @@ export default function WorkoutDetailView() {
           originalApiData ??
           (passedWorkoutData && passedWorkoutData.originalApiData);
 
-        if (!dayData) throw new Error("API data not found.");
+        if (!dayData) throw new Error("API data not found");
         if (!Array.isArray(dayData.workouts))
           throw new Error("Invalid workout data: missing workouts array.");
 
-        const meta = { day: dayData.day_name || `Day ${dayData.day_number}` };
+        const built = buildExercisesFromDay(dayData);
+        if (!mounted) return;
 
-        const builtExercises = dayData.workouts.map((w) => {
-          const { sets, status } = buildSetsFromWorkout(w);
-          return {
-            id: w.scheduleId,
-            scheduleId: w.scheduleId,
-            workout_id: w.workout_id,
-            name: w.name,
-            category: w.category,
-            type: w.type,
-            sets,
-            status,
-          };
+        setExercises(built);
+        setWorkoutMeta({
+          day: dayData.day_name || `Day ${dayData.day_number}`,
         });
-
-        if (!isMounted) return;
-        setWorkoutData(meta);
-        setExercises(builtExercises);
       } catch (e) {
-        if (isMounted) setError(e.message || "Failed to load workout.");
+        if (mounted) setError(e.message || "Failed to load workout");
       } finally {
-        if (isMounted) setLoading(false);
+        if (mounted) setLoading(false);
       }
-    };
+    })();
 
-    processWorkoutData();
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-    // Re-run if route changes or state actually changes
   }, [location.key, JSON.stringify(location.state)]);
 
-  /* ---------- progressive single-set save ---------- */
-  const saveSetProgressive = async (exerciseId, setData) => {
-    const key = `${exerciseId}-${setData.id}`;
-    if (inFlightSaves.current.has(key)) return;
-    inFlightSaves.current.add(key);
-
-    try {
-      const exercise = exercises.find((e) => e.id === exerciseId);
-      if (!exercise) return;
-
-      const token =
-        localStorage.getItem("jwt_token") || localStorage.getItem("X-API-Token");
-      if (!token) return;
-
-      const workoutSessions = [
-        {
-          scheduleId: exercise.scheduleId,
-          status: "completed",
-          performedSets: [
-            {
-              setNumber: setData.id,
-              reps: setData.reps,
-              weight: setData.weight,
-              weightUnit: setData.weightUnit || "kg",
-              elapsedTime: setData.elapsedTime,
-            },
-          ],
-        },
-      ];
-
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 30000);
-
-      const res = await fetch(getApiUrl("/sessions/save"), {
-        method: "POST",
-        signal: controller.signal,
-        headers: {
-          ...getAuthHeaders(),
-          "X-Client-Type": "mobile-webapp-progressive",
-        },
-        body: JSON.stringify({ workoutSessions }),
-      });
-
-      clearTimeout(t);
-      if (!res.ok) throw new Error(`Progressive save failed: ${res.status}`);
-
-      // mark as synced
-      setExercises((prev) =>
-        prev.map((ex) =>
-          ex.id !== exerciseId
-            ? ex
-            : {
-                ...ex,
-                sets: ex.sets.map((s) =>
-                  s.id !== setData.id
-                    ? s
-                    : {
-                        ...s,
-                        isSynced: true,
-                        progressivelySaved: true,
-                        lastSaved: new Date().toISOString(),
-                      }
-                ),
-              }
-        )
-      );
-    } catch {
-      // silent; bulk save will handle retries/alerts
-    } finally {
-      inFlightSaves.current.delete(key);
-    }
+  /* ---------- actions ---------- */
+  const handleStart = (exerciseId, setId) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id !== exerciseId
+          ? ex
+          : {
+              ...ex,
+              sets: ex.sets.map((s) =>
+                s.id !== setId
+                  ? s
+                  : { ...s, status: "in-progress", startedAt: new Date().toISOString() }
+              ),
+            }
+      )
+    );
   };
 
-  /* ---------- bulk save (only unsynced) ---------- */
-  const handleManualSave = async () => {
-    if (!hasUnsavedChanges || isSaving) return;
-
-    setIsSaving(true);
-    setSaveStatus("saving");
-    const token =
-      localStorage.getItem("jwt_token") || localStorage.getItem("X-API-Token");
-
-    if (!token) {
-      setHasUnsavedChanges(false);
-      setIsSaving(false);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(null), 2000);
+  const handleComplete = (exerciseId, setId) => {
+    const key = `${exerciseId}-${setId}`;
+    if (inFlight.current.has(key)) return;
+    inFlight.current.add(key);
+  
+    // 1) Read current snapshot to build the next set FIRST
+    const ex = exercises.find(e => e.id === exerciseId);
+    if (!ex) {
+      inFlight.current.delete(key);
       return;
     }
+    const prevSet = ex.sets.find(s => s.id === setId);
+    if (!prevSet) {
+      inFlight.current.delete(key);
+      return;
+    }
+  
+    const completedAt = new Date().toISOString();
+    const duration = prevSet.startedAt
+      ? Math.max(0, (new Date(completedAt) - new Date(prevSet.startedAt)) / 1000)
+      : (Number.isFinite(Number(prevSet.duration)) ? Number(prevSet.duration) : null);
+  
+    const nextSet = {
+      ...prevSet,
+      status: "done",
+      duration,
+      completedAt,
+      isFromSession: false,
+      isSynced: false,
+      saveError: false,
+    };
+  
+    // 2) Optimistic UI update
+    setExercises(prev =>
+      prev.map(e =>
+        e.id !== exerciseId
+          ? e
+          : {
+              ...e,
+              sets: e.sets.map(s => (s.id === setId ? nextSet : s)),
+              status: (() => {
+                const done = e.sets.map(s => (s.id === setId ? nextSet : s)).filter(s => s.status === "done").length;
+                return done === e.sets.length && e.sets.length > 0
+                  ? "done"
+                  : done > 0
+                  ? "in-progress"
+                  : "pending";
+              })(),
+            }
+      )
+    );
+  
+    // 3) Fire the request (always), then mark synced or error
+    (async () => {
+      try {
+        await saveSingleSet(ex, nextSet); // POST /sessions/save
+        setExercises(curr =>
+          curr.map(e =>
+            e.id !== exerciseId
+              ? e
+              : {
+                  ...e,
+                  sets: e.sets.map(s =>
+                    s.id !== setId
+                      ? s
+                      : { ...s, isSynced: true, isFromSession: true, lastSaved: new Date().toISOString(), saveError: false }
+                  ),
+                }
+          )
+        );
+      } catch (err) {
+        // Show retryable state
+        setExercises(curr =>
+          curr.map(e =>
+            e.id !== exerciseId
+              ? e
+              : {
+                  ...e,
+                  sets: e.sets.map(s =>
+                    s.id !== setId ? s : { ...s, isSynced: false, saveError: true }
+                  ),
+                }
+          )
+        );
+        setHasUnsaved(true);
+        console.warn("Save failed:", err);
+      } finally {
+        inFlight.current.delete(key);
+      }
+    })();
+  };
+  
+
+  async function saveSingleSet(exercise, setData) {
+    const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
+    const res = await fetch(getApiUrl("/sessions/save"), {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      throw new Error(`Save failed: ${res.status} ${t}`);
+    }
+    return res.json();
+  }
+
+  const handleManualSave = async () => {
+    if (!hasUnsaved || isSaving) return;
+    setIsSaving(true);
+    setSaveStatus("saving");
 
     try {
       const toSave = exercises
@@ -302,144 +402,81 @@ export default function WorkoutDetailView() {
         .filter((x) => x.sets.length > 0);
 
       if (toSave.length === 0) {
-        setHasUnsavedChanges(false);
-        setIsSaving(false);
+        setHasUnsaved(false);
         setSaveStatus("saved");
-        setTimeout(() => setSaveStatus(null), 2000);
+        setTimeout(() => setSaveStatus(null), 1200);
         return;
       }
 
-      const workoutSessions = toSave.map(({ ex, sets }) => ({
-        scheduleId: ex.scheduleId,
-        status: "completed",
-        performedSets: sets.map((s) => {
-          const elapsedTime = calcElapsed(s.startTime, s.completedAt);
-          return {
-            setNumber: s.id,
-            reps: s.reps,
-            weight: s.weight,
-            weightUnit: s.weightUnit || "kg",
-            ...(elapsedTime != null ? { elapsedTime } : {}),
-          };
-        }),
-      }));
-
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), 45000);
+      const workoutSessions = toSave.map(({ ex, sets }) =>
+        toApiSession(
+          ex,
+          sets.map((s) => ({
+            ...s,
+            duration:
+              Number.isFinite(Number(s.duration))
+                ? Number(s.duration)
+                : s.completedAt && s.startedAt
+                ? Math.max(0, (new Date(s.completedAt) - new Date(s.startedAt)) / 1000)
+                : undefined,
+          }))
+        )
+      );
 
       const res = await fetch(getApiUrl("/sessions/save"), {
         method: "POST",
-        signal: controller.signal,
-        headers: { ...getAuthHeaders(), "X-Client-Type": "mobile-webapp-bulk" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ workoutSessions }),
       });
-
-      clearTimeout(t);
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || res.statusText);
+        const t = await res.text().catch(() => "");
+        throw new Error(`Save failed: ${res.status} ${t}`);
       }
 
-      const result = await res.json();
-      const sessions =
-        (result.success && result.sessions) ||
-        (result.scheduleId && result.savedSets && [result]);
-      if (!sessions) throw new Error("Invalid save response format");
-
-      // mark saved sets
+      const included = new Set(
+        toSave.flatMap(({ ex, sets }) => sets.map((s) => `${ex.id}#${s.id}`))
+      );
       setExercises((prev) =>
-        prev.map((ex) => {
-          const exResult = sessions.find((s) => s.scheduleId === ex.scheduleId);
-          if (!exResult) return ex;
-          return {
-            ...ex,
-            sets: ex.sets.map((s) => {
-              const saved = exResult.savedSets?.find((ss) => ss.setNumber === s.id);
-              if (!saved) return s;
-              return {
-                ...s,
-                isModified: false,
-                isSynced: true,
-                lastSaved: new Date().toISOString(),
-                isFromSession: s.status === "done" ? true : s.isFromSession,
-                elapsedTime:
-                  saved.elapsedTime ??
-                  s.elapsedTime ??
-                  calcElapsed(s.startTime, s.completedAt),
-              };
-            }),
-          };
-        })
+        prev.map((ex) => ({
+          ...ex,
+          sets: ex.sets.map((s) =>
+            included.has(`${ex.id}#${s.id}`)
+              ? {
+                  ...s,
+                  isSynced: true,
+                  isFromSession: s.status === "done" ? true : s.isFromSession,
+                  isModified: false,
+                  lastSaved: new Date().toISOString(),
+                }
+              : s
+          ),
+        }))
       );
 
-      setHasUnsavedChanges(false);
+      setHasUnsaved(false);
       setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(null), 2000);
+      setTimeout(() => setSaveStatus(null), 1200);
     } catch (e) {
       setSaveStatus("error");
-      const msg =
-        e.name === "AbortError"
-          ? "Save timed out. Try again."
-          : e.message?.match(/401|403/)
-          ? "Session expired. Please log in again."
-          : `Failed to save workout: ${e.message}`;
-      alert(msg);
-      setTimeout(() => setSaveStatus(null), 3000);
+      alert(e.message || "Failed to save workout");
+      setTimeout(() => setSaveStatus(null), 1800);
     } finally {
       setIsSaving(false);
     }
   };
 
-  /* ---------- set actions & editing ---------- */
-  const handleSetAction = (exerciseId, setId, action) => {
-    setExercises((prev) =>
-      prev.map((ex) => {
-        if (ex.id !== exerciseId) return ex;
-        const sets = ex.sets.map((s) => {
-          if (s.id !== setId) return s;
-          if (action === "start")
-            return { ...s, status: "in-progress", startTime: new Date().toISOString() };
-          if (action === "complete") {
-            const completedAt = new Date().toISOString();
-            const elapsedTime = calcElapsed(s.startTime, completedAt);
-            const next = {
-              ...s,
-              status: "done",
-              isFromSession: false,
-              isSynced: false,
-              elapsedTime,
-              completedAt,
-            };
-            setHasUnsavedChanges(true);
-            saveSetProgressive(exerciseId, next); // fire-and-forget
-            return next;
-          }
-          return s;
-        });
+  /* ---------- inline editing ---------- */
+  const onCellClick = (exerciseId, setId, field) =>
+    setEditing({ exerciseId, setId, field });
 
-        const done = sets.filter((s) => s.status === "done").length;
-        const status =
-          done === sets.length && sets.length > 0
-            ? "done"
-            : done > 0
-            ? "in-progress"
-            : "pending";
-        return { ...ex, sets, status };
-      })
-    );
-  };
-
-  const handleCellClick = (exerciseId, setId, field) =>
-    setEditingCell({ exerciseId, setId, field });
-
-  const handleCellEdit = (exerciseId, setId, field, value) => {
-    let processed = value;
+  const onCellEdit = (exerciseId, setId, field, raw) => {
+    let val = raw;
     if (field === "weight") {
-      processed = useMetric
-        ? Math.round(Math.max(0, parseFloat(value) || 0) * 2) / 2
-        : weightConverter.lbsToKg(Math.max(0, parseInt(value) || 0));
+      val = useMetric
+        ? Math.max(0, parseFloat(raw) || 0)
+        : weightConverter.lbsToKg(Math.max(0, parseInt(raw) || 0));
     } else if (field === "reps") {
-      processed = Math.max(0, parseInt(value) || 0);
+      val = Math.max(0, parseInt(raw) || 0);
     }
 
     setExercises((prev) =>
@@ -455,30 +492,31 @@ export default function WorkoutDetailView() {
                       ...s,
                       isModified: true,
                       isSynced: false,
-                      ...(field === "weight" ? { weight: processed } : {}),
-                      ...(field === "reps" ? { reps: processed } : {}),
+                      ...(field === "weight" ? { weight: val } : {}),
+                      ...(field === "reps" ? { reps: val } : {}),
                     }
               ),
             }
       )
     );
-    setEditingCell(null);
-    setHasUnsavedChanges(true);
+    setEditing(null);
+    setHasUnsaved(true);
   };
 
   const renderEditableCell = (exercise, set, field) => {
     const isEditing =
-      editingCell?.exerciseId === exercise.id &&
-      editingCell?.setId === set.id &&
-      editingCell?.field === field;
+      editing?.exerciseId === exercise.id &&
+      editing?.setId === set.id &&
+      editing?.field === field;
 
     if (isEditing) {
       const display =
         field === "weight"
           ? useMetric
-            ? set.weight
+            ? numOr(set.weight, 0)
             : Math.round(weightConverter.kgToLbs(set.weight || 0))
-          : set[field];
+          : set[field] ?? 0;
+
       return (
         <input
           type="number"
@@ -486,15 +524,15 @@ export default function WorkoutDetailView() {
           defaultValue={display}
           autoFocus
           onFocus={(e) => e.target.select()}
-          onBlur={(e) => handleCellEdit(exercise.id, set.id, field, e.target.value)}
+          onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter")
-              handleCellEdit(exercise.id, set.id, field, e.target.value);
-            if (e.key === "Escape") setEditingCell(null);
+              onCellEdit(exercise.id, set.id, field, e.target.value);
+            if (e.key === "Escape") setEditing(null);
           }}
           min="0"
           step={field === "weight" ? (useMetric ? "0.5" : "1") : "1"}
-          placeholder={field === "weight" ? (useMetric ? "kg" : "lbs") : "reps"}
+          placeholder={field === "weight" ? (useMetric ? "kg" : "lb") : "reps"}
         />
       );
     }
@@ -503,58 +541,32 @@ export default function WorkoutDetailView() {
       field === "weight"
         ? weightConverter.display(set.weight, useMetric)
         : set[field] ?? "-";
+
     let cls = `editable-cell ${set.isFromSession ? "from-session" : "from-base"}`;
     if (set.isModified) cls += " modified";
-    if (set.isSynced) cls += " synced";
+    if (set.isSynced) cls += " saved";
 
     return (
       <span
         className={cls}
-        onClick={() => handleCellClick(exercise.id, set.id, field)}
+        onClick={() => onCellClick(exercise.id, set.id, field)}
         title={`Click to edit ${field}`}
       >
         {display}
-        {set.isSynced && <span className="sync-indicator">✓</span>}
       </span>
-    );
-  };
-
-  const getActionButton = (set, exerciseId, setId) => {
-    if (set.status === "done")
-      return (
-        <span className={`status-badge status-done ${set.isSynced ? "synced" : "pending-sync"}`}>
-          Done {set.isSynced ? "✓" : "Saving..."}
-        </span>
-      );
-    if (set.status === "in-progress")
-      return (
-        <button
-          className="btn btn-warning btn-sm"
-          onClick={() => handleSetAction(exerciseId, setId, "complete")}
-        >
-          End
-        </button>
-      );
-    return (
-      <button
-        className="btn btn-success btn-sm"
-        onClick={() => handleSetAction(exerciseId, setId, "start")}
-      >
-        Start
-      </button>
     );
   };
 
   /* ---------- leave warning ---------- */
   useEffect(() => {
     const onBeforeUnload = (e) => {
-      if (!hasUnsavedChanges) return;
+      if (!hasUnsaved) return;
       e.preventDefault();
       e.returnValue = "You have unsaved workout data. Save before leaving!";
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [hasUnsavedChanges]);
+  }, [hasUnsaved]);
 
   /* ---------- UI ---------- */
   if (loading) {
@@ -580,12 +592,11 @@ export default function WorkoutDetailView() {
       </div>
     );
   }
-  if (!workoutData) {
+  if (!workoutMeta) {
     return (
       <div className="workout-detail-container">
         <div className="workout-error">
           <h3>No workout data available</h3>
-          <p>Please navigate from the schedule page to load workout data.</p>
           <button className="btn btn-primary" onClick={() => navigate("/schedule")}>
             Back to Schedule
           </button>
@@ -594,8 +605,6 @@ export default function WorkoutDetailView() {
     );
   }
 
-  const progressPct = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
-
   return (
     <div className="workout-detail-container">
       {/* Header */}
@@ -603,13 +612,13 @@ export default function WorkoutDetailView() {
         <button
           className="back-button"
           onClick={() => {
-            if (hasUnsavedChanges && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+            if (hasUnsaved && !window.confirm("You have unsaved changes. Leave without saving?")) return;
             navigate("/schedule");
           }}
         >
           Back
         </button>
-        <h1 className="workout-title">{workoutData.day}</h1>
+        <h1 className="workout-title">{workoutMeta.day}</h1>
       </div>
 
       {/* Progress */}
@@ -621,13 +630,13 @@ export default function WorkoutDetailView() {
           </div>
         </div>
         <p className="progress-text">
-          {completedSets} of {totalSets} sets completed ({Math.round(progressPct)}%)
+          {completedSets} of {totalSets} sets completed ({progressPct}%)
         </p>
 
-        {hasUnsavedChanges && (
+        {hasUnsaved && (
           <>
             <div className="unsaved-indicator">
-              You have unsaved changes. Sets save automatically when completed, or click "Save Workout" to save all.
+              You have unsaved changes. Completed sets auto-save, or click "Save Workout" to save all.
             </div>
             <div className="save-controls">
               <button className="save-button" onClick={handleManualSave} disabled={isSaving}>
@@ -652,7 +661,7 @@ export default function WorkoutDetailView() {
           className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
           onClick={() => setUseMetric((v) => !v)}
         >
-          Display: {useMetric ? "Metric (kg)" : "Imperial (lbs)"}
+          Display: {useMetric ? "Metric (kg)" : "Imperial (lb)"}
         </button>
       </div>
 
@@ -676,7 +685,15 @@ export default function WorkoutDetailView() {
               >
                 {exercise.name}
               </h3>
-              <span className={`exercise-status-badge ${exercise.status}`}>
+              <span
+                className={`exercise-status-badge ${
+                  exercise.status === "done"
+                    ? "exercise-done"
+                    : exercise.status === "in-progress"
+                    ? "exercise-progress"
+                    : ""
+                }`}
+              >
                 {exercise.status === "pending" && "Pending"}
                 {exercise.status === "in-progress" && "In Progress"}
                 {exercise.status === "done" && "Done"}
@@ -692,32 +709,66 @@ export default function WorkoutDetailView() {
                 <span>Action</span>
               </div>
 
-              {exercise.sets.map((set) => (
-                <div
-                  key={set.id}
-                  className={`set-row ${set.status === "in-progress" ? "set-active" : ""} ${
-                    set.status === "done" ? "set-completed" : ""
-                  }`}
-                >
-                  <span className="set-number">{set.id}</span>
-                  <span className="set-weight">
-                    {renderEditableCell(exercise, set, "weight")}
+              {exercise.sets.length === 0 ? (
+                <div className="set-row">
+                  <span className="set-number" style={{ gridColumn: "1 / -1" }}>
+                    No sets available for this exercise yet.
                   </span>
-                  <span className="set-reps">
-                    {renderEditableCell(exercise, set, "reps")}
-                  </span>
-                  <span
-                    className={`set-time ${
-                      set.status === "done" && set.elapsedTime ? "completed" : "pending"
-                    }`}
-                  >
-                    {set.status === "done" && set.elapsedTime
-                      ? fmtElapsed(set.elapsedTime)
-                      : "-"}
-                  </span>
-                  <div className="set-action">{getActionButton(set, exercise.id, set.id)}</div>
                 </div>
-              ))}
+              ) : (
+                exercise.sets.map((set) => (
+                  <div
+                    key={set.id}
+                    className={`set-row ${
+                      set.status === "in-progress" ? "set-active" : ""
+                    } ${set.status === "done" ? "set-completed" : ""}`}
+                  >
+                    <span className="set-number">{set.id}</span>
+
+                    <span className="set-weight">
+                      {renderEditableCell(exercise, set, "weight")}
+                    </span>
+
+                    <span className="set-reps">
+                      {renderEditableCell(exercise, set, "reps")}
+                    </span>
+
+                    <span
+                      className={`set-time ${
+                        set.status === "done" && set.duration ? "completed" : "pending"
+                      }`}
+                    >
+                      {set.status === "done" && set.duration ? fmtElapsed(set.duration) : "-"}
+                    </span>
+
+                    <div className="set-action">
+                      {set.status === "done" ? (
+                        <span
+                          className={`status-badge status-done ${
+                            set.isSynced ? "synced" : "status-saving"
+                          }`}
+                        >
+                          {set.isSynced ? "Done ✓" : "Saving..."}
+                        </span>
+                      ) : set.status === "in-progress" ? (
+                        <button
+                          className="btn btn-warning btn-sm"
+                          onClick={() => handleComplete(exercise.id, set.id)}
+                        >
+                          End
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => handleStart(exercise.id, set.id)}
+                        >
+                          Start
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         ))}

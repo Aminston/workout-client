@@ -538,23 +538,20 @@ export default function WorkoutDetailView() {
     }
 
     const display =
-      field === "weight"
-        ? weightConverter.display(set.weight, useMetric)
-        : set[field] ?? "-";
-
-    let cls = `editable-cell ${set.isFromSession ? "from-session" : "from-base"}`;
-    if (set.isModified) cls += " modified";
-    if (set.isSynced) cls += " saved";
-
-    return (
-      <span
-        className={cls}
-        onClick={() => onCellClick(exercise.id, set.id, field)}
-        title={`Click to edit ${field}`}
-      >
-        {display}
-      </span>
-    );
+    field === "weight"
+      ? weightConverter.display(set.weight, useMetric)
+      : set[field] ?? "-";
+  
+  return (
+    <span
+      className="editable-cell"
+      onClick={() => onCellClick(exercise.id, set.id, field)}
+      title={`Click to edit ${field}`}
+    >
+      {display}
+    </span>
+  );
+  
   };
 
   /* ---------- leave warning ---------- */

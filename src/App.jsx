@@ -73,12 +73,7 @@ export default function App() {
       }
 
       setPersonalized(data.schedule || []);
-      setMeta({
-        program_id: data.program_id,
-        program_start: data.program_start,
-        expires_on: data.expires_on,
-        user_name: data.user_name || ''
-      });
+      setMeta(data);
 
       if (data.from_ai) {
         toast.show('success', '✅ Your personalized workout plan is ready!');

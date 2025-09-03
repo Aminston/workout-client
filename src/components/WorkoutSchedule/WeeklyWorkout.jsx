@@ -1,10 +1,13 @@
-/* WeeklyWorkout.jsx - Updated for New Day_Number Format with Rest Days */
-import React from 'react';
+/* WeeklyWorkout.jsx - Optimized with Enhanced Spam CTA */
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WeeklyWorkout.css';
 
 export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized, loadingWorkout = false }) {
   const navigate = useNavigate();
+  const [ctaLoading, setCtaLoading] = useState(false);
+  const [ctaError, setCtaError] = useState(null);
+  const [ctaDismissed, setCtaDismissed] = useState(false);
 
   // Helper function to get the best session for a specific set
   const getBestSessionForSet = (sessions, setNumber) => {
@@ -84,7 +87,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
       isCompleted: progress >= 100,
       isPartiallyCompleted: progress > 0 && progress < 100,
       isStarted: hasAnyActivity,
-      mightBeCompleted: progress >= 80, // Consider 80%+ as potentially completed
+      mightBeCompleted: progress >= 80,
       lastActivity: lastActivityDate ? new Date(lastActivityDate) : null
     };
   };
@@ -93,16 +96,13 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
   const generateCompleteSchedule = (workoutDays) => {
     if (!workoutDays || workoutDays.length === 0) return [];
 
-    // Find the maximum day_number to determine total days in split
     const maxDayNumber = Math.max(...workoutDays.map(day => day.day_number));
     const completeSchedule = [];
 
-    // Generate all days from 1 to maxDayNumber
     for (let dayNum = 1; dayNum <= maxDayNumber; dayNum++) {
       const workoutDay = workoutDays.find(day => day.day_number === dayNum);
       
       if (workoutDay) {
-        // This is a workout day
         completeSchedule.push({
           day_number: dayNum,
           day_name: workoutDay.day_name,
@@ -110,7 +110,6 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
           isRestDay: false
         });
       } else {
-        // This is a rest day (missing from workout data)
         completeSchedule.push({
           day_number: dayNum,
           day_name: 'Rest Day',
@@ -123,10 +122,56 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
     return completeSchedule;
   };
 
+  // Enhanced CTA handler with better UX
+  const handleCustomWorkoutCTA = async () => {
+    const token = localStorage.getItem('jwt_token');
+    
+    if (!token) {
+      setCtaError('Please login first to get your custom workout');
+      return;
+    }
+
+    setCtaLoading(true);
+    setCtaError(null);
+
+    try {
+      console.log('🎯 Requesting custom workout generation...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/personalize/plan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to generate workout`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Custom workout generated successfully:', result);
+
+      // Show success message briefly before reload
+      setCtaError(null);
+      
+      // Add a small delay for better UX feedback
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Custom workout generation failed:', error);
+      setCtaError(error.message || 'Failed to generate custom workout. Please try again.');
+    } finally {
+      setCtaLoading(false);
+    }
+  };
+
   // Handle workout/rest day navigation
   const handleDayClick = (dayData) => {
     if (dayData.isRestDay) {
-      // Could navigate to rest day info or just return
       console.log('Rest day clicked - no action needed');
       return;
     }
@@ -138,7 +183,7 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
       // Generate exercise data for WorkoutDetailView
       const exercises = workouts.map((workout, index) => {
         const sets = [];
-        const maxSets = workout.sets || 3; // Default to 3 sets if not specified
+        const maxSets = workout.sets || 3;
         
         for (let i = 1; i <= maxSets; i++) {
           const bestSession = getBestSessionForSet(workout.sessions || [], i);
@@ -185,8 +230,8 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
       });
 
       const workoutDetailData = {
-        day: dayData.day_name, // Use day_name instead of calendar day
-        category: '', // Remove category since we're not using it
+        day: dayData.day_name,
+        category: '',
         scheduleId: workouts[0]?.scheduleId,
         exercises: exercises,
         
@@ -208,7 +253,6 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
 
       console.log('🎯 Navigating to workout:', workoutDetailData);
 
-      // Navigate to workout detail page
       navigate('/workout-detail', { 
         state: { 
           workoutData: workoutDetailData,
@@ -225,18 +269,85 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
   // Generate complete schedule with rest days
   const completeSchedule = generateCompleteSchedule(personalized);
 
+  // Determine if CTA should be shown - FIXED LOGIC
+  // Only show CTA when user has a BASE workout (is_custom_workout: false)
+  const shouldShowCTA = !ctaDismissed && 
+  meta?.program_id && // Only show when we have actual data
+  !meta?.is_custom_workout;
+
+  console.log('🎯 CTA Debug:', {
+    meta,
+    is_custom_workout: meta?.is_custom_workout,
+    typeof_is_custom_workout: typeof meta?.is_custom_workout,
+    shouldShowCTA,
+    ctaDismissed,
+  });
+
   return (
     <div className="workout-container">
+
+      {/* Enhanced Spam CTA - Only show for base workouts */}
+      {shouldShowCTA && (
+        <div className="spam-cta-container" role="banner" aria-label="Custom workout promotion">
+          <div className="spam-cta-card">
+            <button 
+              className="spam-cta-dismiss"
+              onClick={() => setCtaDismissed(true)}
+              aria-label="Dismiss custom workout promotion"
+              title="Dismiss"
+            >
+              ×
+            </button>
+            
+            <div className="spam-cta-content">
+              <div className="spam-cta-icon">
+                🎯
+              </div>
+              
+              <div className="spam-cta-text">
+                <h3 className="spam-cta-title">Personaliza tu entrenamiento</h3>
+                <p className="spam-cta-subtitle">
+                  Rutinas personalizadas con IA adaptadas a tus objetivos y experiencia
+                </p>
+              </div>
+              
+              <button
+                className={`spam-cta-button ${ctaLoading ? 'loading' : ''}`}
+                onClick={handleCustomWorkoutCTA}
+                disabled={ctaLoading}
+                aria-label="Generate custom workout plan"
+              >
+                {ctaLoading ? (
+                  <>
+                    <div className="spinner" />
+                    Generando...
+                  </>
+                ) : (
+                  'Crear Plan Personalizado'
+                )}
+              </button>
+            </div>
+            
+            {ctaError && (
+              <div className="spam-cta-error" role="alert">
+                <span className="error-icon">⚠️</span>
+                {ctaError}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {loadingWorkout ? (
         <div className="workout-loading">
           <div className="spinner-border text-primary" role="status" />
-          <span className="ms-2">Generating your workout...</span>
+          <span className="ms-2">Generando tu entrenamiento…</span>
         </div>
       ) : (
         <div className="workout-days-container">
           {completeSchedule.map((dayData) => {
             if (dayData.isRestDay) {
-              // REST DAY CARD - Compact version
+              // REST DAY CARD
               return (
                 <div key={dayData.day_number} className="workout-day-card rest-day-card">
                   <div className="day-header">
@@ -244,10 +355,9 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
                       <span className="day-title">{dayData.day_name}</span>
                     </div>
                   </div>
-                  
                   <div className="workout-day-footer">
                     <button className="rest-day-btn" disabled>
-                      🛌 Rest Day
+                      🛌 Día de Descanso
                     </button>
                   </div>
                 </div>
@@ -257,28 +367,32 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
             // WORKOUT DAY CARD
             const workouts = dayData.workouts || [];
             const workoutStatus = getWorkoutStatus(workouts);
-            
+
             return (
               <div key={dayData.day_number} className="workout-day-card">
-                {/* Day Header - Clean with descriptive name as title */}
+                {/* Day Header */}
                 <div className="day-header">
                   <div className="day-info">
                     <span className="day-title">{dayData.day_name}</span>
-                    <span className="workout-summary">{workouts.length} exercises</span>
+                    <span className="workout-summary">{workouts.length} ejercicios</span>
                   </div>
                 </div>
 
-                {/* Progress bar only - no text */}
+                {/* Progress bar */}
                 {(workoutStatus.isStarted || workoutStatus.mightBeCompleted) && (
                   <div className="day-progress">
                     <div className="day-progress-bar">
-                      <div 
-                        className="progress-fill" 
-                        style={{ 
+                      <div
+                        className="progress-fill"
+                        style={{
                           width: `${workoutStatus.mightBeCompleted ? 100 : workoutStatus.progress}%`,
-                          backgroundColor: workoutStatus.isCompleted ? '#10b981' : 
-                                         workoutStatus.mightBeCompleted ? '#f59e0b' : 
-                                         workoutStatus.isPartiallyCompleted ? '#f59e0b' : '#3b82f6'
+                          backgroundColor: workoutStatus.isCompleted
+                            ? '#10b981'
+                            : workoutStatus.mightBeCompleted
+                            ? '#f59e0b'
+                            : workoutStatus.isPartiallyCompleted
+                            ? '#f59e0b'
+                            : '#3b82f6'
                         }}
                       />
                     </div>
@@ -287,22 +401,25 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
 
                 {/* Action Button */}
                 <div className="workout-day-footer">
-                  <button 
+                  <button
                     className={`start-workout-btn ${
-                      workoutStatus.isCompleted ? 'completed' : 
-                      workoutStatus.isPartiallyCompleted ? 'partial' :
-                      workoutStatus.isStarted ? 'resume' : 'start'
+                      workoutStatus.isCompleted
+                        ? 'completed'
+                        : workoutStatus.isPartiallyCompleted
+                        ? 'partial'
+                        : workoutStatus.isStarted
+                        ? 'resume'
+                        : 'start'
                     }`}
                     onClick={() => handleDayClick(dayData)}
                   >
-                    {workoutStatus.isCompleted 
-                      ? '📋 Review Workout' 
+                    {workoutStatus.isCompleted
+                      ? 'Revisar'
                       : workoutStatus.isPartiallyCompleted
-                        ? '⚡ Continue Workout'
-                        : workoutStatus.isStarted
-                          ? '🔥 Resume Workout'
-                          : '🏋️ Start Workout'
-                    }
+                      ? 'Continuar'
+                      : workoutStatus.isStarted
+                      ? 'Reanudar'
+                      : 'Iniciar'}
                   </button>
                 </div>
               </div>

@@ -1,20 +1,70 @@
 @import '../../styles/theme.css';
 
 /* ======================
-   CSS CUSTOM PROPERTIES
+   MATERIAL DARK TOKENS
    ====================== */
 :root {
+  /* Material-ish Dark base */
+  --md-sys-color-background: #0f1115;   /* más profundo para mejor contraste */
+  --md-sys-color-surface: #13161b;
+  --md-sys-color-surface-low: #151922;  /* hover base */
+  --md-sys-color-surface-def: #181d26;  /* card */
+  --md-sys-color-surface-high: #1e2430; /* headers / barras */
+
+  --md-sys-color-on-surface: #e8eaed;           /* texto principal */
+  --md-sys-color-on-surface-variant: #b9c0cc;   /* secundario */
+  --md-sys-color-outline: #3a4353;              /* bordes neutrales */
+
+  /* Brand & feedback */
+  --md-sys-color-primary: #8fb9ff;
+  --md-sys-color-primary-hover: #6ea3ff;
+  --md-sys-color-accent: var(--md-sys-color-primary);
+
+  --md-sys-color-success: #46e68a;
+  --md-sys-color-success-strong: #22c761;
+  --md-sys-color-warning: #f7c64b;
+  --md-sys-color-warning-strong: #f0a81f;
+  --md-sys-color-error: #ff5b5b;
+  --md-sys-color-neutral: #7a8699;
+
+  /* Alphas estandarizados */
+  --alpha-01: 0.06;
+  --alpha-02: 0.10;
+  --alpha-03: 0.16;
+  --alpha-04: 0.22;
+  --alpha-05: 0.30;
+
+  /* Elevation overlays */
+  --elev-1: rgba(255,255,255,var(--alpha-01));
+  --elev-2: rgba(255,255,255,var(--alpha-02));
+  --elev-3: rgba(255,255,255,var(--alpha-03));
+
+  /* Motion */
+  --transition-fast: 0.2s ease;
+  --transition-smooth: 0.3s ease;
+
+  /* Grids / sizes */
   --grid-desktop: 60px 80px 80px 80px 1fr;
   --grid-tablet: 50px 70px 70px 70px 1fr;
   --grid-mobile: 40px 60px 60px 60px 1fr;
   --grid-small: 35px 50px 50px 50px 1fr;
-  
+
   --btn-min-width-lg: 120px;
   --btn-min-width-md: 90px;
   --btn-min-width-sm: 65px;
-  
-  --transition-fast: 0.2s ease;
-  --transition-smooth: 0.3s ease;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Aliases */
+  --color-bg-main: var(--md-sys-color-background);
+  --color-bg-card: var(--md-sys-color-surface-def);
+  --color-bg-hover: var(--md-sys-color-surface-low);
+  --color-text-main: var(--md-sys-color-on-surface);
+  --color-text-secondary: var(--md-sys-color-on-surface-variant);
+  --color-border: var(--md-sys-color-outline);
+  --color-accent: var(--md-sys-color-accent);
 }
 
 /* ======================
@@ -44,7 +94,7 @@
 
 .workout-loading {
   padding: 2rem;
-  color: var(--color-accent);
+  color: var(--color-text-secondary);
 }
 
 .saving-indicator {
@@ -65,7 +115,7 @@
 }
 
 .workout-error h3 {
-  color: #ef4444;
+  color: var(--md-sys-color-error);
   margin: 0;
 }
 
@@ -76,8 +126,8 @@
 
 /* Review Mode Message */
 .review-mode-message {
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background-color: rgba(143,185,255, var(--alpha-02));
+  border: 1px solid rgba(143,185,255, var(--alpha-04));
   border-radius: var(--radius-md);
   padding: 1rem;
   margin-top: 1rem;
@@ -90,39 +140,37 @@
   font-size: 0.9rem;
 }
 
-/* Additional button styles for completed workouts */
+/* ======================
+   START/RESUME BUTTON STATES
+   ====================== */
 .start-workout-btn.completed {
-  background-color: #10b981;
-  color: white;
+  background-color: rgba(70,230,138, var(--alpha-02));
+  border: 1px solid rgba(70,230,138, var(--alpha-04));
+  color: var(--color-text-main);
 }
 
 .start-workout-btn.resume {
-  background-color: #f59e0b;
-  color: white;
+  background-color: rgba(247,198,75, var(--alpha-02));
+  border: 1px solid rgba(247,198,75, var(--alpha-04));
+  color: var(--color-text-main);
 }
 
 .start-workout-btn.start {
-  background-color: #3b82f6;
-  color: white;
+  background-color: var(--md-sys-color-primary);
+  color: #0b1220; /* on-primary dark */
 }
 
 /* Day progress styles */
-.day-progress {
-  margin-top: 4px;
-}
+.day-progress { margin-top: 4px; }
 
 .progress-text {
   font-size: 0.8rem;
   font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
-.progress-text.completed {
-  color: #10b981;
-}
-
-.progress-text.in-progress {
-  color: #f59e0b;
-}
+.progress-text.completed { color: var(--md-sys-color-success); }
+.progress-text.in-progress { color: var(--md-sys-color-warning-strong); }
 
 .day-progress-bar {
   height: 4px;
@@ -133,7 +181,7 @@
 
 .day-progress-bar .progress-fill {
   height: 100%;
-  background-color: #10b981;
+  background: var(--md-sys-color-primary);
   border-radius: 2px;
   transition: width var(--transition-smooth);
 }
@@ -154,7 +202,7 @@
 .back-button {
   background: none;
   border: none;
-  color: #3b82f6;
+  color: var(--md-sys-color-primary);
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -163,10 +211,7 @@
   transition: background-color var(--transition-fast);
   flex-shrink: 0;
 }
-
-.back-button:hover {
-  background-color: var(--color-bg-hover);
-}
+.back-button:hover { background-color: var(--color-bg-hover); }
 
 .workout-title {
   font-size: 1.5rem;
@@ -197,87 +242,70 @@
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-
-.unit-toggle-btn:hover {
-  background-color: var(--color-bg-hover);
-}
+.unit-toggle-btn:hover { background-color: var(--color-bg-hover); }
 
 .unit-toggle-btn.active {
-  background-color: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
+  background-color: var(--md-sys-color-primary);
+  color: #0b1220;
+  border-color: var(--md-sys-color-primary);
 }
 
 /* ======================
-   STATUS BADGES
+   STATUS BADGES (outline)
    ====================== */
 .session-status,
 .exercise-status-badge,
 .status-badge {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.25rem 0.625rem;
-  border-radius: 1rem;
+  border-radius: 999px;
   text-transform: uppercase;
   flex-shrink: 0;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-secondary);
 }
+.session-status { padding: 0.375rem 0.75rem; display: flex; align-items: center; gap: 0.25rem; }
 
-.session-status {
-  padding: 0.375rem 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-/* Status color variants */
-.session-active,
-.exercise-progress {
-  background-color: #f59e0b;
-  color: white;
-}
-
+.status-saving,
 .session-active {
-  background-color: #ef4444;
-  animation: pulse 2s infinite;
+  color: var(--md-sys-color-primary);
+  border-color: rgba(143,185,255,var(--alpha-04));
+  background: rgba(143,185,255,var(--alpha-01));
 }
-
-.session-paused {
-  background-color: #f59e0b;
-  color: white;
+.session-paused,
+.exercise-progress {
+  color: var(--md-sys-color-warning-strong);
+  border-color: rgba(247,198,75,var(--alpha-04));
+  background: rgba(247,198,75,var(--alpha-01));
 }
-
 .session-completed,
 .exercise-done,
 .status-done {
-  background-color: #10b981;
-  color: white;
+  color: var(--md-sys-color-success-strong);
+  border-color: rgba(70,230,138,var(--alpha-04));
+  background: rgba(70,230,138,var(--alpha-01));
 }
-
 .session-cancelled,
 .status-final {
-  background-color: #6b7280;
-  color: white;
+  color: var(--md-sys-color-neutral);
+  border-color: rgba(122,134,153,var(--alpha-03));
+  background: rgba(122,134,153,var(--alpha-01));
 }
 
-.status-saving {
-  background-color: #3b82f6;
-  color: white;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
 
 /* ======================
    PROGRESS SECTION
    ====================== */
 .workout-progress-section {
-  background-color: var(--color-bg-card);
+  background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--color-bg-card);
   padding: 1.25rem;
   border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  border: 1px solid var(--color-border);
 }
 
 .progress-title {
@@ -288,9 +316,7 @@
   text-align: center;
 }
 
-.progress-bar-container {
-  margin-bottom: 0.75rem;
-}
+.progress-bar-container { margin-bottom: 0.75rem; }
 
 .progress-bar {
   width: 100%;
@@ -302,45 +328,33 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(90deg, var(--md-sys-color-primary), var(--md-sys-color-primary-hover));
   transition: width var(--transition-smooth);
 }
 
-.progress-text {
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-main);
-  margin: 0;
-}
+.progress-text { text-align: center; font-size: 1rem; font-weight: 600; color: var(--color-text-main); margin: 0; }
 
 /* ======================
    SAVE CONTROLS & STATUS
    ====================== */
 .unsaved-indicator {
-  background-color: rgba(251, 191, 36, 0.1);
-  border: 1px solid #f59e0b;
-  color: #f59e0b;
+  background-color: rgba(247,198,75, var(--alpha-02));
+  border: 1px solid rgba(247,198,75, var(--alpha-04));
+  color: var(--md-sys-color-warning-strong);
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   margin: 1rem 0;
   text-align: center;
   font-weight: 600;
   font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
 
-.save-controls {
-  text-align: center;
-  margin: 1rem 0;
-}
+.save-controls { text-align: center; margin: 1rem 0; }
 
 .save-button {
-  background-color: #10b981;
-  color: white;
+  background-color: var(--md-sys-color-success);
+  color: #0e140d;
   border: none;
   padding: 0.875rem 2rem;
   border-radius: var(--radius-md);
@@ -351,15 +365,14 @@
   text-transform: none;
   min-width: 150px;
 }
-
 .save-button:hover:not(:disabled) {
-  background-color: #059669;
+  background-color: var(--md-sys-color-success-strong);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
 }
-
 .save-button:disabled {
-  background-color: #6b7280;
+  background-color: var(--md-sys-color-neutral);
+  color: #111;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -372,108 +385,60 @@
   padding: 0.75rem 1rem;
   border-radius: var(--radius-md);
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
 }
-
 .save-status.saving {
-  background-color: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: #3b82f6;
+  background-color: rgba(143,185,255,var(--alpha-02));
+  border: 1px solid rgba(143,185,255,var(--alpha-04));
+  color: var(--md-sys-color-primary);
 }
-
 .save-status.saved {
-  background-color: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  background-color: rgba(70,230,138,var(--alpha-02));
+  border: 1px solid rgba(70,230,138,var(--alpha-04));
+  color: var(--md-sys-color-success);
 }
-
 .save-status.error {
-  background-color: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  background-color: rgba(255,91,91,var(--alpha-02));
+  border: 1px solid rgba(255,91,91,var(--alpha-04));
+  color: var(--md-sys-color-error);
 }
 
 /* ======================
    SESSION CONTROLS
    ====================== */
 .session-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-  justify-content: center;
+  display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; justify-content: center;
 }
-
 .session-controls .btn {
-  flex: 1;
-  min-width: var(--btn-min-width-lg);
-  max-width: 200px;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
-  text-transform: none;
-  font-weight: 600;
-  border-radius: var(--radius-md);
+  flex: 1; min-width: var(--btn-min-width-lg); max-width: 200px;
+  padding: 0.75rem 1rem; font-size: 0.875rem; text-transform: none; font-weight: 600; border-radius: var(--radius-md);
 }
 
 /* ======================
    EXERCISE CARDS
    ====================== */
-.exercises-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
+.exercises-container { display:flex; flex-direction:column; gap: 1.25rem; }
 
 .exercise-detail-card {
-  background-color: var(--color-bg-card);
+  background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--color-bg-card);
   border-radius: var(--radius-md);
   padding: 1.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  border: 1px solid var(--color-border);
 }
 
 /* ======================
-   EXERCISE HEADER - FIXED ALIGNMENT
+   EXERCISE HEADER
    ====================== */
-.exercise-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  gap: 1rem;
-  min-height: 2rem;
-}
+.exercise-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; gap: 1rem; min-height: 2rem; }
 
 .exercise-name {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #3b82f6;
-  margin: 0;
-  text-decoration: none;
-  line-height: 1.2;
-  flex: 1;
+  font-size: 1.125rem; font-weight: 700; color: var(--md-sys-color-primary);
+  margin: 0; text-decoration: none; line-height: 1.2; flex: 1;
 }
+.exercise-name:hover { text-decoration: underline; }
 
-.exercise-name:hover {
-  text-decoration: underline;
-}
-
-.exercise-status-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.25rem 0.625rem;
-  border-radius: 1rem;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  align-self: center;
-}
-
-.exercise-done {
-  background-color: #10b981;
-  color: white;
-}
+.exercise-status-badge { align-self:center; }
 
 /* ======================
    SETS TABLE
@@ -484,6 +449,7 @@
   border-radius: var(--radius-sm);
   overflow: hidden;
   width: 100%;
+  border: 1px solid var(--color-border);
 }
 
 .sets-header,
@@ -510,23 +476,17 @@
   border-bottom: 1px solid var(--color-border);
   min-height: 56px;
 }
+.set-row:last-child { border-bottom: none; }
+.set-row:hover { background-color: var(--color-bg-hover); }
 
-.set-row:last-child {
-  border-bottom: none;
-}
-
-.set-row:hover {
-  background-color: var(--color-bg-hover);
-}
-
+/* Estados de fila */
 .set-active {
-  background-color: rgba(59, 130, 246, 0.1);
-  border-left: 4px solid #3b82f6;
+  background-color: rgba(143,185,255,var(--alpha-01));
+  border-left: 4px solid var(--md-sys-color-primary);
 }
-
 .set-completed {
-  background-color: rgba(16, 185, 129, 0.05);
-  border-left: 4px solid #10b981;
+  background-color: rgba(70,230,138,var(--alpha-01));
+  border-left: 4px solid var(--md-sys-color-success);
 }
 
 .set-number,
@@ -536,117 +496,77 @@
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-text-main);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
+  display: flex; align-items: center; justify-content: center; width: 100%;
 }
 
-.set-time.completed {
-  color: #10b981;
-  font-weight: 600;
-}
+.set-time.completed { color: var(--md-sys-color-success); font-weight: 600; }
+.set-time.pending { color: var(--color-text-secondary); }
 
-.set-time.pending {
-  color: var(--color-text-secondary);
-}
-
-.set-action {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  width: 100%;
-}
+.set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }
 
 /* ======================
    INLINE EDITING
    ====================== */
-.editable-cell {
-  cursor: pointer;
-  padding: 0.375rem 0.5rem;
-  border-radius: 4px;
-  transition: all var(--transition-fast);
-  display: inline-block;
-  min-width: 40px;
-  text-align: center;
-  border: 1px solid transparent;
-}
-
-.editable-cell:hover:not(.cell-readonly) {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.2);
-}
-
-.cell-readonly {
-  cursor: default;
-  opacity: 0.8;
-}
-
-.cell-readonly:hover {
-  background-color: transparent;
-  color: var(--color-text-main);
-  border-color: transparent;
-}
-
-.editable-cell.from-session {
-  background-color: rgba(16, 185, 129, 0.1);
-  border-left: 3px solid #10b981;
-  font-weight: 600;
-  color: #10b981;
-}
-
-.editable-cell.from-base {
-  background-color: rgba(107, 114, 128, 0.05);
-  border-left: 3px solid #6b7280;
-}
-
-.editable-cell.from-base:hover:not(.cell-readonly) {
-  background-color: rgba(59, 130, 246, 0.1);
-  border-left-color: #3b82f6;
-}
-
-.editable-cell.modified {
-  background-color: rgba(251, 191, 36, 0.1);
-  border-left: 3px solid #f59e0b;
-  color: #f59e0b;
-  font-weight: 600;
-}
-
-.editable-cell.saved {
-  background-color: rgba(34, 197, 94, 0.1);
-  border-left: 3px solid #22c55e;
-  color: #22c55e;
-}
-
-.table-cell-input {
-  background-color: var(--color-bg-main);
-  color: var(--color-text-main);
-  border: 2px solid #3b82f6;
-  border-radius: 4px;
-  padding: 0.375rem 0.5rem;
-  width: 60px;
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 500;
-  transition: all var(--transition-fast);
-}
-
-.table-cell-input:focus {
-  outline: none;
-  border-color: #1d4ed8;
-  background-color: var(--color-bg-card);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
+   .editable-cell {
+    cursor: pointer;
+    padding: 0.375rem 0.5rem;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+    display: inline-block;
+    min-width: 40px;
+    text-align: center;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-text-main);
+    font-weight: 600;
+  }
+  
+  .editable-cell:hover:not(.cell-readonly) {
+    background-color: var(--color-bg-hover);
+    color: var(--color-text-main);
+    border-color: var(--color-border);
+  }
+  
+  .cell-readonly {
+    cursor: default;
+    opacity: 0.85;
+  }
+  .cell-readonly:hover {
+    background-color: transparent;
+    color: var(--color-text-main);
+    border-color: transparent;
+  }
+  
+  /* eliminados: from-session, from-base, modified, saved */
+  
+  /* Inputs */
+  .table-cell-input {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+    border: 2px solid var(--md-sys-color-primary);
+    border-radius: 4px;
+    padding: 0.375rem 0.5rem;
+    width: 60px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+  }
+  .table-cell-input:focus {
+    outline: none;
+    border-color: var(--md-sys-color-primary-hover);
+    background-color: var(--color-bg-card);
+    box-shadow: 0 0 0 3px rgba(143,185,255,var(--alpha-03));
+  }
+  
 
 /* ======================
    BUTTONS
    ====================== */
 .btn {
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
   text-transform: uppercase;
@@ -655,60 +575,33 @@
   min-width: 80px;
   padding: 0.5rem 0.75rem;
 }
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(143,185,255,var(--alpha-03));
 }
 
-.btn-sm {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.75rem;
-  min-width: 80px;
-}
+.btn-sm { padding: 0.5rem 0.75rem; font-size: 0.75rem; min-width: 80px; }
 
-/* Button color variants */
-.btn-primary {
-  background-color: #3b82f6;
-  color: white;
-}
+/* Variantes */
+.btn-primary { background-color: var(--md-sys-color-primary); color: #0a0f1a; }
+.btn-primary:hover:not(:disabled) { background-color: var(--md-sys-color-primary-hover); }
 
-.btn-primary:hover:not(:disabled) {
-  background-color: #2563eb;
-}
+.btn-success { background-color: var(--md-sys-color-success); color: #06160d; }
+.btn-success:hover:not(:disabled) { background-color: var(--md-sys-color-success-strong); }
 
-.btn-success {
-  background-color: #10b981;
-  color: white;
-}
+.btn-warning { background-color: var(--md-sys-color-warning); color: #0d0b05; }
+.btn-warning:hover:not(:disabled) { background-color: var(--md-sys-color-warning-strong); }
 
-.btn-success:hover:not(:disabled) {
-  background-color: #059669;
-}
+.btn-danger { background-color: var(--md-sys-color-error); color: #140707; }
+.btn-danger:hover:not(:disabled) { background-color: #ff3f3f; }
 
-.btn-warning {
-  background-color: #f59e0b;
-  color: white;
-}
-
-.btn-warning:hover:not(:disabled) {
-  background-color: #d97706;
-}
-
-.btn-danger {
-  background-color: #ef4444;
-  color: white;
-}
-
-.btn-danger:hover:not(:disabled) {
-  background-color: #dc2626;
-}
-
+/* CTA add-set */
 .add-set-button {
   width: 100%;
   padding: 0.875rem;
-  background-color: #10b981;
-  color: white;
+  background-color: var(--md-sys-color-success);
+  color: #0e140d;
   border: none;
   border-radius: var(--radius-sm);
   font-weight: 600;
@@ -716,10 +609,7 @@
   cursor: pointer;
   transition: background-color var(--transition-fast);
 }
-
-.add-set-button:hover {
-  background-color: #059669;
-}
+.add-set-button:hover { background-color: var(--md-sys-color-success-strong); }
 
 /* ======================
    RESPONSIVE DESIGN
@@ -727,323 +617,92 @@
 
 /* Tablet/Small Desktop */
 @media (max-width: 1024px) and (min-width: 769px) {
-  .workout-days-container {
-    max-width: 500px;
-  }
-  
-  .btn {
-    min-width: 85px;
-  }
-  
-  .session-controls .btn {
-    min-width: 100px;
-  }
-  
-  .save-button {
-    min-width: 130px;
-    padding: 0.75rem 1.5rem;
-  }
+  .workout-days-container { max-width: 500px; }
+  .btn { min-width: 85px; }
+  .session-controls .btn { min-width: 100px; }
+  .save-button { min-width: 130px; padding: 0.75rem 1.5rem; }
 }
 
 /* Small tablets and large phones */
 @media (max-width: 768px) and (min-width: 481px) {
-  .workout-container {
-    padding: 0.875rem;
-  }
-  
-  .workout-days-container {
-    max-width: 100%;
-    gap: 0.875rem;
-  }
-  
-  .workout-day-card {
-    padding: 1rem;
-  }
-  
-  .day-title {
-    font-size: 1.125rem;
-  }
-  
-  .start-workout-btn {
-    padding: 0.875rem 1.25rem;
-    font-size: 0.9rem;
-  }
-  
-  .workout-detail-container {
-    padding: 0.875rem;
-  }
-
-  .workout-title {
-    font-size: 1.375rem;
-  }
-
-  .workout-detail-header {
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-
-  .session-status {
-    font-size: 0.7rem;
-    padding: 0.25rem 0.5rem;
-  }
-
-  .exercise-header {
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-  
-  .exercise-name {
-    font-size: 1.125rem;
-  }
-  
-  .exercise-status-badge {
-    font-size: 0.7rem;
-    padding: 0.2rem 0.5rem;
-  }
-
-  .sets-header,
-  .set-row {
-    grid-template-columns: var(--grid-tablet);
-    padding: 0.875rem 0.4rem;
-    font-size: 0.875rem;
-  }
-
-  .btn {
-    min-width: 75px;
-    font-size: 0.7rem;
-  }
-
-  .btn-sm {
-    padding: 0.45rem 0.65rem;
-    min-width: 75px;
-  }
-
-  .session-controls {
-    gap: 0.5rem;
-  }
-
-  .session-controls .btn {
-    min-width: var(--btn-min-width-md);
-    font-size: 0.8rem;
-    padding: 0.6rem 0.8rem;
-  }
-  
-  .save-button {
-    min-width: 120px;
-    padding: 0.75rem 1.25rem;
-    font-size: 0.9rem;
-  }
-  
-  .unsaved-indicator,
-  .save-status {
-    font-size: 0.8rem;
-    padding: 0.65rem 0.875rem;
-  }
+  .workout-container { padding: 0.875rem; }
+  .workout-days-container { max-width: 100%; gap: 0.875rem; }
+  .workout-day-card { padding: 1rem; }
+  .day-title { font-size: 1.125rem; }
+  .start-workout-btn { padding: 0.875rem 1.25rem; font-size: 0.9rem; }
+  .workout-detail-container { padding: 0.875rem; }
+  .workout-title { font-size: 1.375rem; }
+  .workout-detail-header { flex-wrap: wrap; gap: 0.75rem; }
+  .session-status { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
+  .exercise-header { gap: 0.75rem; margin-bottom: 0.75rem; }
+  .exercise-name { font-size: 1.125rem; }
+  .exercise-status-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
+  .sets-header, .set-row { grid-template-columns: var(--grid-tablet); padding: 0.875rem 0.4rem; font-size: 0.875rem; }
+  .btn { min-width: 75px; font-size: 0.7rem; }
+  .btn-sm { padding: 0.45rem 0.65rem; min-width: 75px; }
+  .session-controls { gap: 0.5rem; }
+  .session-controls .btn { min-width: var(--btn-min-width-md); font-size: 0.8rem; padding: 0.6rem 0.8rem; }
+  .save-button { min-width: 120px; padding: 0.75rem 1.25rem; font-size: 0.9rem; }
+  .unsaved-indicator, .save-status { font-size: 0.8rem; padding: 0.65rem 0.875rem; }
 }
 
 /* Mobile phones */
 @media (max-width: 480px) {
-  .workout-container {
-    padding: 0.75rem;
-  }
-  
-  .workout-days-container {
-    gap: 0.75rem;
-  }
-  
-  .workout-day-card {
-    padding: 0.875rem;
-  }
-  
-  .day-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin-bottom: 0.875rem;
-  }
-  
-  .day-info {
-    width: 100%;
-  }
-  
-  .workout-summary {
-    align-self: flex-end;
-    text-align: right;
-  }
-  
-  .day-title {
-    font-size: 1.125rem;
-  }
-  
-  .start-workout-btn {
-    padding: 0.875rem;
-    font-size: 0.875rem;
-  }
-  
-  .progress-text {
-    font-size: 0.75rem;
-  }
-  
-  .workout-detail-container {
-    padding: 0.75rem;
-  }
-
-  .workout-title {
-    font-size: 1.25rem;
-  }
-
-  .workout-detail-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  .session-status {
-    align-self: flex-end;
-    font-size: 0.65rem;
-    padding: 0.2rem 0.4rem;
-  }
-
-  /* FIXED: Keep exercise header horizontal on mobile */
-  .exercise-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .exercise-name {
-    font-size: 1.125rem;
-    flex: 1;
-  }
-
-  .exercise-status-badge {
-    font-size: 0.65rem;
-    padding: 0.2rem 0.4rem;
-  }
-
-  .sets-header,
-  .set-row {
-    grid-template-columns: var(--grid-mobile);
-    gap: 0;
-    padding: 0.75rem 0.25rem;
-    font-size: 0.8125rem;
-  }
-
-  .btn {
-    min-width: var(--btn-min-width-sm);
-    font-size: 0.625rem;
-  }
-
-  .btn-sm {
-    padding: 0.35rem 0.5rem;
-    min-width: var(--btn-min-width-sm);
-  }
-
-  .set-action {
-    padding: 0 0.125rem;
-  }
-
-  .table-cell-input {
-    width: 50px;
-    padding: 0.2rem 0.4rem;
-    font-size: 0.9rem;
-  }
-
-  .session-controls {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .session-controls .btn {
-    min-width: 100%;
-    font-size: 0.75rem;
-    padding: 0.75rem;
-  }
-
-  .saving-indicator {
-    font-size: 0.8rem;
-  }
-  
-  .save-button {
-    width: 100%;
-    min-width: auto;
-    padding: 0.875rem;
-    font-size: 0.875rem;
-  }
-  
-  .unsaved-indicator,
-  .save-status {
-    font-size: 0.75rem;
-    padding: 0.5rem 0.75rem;
-  }
+  .workout-container { padding: 0.75rem; }
+  .workout-days-container { gap: 0.75rem; }
+  .workout-day-card { padding: 0.875rem; }
+  .day-header { flex-direction: column; align-items:flex-start; gap:.75rem; margin-bottom:.875rem; }
+  .day-info { width: 100%; }
+  .workout-summary { align-self: flex-end; text-align: right; }
+  .day-title { font-size: 1.125rem; }
+  .start-workout-btn { padding: 0.875rem; font-size: 0.875rem; }
+  .progress-text { font-size: 0.75rem; }
+  .workout-detail-container { padding: 0.75rem; }
+  .workout-title { font-size: 1.25rem; }
+  .workout-detail-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .session-status { align-self: flex-end; font-size: 0.65rem; padding: 0.2rem 0.4rem; }
+  .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
+  .exercise-name { font-size: 1.125rem; flex:1; }
+  .exercise-status-badge { font-size: 0.65rem; padding: 0.2rem 0.4rem; }
+  .sets-header, .set-row { grid-template-columns: var(--grid-mobile); gap:0; padding: 0.75rem 0.25rem; font-size: .8125rem; }
+  .btn { min-width: var(--btn-min-width-sm); font-size: .625rem; }
+  .btn-sm { padding: 0.35rem 0.5rem; min-width: var(--btn-min-width-sm); }
+  .set-action { padding: 0 0.125rem; }
+  .table-cell-input { width: 50px; padding: 0.2rem 0.4rem; font-size: 0.9rem; }
+  .session-controls { flex-direction: column; gap: 0.5rem; }
+  .session-controls .btn { min-width: 100%; font-size: 0.75rem; padding: 0.75rem; }
+  .saving-indicator { font-size: 0.8rem; }
+  .save-button { width: 100%; min-width: auto; padding: 0.875rem; font-size: 0.875rem; }
+  .unsaved-indicator, .save-status { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
 }
 
 /* Very small phones */
 @media (max-width: 360px) {
-  .workout-container {
-    padding: 0.5rem;
-  }
-  
-  .workout-days-container {
-    gap: 0.5rem;
-  }
-  
-  .workout-day-card {
-    padding: 0.75rem;
-  }
-  
-  .day-title {
-    font-size: 1rem;
-  }
-  
-  .start-workout-btn {
-    padding: 0.75rem;
-    font-size: 0.8rem;
-  }
-  
-  .workout-detail-container {
-    padding: 0.5rem;
-  }
+  .workout-container { padding: 0.5rem; }
+  .workout-days-container { gap: 0.5rem; }
+  .workout-day-card { padding: 0.75rem; }
+  .day-title { font-size: 1rem; }
+  .start-workout-btn { padding: 0.75rem; font-size: 0.8rem; }
+  .workout-detail-container { padding: 0.5rem; }
+  .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
+  .exercise-name { font-size: 1rem; }
+  .exercise-status-badge { font-size: 0.6rem; padding: 0.15rem 0.35rem; }
+  .sets-header, .set-row { grid-template-columns: var(--grid-small); padding: 0.5rem 0.2rem; font-size: 0.75rem; }
+  .btn { min-width: 55px; font-size: 0.6rem; }
+  .btn-sm { padding: 0.3rem 0.4rem; min-width: 55px; }
+  .save-button { padding: 0.75rem; font-size: 0.8rem; }
+}
 
-  /* FIXED: Keep exercise header horizontal on very small phones */
-  .exercise-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.75rem;
+/* ======================
+   ACCESIBILIDAD (alto contraste)
+   ====================== */
+@media (prefers-contrast: more) {
+  :root {
+    --md-sys-color-outline: #4b5568;
+    --md-sys-color-primary-hover: #5b93ff;
   }
-
-  .exercise-name {
-    font-size: 1rem;
-  }
-
-  .exercise-status-badge {
-    font-size: 0.6rem;
-    padding: 0.15rem 0.35rem;
-  }
-
-  .sets-header,
-  .set-row {
-    grid-template-columns: var(--grid-small);
-    padding: 0.5rem 0.2rem;
-    font-size: 0.75rem;
-  }
-
-  .btn {
-    min-width: 55px;
-    font-size: 0.6rem;
-  }
-
-  .btn-sm {
-    padding: 0.3rem 0.4rem;
-    min-width: 55px;
-  }
-  
-  .save-button {
-    padding: 0.75rem;
-    font-size: 0.8rem;
+  .btn:focus-visible,
+  .table-cell-input:focus {
+    box-shadow: 0 0 0 3px rgba(143,185,255,0.45);
   }
 }

@@ -1,293 +1,236 @@
-@import '../../styles/theme.css';
+/* WeeklyWorkout.css — Material Dark */
 
-/* ======================
-   WEEKLY WORKOUT COMPONENT
-   ====================== */
+:root {
+  /* Tonos base (Material Dark-ish) */
+  --md-ref-palette-primary-40: #8ab4f8;   /* Primary on dark */
+  --md-ref-palette-primary-30: #669df6;   /* Hover */
+  --md-ref-palette-secondary-40: #b3c6ff;
+  --md-ref-palette-tertiary-40: #80eec0;
 
-/* Base container */
+  --md-sys-color-background: #121212;                 /* App bg */
+  --md-sys-color-surface: #121212;                    /* Base surface */
+  --md-sys-color-surface-container-low: #1a1a1a;      /* Cards low */
+  --md-sys-color-surface-container: #1f1f1f;          /* Cards default */
+  --md-sys-color-surface-container-high: #242424;     /* Raised */
+  --md-sys-color-outline: #3a3a3a;
+
+  --md-sys-color-on-surface: #e6e6e6;                 /* Texto primario */
+  --md-sys-color-on-surface-variant: #b3b3b3;         /* Texto secundario */
+  --md-sys-color-disabled: #9a9a9a;
+
+  --md-sys-color-primary: var(--md-ref-palette-primary-40);
+  --md-sys-color-primary-hover: var(--md-ref-palette-primary-30);
+  --md-sys-color-success: #4ade80;
+  --md-sys-color-warning: #fbbf24;
+  --md-sys-color-error: #ef4444;
+
+  /* Elevation overlay (simula Material en dark) */
+  --elev-1: rgba(255, 255, 255, 0.05);
+  --elev-2: rgba(255, 255, 255, 0.07);
+  --elev-3: rgba(255, 255, 255, 0.09);
+
+  /* Radii / spacing (tus originales) */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 2.5rem;
+  --spacing-3xl: 3rem;
+
+  /* Sombras discretas para dark */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --shadow-base: 0 4px 10px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+
+  /* Alias de compatibilidad con tu CSS existente */
+  --color-bg-card: var(--md-sys-color-surface-container);
+  --color-primary: var(--md-sys-color-primary);
+  --color-primary-dark: var(--md-sys-color-primary-hover);
+  --color-success: var(--md-sys-color-success);
+  --color-success-dark: #22c55e;
+  --color-warning: var(--md-sys-color-warning);
+  --color-warning-dark: #f59e0b;
+  --color-gray-50: #fafafa;   /* no usados en dark, se mantienen por compatibilidad */
+  --color-gray-100: #222;
+  --color-gray-200: #2a2a2a;
+  --color-gray-300: #333;
+  --color-gray-400: #444;
+  --color-gray-500: #8a8a8a;
+  --color-gray-600: #a3a3a3;
+  --color-gray-700: #c2c2c2;
+  --color-gray-800: #e0e0e0;
+  --color-gray-900: #f5f5f5;
+}
+
+/* App container */
 .workout-container {
-  background-color: var(--color-bg-main);
-  padding: 1rem;
-}
-
-.workout-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  color: var(--color-accent);
-}
-
-/* ======================
-   WORKOUT DAYS LAYOUT
-   ====================== */
-.workout-days-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  padding: var(--spacing-md);
   max-width: 400px;
   margin: 0 auto;
+  background-color: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-surface);
+  min-height: 100vh;
 }
 
+/* CTA */
+.spam-cta-container { margin-bottom: var(--spacing-lg); animation: slideInFromTop 0.5s ease-out; }
+.spam-cta-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--md-sys-color-outline);
+  background: linear-gradient(135deg, rgba(102,126,234,.18) 0%, rgba(118,75,162,.18) 100%), var(--md-sys-color-surface-container-high);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+.spam-cta-card::before {
+  content: '';
+  position: absolute; inset: -50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+  animation: sparkle 3s ease-in-out infinite;
+  pointer-events: none;
+}
+.spam-cta-dismiss {
+  position: absolute; top: var(--spacing-sm); right: var(--spacing-sm);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface);
+  width: 24px; height: 24px; border-radius: 50%;
+  cursor: pointer; font-size: 14px; display:flex; align-items:center; justify-content:center;
+  transition: all .2s ease; z-index: 2;
+}
+.spam-cta-dismiss:hover { background: rgba(255,255,255,0.14); transform: scale(1.06); }
+.spam-cta-content { display:flex; flex-direction:column; align-items:center; text-align:center; gap: var(--spacing-md); }
+.spam-cta-icon { font-size: 2rem; animation: bounce 2s ease-in-out infinite; }
+.spam-cta-title { font-size: 1.125rem; font-weight: 700; margin: 0 0 var(--spacing-xs) 0; color: var(--md-sys-color-on-surface); }
+.spam-cta-subtitle { font-size: .8125rem; margin: 0 0 var(--spacing-md) 0; color: var(--md-sys-color-on-surface-variant); line-height: 1.5; }
+.spam-cta-button {
+  background: rgba(138,180,248,0.14);
+  border: 1px solid rgba(138,180,248,0.32);
+  color: var(--md-sys-color-on-surface);
+  padding: 10px 20px; border-radius: var(--radius-lg); font-weight: 600; font-size: .8125rem;
+  cursor: pointer; transition: all .2s ease; display:flex; align-items:center; gap: var(--spacing-xs);
+  width: 100%; justify-content:center;
+}
+.spam-cta-button:hover:not(:disabled) {
+  background: rgba(138,180,248,0.22); border-color: rgba(138,180,248,0.5); transform: translateY(-1px);
+}
+.spam-cta-button:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.spam-cta-error {
+  margin-top: var(--spacing-md); padding: var(--spacing-sm);
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.32);
+  border-radius: var(--radius-md); color: #fecaca; font-size: .75rem; display:flex; align-items:center; gap: var(--spacing-xs);
+}
+
+/* Loading */
+.workout-loading { display:flex; justify-content:center; align-items:center; padding: var(--spacing-3xl); color: var(--md-sys-color-on-surface-variant); gap: var(--spacing-md); }
+.spinner-border { width: 1.5rem; height: 1.5rem; border: .2em solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .75s linear infinite; }
+
+/* Listado de días */
+.workout-days-container { display:flex; flex-direction:column; gap: var(--spacing-md); }
+
+/* Cards */
 .workout-day-card {
-  background-color: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  padding: 1.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--color-border);
-  transition: all 0.2s ease;
+  background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-base);
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+  position: relative;
+  color: var(--md-sys-color-on-surface);
 }
-
 .workout-day-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(0deg, var(--elev-2), var(--elev-2)), var(--md-sys-color-surface-container);
 }
 
-/* ======================
-   REST DAY CARD STYLING
-   ====================== */
 .rest-day-card {
-  background: linear-gradient(135deg, 
-    rgba(79, 172, 254, 0.1) 0%, 
-    rgba(0, 242, 195, 0.1) 100%);
-  border: 1px solid rgba(79, 172, 254, 0.3);
+  background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--md-sys-color-surface-container-low);
+  border: 1px dashed var(--md-sys-color-outline);
+  color: var(--md-sys-color-on-surface-variant);
 }
-
 .rest-day-card:hover {
-  transform: none; /* Disable hover lift for rest days */
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transform: none;
+  box-shadow: var(--shadow-base);
+  background: linear-gradient(0deg, var(--elev-2), var(--elev-2)), var(--md-sys-color-surface-container-low);
 }
 
-/* Remove the extra rest day content styling since we're making it compact */
-.rest-day-content {
-  display: none; /* Hide the extra content to make it compact */
-}
+/* Header */
+.day-header { margin-bottom: var(--spacing-md); }
+.day-info { display:flex; justify-content:space-between; align-items:center; }
+.day-title { font-size: 1.25rem; font-weight: 700; color: var(--md-sys-color-on-surface); letter-spacing: -0.025em; }
+.workout-summary { font-size: .75rem; color: var(--md-sys-color-on-surface-variant); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
 
-.rest-day-icon {
-  display: none; /* Hide the large icon */
-}
+/* Progress */
+.day-progress { margin: var(--spacing-md) 0; }
+.day-progress-bar { width: 100%; height: 4px; background: #2c2c2c; border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; transition: width .5s ease, background-color .3s ease; border-radius: 2px; background: var(--md-sys-color-primary); }
 
-.rest-day-message {
-  display: none; /* Hide the message */
+/* Botones */
+.workout-day-footer { margin-top: var(--spacing-md); }
+.start-workout-btn, .rest-day-btn {
+  width: 100%; padding: 12px 20px; border: none; border-radius: var(--radius-lg);
+  font-weight: 600; font-size: .875rem; cursor: pointer; transition: all .15s ease;
+  display:flex; align-items:center; justify-content:center; gap: var(--spacing-xs); letter-spacing: -0.01em;
 }
-
-.rest-day-btn {
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  border: 1px solid rgba(79, 172, 254, 0.3);
-  border-radius: var(--radius-md);
-  background: rgba(79, 172, 254, 0.1);
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  font-size: 0.9rem;
-  cursor: not-allowed;
-  transition: none;
-  opacity: 0.7;
-}
-
-/* ======================
-   DAY HEADER - UPDATED FOR DAY_NUMBER FORMAT
-   ====================== */
-.day-header {
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: space-between !important;
-  align-items: flex-start !important;
-  margin-bottom: 0.75rem;
-  width: 100%;
-  gap: 1rem;
-}
-
-.day-info {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0.25rem;
-  flex: 1;
-  min-width: 0;
-  align-items: flex-start !important;
-}
-
-.day-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: white; /* White font as requested */
-  margin: 0;
-  line-height: 1.2;
-  width: 100%;
-  text-align: left !important;
-}
-
-/* Remove day-subtitle since we're not using it anymore */
-.day-subtitle {
-  display: none;
-}
-
-.workout-summary {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-  margin: 0;
-  width: 100%;
-  text-align: left !important;
-  align-self: flex-start !important;
-}
-
-/* Remove category badge since we're not using it anymore */
-.category-badge {
-  display: none;
-}
-
-/* ======================
-   PROGRESS BAR ONLY (NO TEXT)
-   ====================== */
-.day-progress {
-  margin-bottom: 1rem;
-}
-
-/* Hide the progress text completely */
-.progress-text {
-  display: none;
-}
-
-.day-progress-bar {
-  height: 4px;
-  background-color: rgba(75, 85, 99, 0.3);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.day-progress-bar .progress-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease;
-  background-color: #3b82f6;
-}
-
-/* Progress bar colors based on status */
-.progress-text.completed + .day-progress-bar .progress-fill {
-  background-color: #10b981;
-}
-
-.progress-text.partial + .day-progress-bar .progress-fill {
-  background-color: #f59e0b;
-}
-
-.progress-text.might-completed + .day-progress-bar .progress-fill {
-  background-color: #f59e0b;
-}
-
-/* ======================
-   WORKOUT BUTTONS
-   ====================== */
-.workout-day-footer {
-  display: flex;
-  justify-content: center;
-  margin-top: 0;
-}
-
-.start-workout-btn {
-  width: 100%;
-  padding: 0.875rem 1.5rem;
-  border: none;
-  border-radius: var(--radius-md);
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  text-transform: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.start-workout-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
-}
-
-.start-workout-btn:active {
-  transform: translateY(0);
-}
-
-/* Button states */
 .start-workout-btn.start {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  color: white;
+  background: var(--md-sys-color-primary); color: #0b1220; /* on-primary para dark */
+  box-shadow: var(--shadow-sm);
 }
+.start-workout-btn.start:hover { background: var(--md-sys-color-primary-hover); transform: translateY(-1px); }
 
-.start-workout-btn.resume {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-}
-
+.start-workout-btn.resume,
 .start-workout-btn.partial {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
+  background: rgba(251,191,36,0.18);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid rgba(251,191,36,0.35);
+}
+.start-workout-btn.resume:hover,
+.start-workout-btn.partial:hover {
+  background: rgba(251,191,36,0.28);
+  transform: translateY(-1px);
 }
 
 .start-workout-btn.completed {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-  color: white;
+  background: rgba(74,222,128,0.22);
+  color: var(--md-sys-color-on-surface);
+  border: 1px solid rgba(74,222,128,0.35);
+}
+.start-workout-btn.completed:hover { background: rgba(74,222,128,0.3); transform: translateY(-1px); }
+
+.rest-day-btn {
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px dashed var(--md-sys-color-outline);
+  cursor: not-allowed;
 }
 
-.start-workout-btn:before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-  transition: left 0.5s;
-}
+/* Animaciones (tus originales) */
+@keyframes slideInFromTop { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bounce { 0%,20%,50%,80%,100% { transform: translateY(0);} 40% { transform: translateY(-6px);} 60% { transform: translateY(-3px);} }
+@keyframes sparkle { 0%,100% { opacity: 0; transform: rotate(0deg);} 50% { opacity: 1; transform: rotate(180deg);} }
+@keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
 
-.start-workout-btn:hover:before {
-  left: 100%;
+/* Responsive */
+@media (max-width: 768px) {
+  .workout-container { padding: var(--spacing-sm); max-width: 100%; }
+  .spam-cta-card { padding: var(--spacing-md); }
+  .workout-day-card { padding: var(--spacing-md); }
+  .day-title { font-size: 1.125rem; }
 }
-
-/* ======================
-   RESPONSIVE DESIGN
-   ====================== */
-@media (min-width: 768px) {
-  .workout-days-container {
-    max-width: 500px;
-  }
-  
-  .workout-day-card {
-    padding: 1.5rem;
-  }
-  
-  .day-title {
-    font-size: 1.375rem;
-  }
-  
-  .day-subtitle {
-    font-size: 1.125rem;
-  }
-}
-
 @media (max-width: 480px) {
-  .workout-container {
-    padding: 0.75rem;
-  }
-  
-  .workout-day-card {
-    padding: 1rem;
-  }
-  
-  .day-title {
-    font-size: 1.125rem;
-  }
-  
-  .day-subtitle {
-    font-size: 0.9rem;
-  }
-  
-  .start-workout-btn {
-    padding: 0.75rem 1rem;
-    font-size: 0.85rem;
-  }
+  .workout-container { padding: var(--spacing-xs); }
+  .spam-cta-title { font-size: 1rem; }
+  .spam-cta-subtitle { font-size: .75rem; }
 }

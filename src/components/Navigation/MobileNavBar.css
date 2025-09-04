@@ -1,0 +1,245 @@
+/* src/components/Navigation/MobileNavBar.css */
+/* Mobile Navigation Bar - Uses your existing theme tokens */
+
+:root {
+    /* Navigation specific tokens */
+    --nav-height: 70px;
+    --nav-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  
+  /* Main navigation container - BOTTOM POSITIONED FOR THUMB REACH */
+  .mobile-nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    
+    /* Use your existing theme tokens */
+    background: rgba(15, 17, 21, 0.95); /* Based on your --md-sys-color-background */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    /* Border using your theme */
+    border-top: 1px solid var(--md-sys-color-outline, #3a4353);
+    padding-bottom: var(--nav-safe-area-bottom);
+    
+    /* Height optimized for thumb reach */
+    height: calc(var(--nav-height) + var(--nav-safe-area-bottom));
+    min-height: 60px;
+  }
+  
+  /* Inner container for nav items */
+  .nav-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    height: var(--nav-height);
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 0 8px;
+  }
+  
+  /* Individual navigation items - OPTIMIZED FOR THUMB TAPPING */
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    
+    /* Sizing - THUMB-FRIENDLY tap targets */
+    flex: 1;
+    max-width: 80px;
+    height: 56px;
+    min-height: 44px;
+    
+    /* Reset button styles */
+    background: none;
+    border: none;
+    cursor: pointer;
+    
+    /* Use your theme colors */
+    color: var(--md-sys-color-on-surface-variant, #b9c0cc);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+    
+    /* Touch optimization - CRITICAL for thumb usage */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    
+    /* Thumb reach optimization */
+    margin: 8px 4px;
+  }
+  
+  /* Hover states */
+  .nav-item:hover {
+    background-color: rgba(139, 185, 255, 0.08); /* Your primary color with opacity */
+    color: var(--md-sys-color-on-surface, #e8eaed);
+  }
+  
+  /* Active state - uses your primary color */
+  .nav-item-active {
+    color: var(--md-sys-color-primary, #8fb9ff);
+    background-color: rgba(139, 185, 255, 0.12);
+  }
+  
+  .nav-item-active:hover {
+    background-color: rgba(139, 185, 255, 0.16);
+  }
+  
+  /* Focus states for accessibility */
+  .nav-item:focus {
+    outline: 2px solid var(--md-sys-color-primary, #8fb9ff);
+    outline-offset: 2px;
+  }
+  
+  .nav-item:focus:not(:focus-visible) {
+    outline: none;
+  }
+  
+  /* Icon styling */
+  .nav-icon {
+    font-size: 20px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+  }
+  
+  .nav-item-active .nav-icon {
+    transform: scale(1.05);
+  }
+  
+  /* Label styling */
+  .nav-label {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    text-transform: none;
+  }
+  
+  .nav-item-active .nav-label {
+    font-weight: 600;
+  }
+  
+  /* Active indicator - subtle dot */
+  .nav-item-active::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background-color: var(--md-sys-color-primary, #8fb9ff);
+    border-radius: 50%;
+    opacity: 0.8;
+  }
+  
+  /* ============================
+     RESPONSIVE DESIGN - THUMB OPTIMIZED
+     ============================ */
+  
+  /* Large phones - optimize for one-handed use */
+  @media (min-width: 414px) and (max-width: 767px) {
+    .nav-container {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    .nav-item {
+      max-width: 90px;
+      height: 60px;
+    }
+  }
+  
+  /* Landscape mode - keep accessible */
+  @media (orientation: landscape) and (max-height: 500px) {
+    .mobile-nav-bar {
+      height: calc(60px + var(--nav-safe-area-bottom));
+    }
+    
+    .nav-container {
+      height: 60px;
+    }
+    
+    .nav-item {
+      height: 48px;
+      gap: 2px;
+    }
+    
+    .nav-icon {
+      font-size: 18px;
+      width: 20px;
+      height: 20px;
+    }
+    
+    .nav-label {
+      font-size: 10px;
+    }
+  }
+  
+  /* Small phones - maximize tap area */
+  @media (max-width: 360px) {
+    .nav-container {
+      padding: 0 8px;
+      justify-content: space-evenly;
+    }
+    
+    .nav-item {
+      max-width: none;
+      flex: 1;
+      margin: 6px 2px;
+      height: 52px;
+      gap: 3px;
+    }
+    
+    .nav-icon {
+      font-size: 18px;
+      width: 22px;
+      height: 22px;
+    }
+    
+    .nav-label {
+      font-size: 10px;
+    }
+  }
+  
+  /* Hide on tablets/desktop */
+  @media (min-width: 768px) {
+    .mobile-nav-bar {
+      display: none;
+    }
+  }
+  
+  /* ============================
+     ACCESSIBILITY
+     ============================ */
+  
+  /* High contrast mode */
+  @media (prefers-contrast: high) {
+    .nav-item {
+      border: 1px solid transparent;
+    }
+    
+    .nav-item-active {
+      border-color: var(--md-sys-color-primary, #8fb9ff);
+    }
+  }
+  
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .nav-item,
+    .nav-icon,
+    .nav-item-active::before {
+      transition: none;
+    }
+  }

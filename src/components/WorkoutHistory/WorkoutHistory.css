@@ -50,7 +50,7 @@
    CONTAINER & LAYOUT
    ====================== */
 .workout-history-container {
-  background-color: var(--history-bg-main);
+  background-color: var(--color-bg-main);
   color: var(--history-text-main);
   max-width: 400px;
   margin: 0 auto;
@@ -69,24 +69,6 @@
   margin-bottom: var(--history-spacing-lg);
   padding-bottom: var(--history-spacing-md);
   gap: var(--history-spacing-md);
-}
-
-.back-button {
-  background: none;
-  border: none;
-  color: var(--history-primary);
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: var(--history-radius-sm);
-  transition: all var(--history-transition-fast);
-  flex-shrink: 0;
-}
-
-.back-button:hover {
-  background-color: var(--history-bg-hover);
-  color: var(--history-primary-hover);
 }
 
 .time-range-selector {

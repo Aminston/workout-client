@@ -3,14 +3,26 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import WorkoutDetailView from './components/WorkoutSchedule/WorkoutDetailView';
-import WorkoutHistory from './components/WorkoutHistory/WorkoutHistory'; // ✅ ADD THIS IMPORT
+import WorkoutHistory from './components/WorkoutHistory/WorkoutHistory';
 import LandingPage from './pages/Landing/LandingPage';
 import ToastManager, { toast } from './components/ToastManager';
+import MobileNavBar from './components/Navigation/MobileNavBar'; // ✅ ADD THIS IMPORT
 import './App.css';
 
 function ProtectedRoute({ token, children }) {
   return token ? children : <Navigate to="/" replace />;
 }
+
+// ✅ ADD THIS: Layout component to conditionally show mobile navigation
+const AppLayout = ({ children, showMobileNav = false }) => {
+  return (
+    <>
+      {children}
+      {/* Show mobile navigation only on logged-in app pages */}
+      {showMobileNav && <MobileNavBar />}
+    </>
+  );
+};
 
 export default function App() {
   const location = useLocation();
@@ -140,14 +152,16 @@ export default function App() {
             isLoggedIn ? (
               <Navigate to="/schedule" replace />
             ) : (
-              <LandingPage
-                token={token}
-                setToken={setToken}
-                userName={userName}
-                setUserName={setUserName}
-                onLoginSuccess={handleLoginSuccess}
-                onSaveSuccess={handleSaveSuccess}
-              />
+              <AppLayout showMobileNav={false}>
+                <LandingPage
+                  token={token}
+                  setToken={setToken}
+                  userName={userName}
+                  setUserName={setUserName}
+                  onLoginSuccess={handleLoginSuccess}
+                  onSaveSuccess={handleSaveSuccess}
+                />
+              </AppLayout>
             )
           }
         />
@@ -155,7 +169,7 @@ export default function App() {
           path="/schedule"
           element={
             <ProtectedRoute token={token}>
-              <>
+              <AppLayout showMobileNav={true}>
                 <Navbar
                   token={token}
                   setToken={setToken}
@@ -172,11 +186,11 @@ export default function App() {
                       meta={meta}
                       setPersonalized={setPersonalized}
                       loadingWorkout={loadingWorkout}
-                      onRefreshSchedule={fetchSchedule} // Pass refresh function
+                      onRefreshSchedule={fetchSchedule}
                     />
                   </div>
                 </main>
-              </>
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -186,25 +200,29 @@ export default function App() {
           path="/workout-detail"
           element={
             <ProtectedRoute token={token}>
-              <main className="app-main">
-                <div className="content-container">
-                  <WorkoutDetailView onWorkoutComplete={fetchSchedule} />
-                </div>
-              </main>
+              <AppLayout showMobileNav={true}>
+                <main className="app-main">
+                  <div className="content-container">
+                    <WorkoutDetailView onWorkoutComplete={fetchSchedule} />
+                  </div>
+                </main>
+              </AppLayout>
             </ProtectedRoute>
           }
         />
 
-        {/* ✅ ADD THIS: Workout History Route */}
+        {/* Workout History Route */}
         <Route
           path="/history"
           element={
             <ProtectedRoute token={token}>
-              <main className="app-main">
-                <div className="content-container">
-                  <WorkoutHistory />
-                </div>
-              </main>
+              <AppLayout showMobileNav={true}>
+                <main className="app-main">
+                  <div className="content-container">
+                    <WorkoutHistory />
+                  </div>
+                </main>
+              </AppLayout>
             </ProtectedRoute>
           }
         />

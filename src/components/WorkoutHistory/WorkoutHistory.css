@@ -1,0 +1,678 @@
+/* WorkoutHistory.css - Aligned with WorkoutDetailView Material Dark design system */
+@import '../../styles/theme.css';
+
+/* ======================
+   MATERIAL DARK TOKENS (matching WorkoutDetailView)
+   ====================== */
+:root {
+  /* Use exact same tokens as WorkoutDetailView for consistency */
+  --history-bg-main: var(--md-sys-color-background, #0f1115);
+  --history-bg-card: var(--md-sys-color-surface-def, #181d26);
+  --history-bg-hover: var(--md-sys-color-surface-low, #151922);
+  --history-text-main: var(--md-sys-color-on-surface, #e8eaed);
+  --history-text-secondary: var(--md-sys-color-on-surface-variant, #b9c0cc);
+  --history-border: var(--md-sys-color-outline, #3a4353);
+  --history-primary: var(--md-sys-color-primary, #8fb9ff);
+  --history-primary-hover: var(--md-sys-color-primary-hover, #6ea3ff);
+  --history-success: var(--md-sys-color-success, #46e68a);
+  --history-success-strong: var(--md-sys-color-success-strong, #22c761);
+  --history-warning: var(--md-sys-color-warning, #f7c64b);
+  --history-warning-strong: var(--md-sys-color-warning-strong, #f0a81f);
+  --history-error: var(--md-sys-color-error, #ff5b5b);
+  
+  /* Elevation overlays (exact match) */
+  --history-elev-1: var(--elev-1, rgba(255,255,255,0.06));
+  --history-elev-2: var(--elev-2, rgba(255,255,255,0.10));
+  
+  /* Use same radius system */
+  --history-radius-sm: var(--radius-sm, 6px);
+  --history-radius-md: var(--radius-md, 8px);
+  --history-radius-lg: var(--radius-lg, 12px);
+  --history-radius-xl: 16px;
+  
+  /* Consistent transitions */
+  --history-transition-fast: var(--transition-fast, 0.2s ease);
+  --history-transition-smooth: var(--transition-smooth, 0.3s ease);
+  
+  /* Spacing (simplified) */
+  --history-spacing-xs: 0.5rem;
+  --history-spacing-sm: 0.75rem;
+  --history-spacing-md: 1rem;
+  --history-spacing-lg: 1.5rem;
+  --history-spacing-xl: 2rem;
+  
+  /* Shadows matching WorkoutDetailView */
+  --history-shadow-base: 0 8px 20px rgba(0,0,0,.35);
+  --history-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* ======================
+   CONTAINER & LAYOUT
+   ====================== */
+.workout-history-container {
+  background-color: var(--color-bg-main);
+  color: var(--history-text-main);
+  max-width: 400px;
+  margin: 0 auto;
+  padding: var(--history-spacing-md);
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* ======================
+   HEADER (improved alignment)
+   ====================== */
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--history-spacing-lg);
+  padding-bottom: var(--history-spacing-md);
+  gap: var(--history-spacing-md);
+}
+
+.time-range-selector {
+  display: flex;
+  background-color: var(--history-bg-card);
+  border: 1px solid var(--history-border);
+  border-radius: var(--history-radius-md);
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.time-range-btn {
+  background: none;
+  border: none;
+  color: var(--history-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: var(--history-spacing-xs) var(--history-spacing-md);
+  border-radius: var(--history-radius-sm);
+  cursor: pointer;
+  transition: all var(--history-transition-fast);
+  text-transform: none; /* Changed from uppercase */
+  letter-spacing: normal; /* Reduced emphasis */
+  min-width: 60px; /* Ensure consistent sizing */
+}
+
+.time-range-btn:hover {
+  color: var(--history-text-main);
+  background-color: var(--history-bg-hover);
+}
+
+.time-range-btn.active {
+  background-color: var(--history-primary);
+  color: #0b1220; /* on-primary dark */
+  font-weight: 600;
+}
+
+/* ======================
+   LOADING & ERROR STATES
+   ====================== */
+.loading-state, .error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--history-spacing-xl);
+  text-align: center;
+  gap: var(--history-spacing-md);
+}
+
+.spinner {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--history-border);
+  border-top-color: var(--history-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-state {
+  background: linear-gradient(0deg, var(--history-elev-1), var(--history-elev-1)), var(--history-bg-card);
+  border: 1px solid rgba(255, 91, 91, 0.32);
+  border-radius: var(--history-radius-xl);
+  color: var(--history-text-main);
+  box-shadow: var(--history-shadow-base);
+}
+
+.error-icon {
+  font-size: 2rem;
+}
+
+.error-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--history-error);
+  margin: 0;
+}
+
+.error-message {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.retry-button {
+  background-color: var(--history-error);
+  color: white;
+  border: none;
+  padding: var(--history-spacing-sm) var(--history-spacing-lg);
+  border-radius: var(--history-radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--history-transition-fast);
+  min-width: 100px;
+}
+
+.retry-button:hover {
+  background-color: #ff3f3f;
+  transform: translateY(-1px);
+}
+
+/* ======================
+   OVERVIEW CARD (enhanced styling)
+   ====================== */
+.overview-card {
+  background: linear-gradient(0deg, var(--history-elev-1), var(--history-elev-1)), var(--history-bg-card);
+  border: 1px solid var(--history-border);
+  border-radius: var(--history-radius-lg);
+  padding: 1.25rem; /* Match WorkoutDetailView card padding */
+  margin-bottom: var(--history-spacing-lg);
+  box-shadow: var(--history-shadow-base);
+}
+
+.overview-header {
+  display: flex;
+  align-items: center;
+  gap: var(--history-spacing-xs);
+  margin-bottom: var(--history-spacing-md);
+}
+
+.overview-icon {
+  font-size: 1.125rem;
+  color: var(--history-primary);
+}
+
+.overview-title {
+  font-size: 1rem; /* Reduced from 1.125rem for better hierarchy */
+  font-weight: 600; /* Match WorkoutDetailView weight */
+  color: var(--history-text-secondary); /* Secondary text like progress-title */
+  margin: 0;
+}
+
+.main-stats {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--history-spacing-md);
+}
+
+.stat-value {
+  font-weight: 600; /* Reduced from 700 */
+  color: var(--history-text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-separator {
+  margin: 0 var(--history-spacing-xs);
+  color: var(--history-border);
+}
+
+.pr-section {
+  margin-top: var(--history-spacing-md);
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600; /* Match WorkoutDetailView */
+  color: var(--history-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--history-spacing-sm);
+}
+
+.pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* Tighter spacing */
+}
+
+.pr-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  min-height: 24px; /* Ensure consistent height */
+}
+
+.pr-category {
+  display: flex;
+  align-items: center;
+  gap: var(--history-spacing-xs);
+}
+
+.category-emoji {
+  font-size: 0.875rem;
+}
+
+.category-name {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+}
+
+.pr-weight {
+  font-size: 0.875rem;
+  font-weight: 600; /* Reduced from 700 */
+  color: var(--history-text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ======================
+   SECTION DIVIDER
+   ====================== */
+.section-divider {
+  border-top: 1px solid var(--history-border);
+  margin: var(--history-spacing-lg) 0;
+}
+
+/* ======================
+   SESSIONS CONTAINER
+   ====================== */
+.sessions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem; /* Match exercises-container gap */
+}
+
+/* ======================
+   SESSION CARDS (major improvements)
+   ====================== */
+.session-card {
+  background: linear-gradient(0deg, var(--history-elev-1), var(--history-elev-1)), var(--history-bg-card);
+  border: 1px solid var(--history-border);
+  border-radius: var(--history-radius-lg);
+  padding: 1.25rem; /* Match WorkoutDetailView exercise cards */
+  cursor: pointer;
+  transition: all var(--history-transition-fast);
+  box-shadow: var(--history-shadow-base);
+}
+
+.session-card:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(0deg, var(--history-elev-2), var(--history-elev-2)), var(--history-bg-card);
+  box-shadow: var(--history-shadow-lg);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem; /* Match exercise-header margin */
+  gap: var(--history-spacing-md);
+  min-height: 2rem; /* Match exercise-header min-height */
+}
+
+.session-info {
+  flex: 1;
+}
+
+.session-name {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--history-primary); /* Match exercise-name color */
+  margin: 0 0 4px 0;
+  line-height: 1.2;
+}
+
+.session-date {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+  margin: 0;
+}
+
+.completion-badge {
+  flex-shrink: 0;
+  align-self: center; /* Match exercise-status-badge alignment */
+}
+
+.completion-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  border: 1px solid;
+}
+
+.completion-pill.completion-excellent {
+  color: var(--history-success-strong);
+  border-color: rgba(70,230,138,var(--alpha-04, 0.22));
+  background: rgba(70,230,138,var(--alpha-01, 0.06));
+}
+
+.completion-pill.completion-good {
+  color: var(--history-warning-strong);
+  border-color: rgba(247,198,75,var(--alpha-04, 0.22));
+  background: rgba(247,198,75,var(--alpha-01, 0.06));
+}
+
+.completion-pill.completion-needs-work {
+  color: var(--history-error);
+  border-color: rgba(255,91,91,var(--alpha-04, 0.22));
+  background: rgba(255,91,91,var(--alpha-01, 0.06));
+}
+
+/* Stats sections */
+.stats-section {
+  margin-bottom: var(--history-spacing-md);
+}
+
+.stats-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--history-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.stats-content {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+  line-height: 1.5;
+}
+
+.stat-highlight {
+  font-weight: 600; /* Reduced from 700 */
+  color: var(--history-text-main);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Session PR section */
+.pr-divider {
+  border-top: 1px solid var(--history-border);
+  margin: var(--history-spacing-md) 0;
+}
+
+.session-pr-section {
+  margin-top: var(--history-spacing-md);
+}
+
+.session-pr-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-pr-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  min-height: 24px;
+}
+
+.category-icon {
+  width: 20px;
+  height: 20px;
+  background-color: var(--history-bg-hover);
+  border-radius: var(--history-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.category-icon::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  background-color: var(--history-primary);
+  border-radius: 2px;
+}
+
+/* ======================
+   EMPTY STATE
+   ====================== */
+.empty-state {
+  background: linear-gradient(0deg, var(--history-elev-1), var(--history-elev-1)), var(--history-bg-card);
+  border: 1px solid var(--history-border);
+  border-radius: var(--history-radius-xl);
+  padding: var(--history-spacing-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--history-spacing-md);
+  box-shadow: var(--history-shadow-base);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--history-spacing-xs);
+}
+
+.empty-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--history-text-main);
+  margin: 0;
+}
+
+.empty-message {
+  font-size: 0.875rem;
+  color: var(--history-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cta-button {
+  background-color: var(--history-primary);
+  color: #0b1220; /* on-primary dark */
+  border: none;
+  padding: var(--history-spacing-sm) var(--history-spacing-lg);
+  border-radius: var(--history-radius-md);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--history-transition-fast);
+  margin-top: var(--history-spacing-xs);
+  min-width: 150px;
+}
+
+.cta-button:hover {
+  background-color: var(--history-primary-hover);
+  transform: translateY(-1px);
+}
+
+/* ======================
+   SHOW MORE BUTTON
+   ====================== */
+.show-more-button {
+  width: 100%;
+  padding: var(--history-spacing-sm);
+  background: none;
+  border: 1px solid var(--history-border);
+  color: var(--history-text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--history-radius-xl);
+  cursor: pointer;
+  transition: all var(--history-transition-fast);
+  margin-top: var(--history-spacing-md);
+}
+
+.show-more-button:hover {
+  background-color: var(--history-bg-hover);
+  color: var(--history-text-main);
+}
+
+/* ======================
+   RESPONSIVE DESIGN (improved breakpoints)
+   ====================== */
+
+/* Small tablets and large phones */
+@media (max-width: 768px) and (min-width: 481px) {
+  .workout-history-container {
+    max-width: 100%;
+    padding: 0.875rem; /* Match WorkoutDetailView */
+  }
+  
+  .history-header {
+    margin-bottom: var(--history-spacing-md);
+    gap: 0.75rem;
+  }
+  
+  .session-name {
+    font-size: 1.125rem; /* Match WorkoutDetailView exercise-name */
+  }
+  
+  .overview-title {
+    font-size: 1rem;
+  }
+  
+  .main-stats, .stats-content {
+    font-size: 0.875rem;
+  }
+  
+  .overview-card, .session-card {
+    padding: 1rem; /* Adjust padding for tablets */
+  }
+}
+
+/* Mobile phones */
+@media (max-width: 480px) {
+  .workout-history-container {
+    padding: 0.75rem; /* Match WorkoutDetailView */
+  }
+  
+  .history-header {
+    flex-wrap: wrap;
+    gap: var(--history-spacing-sm);
+  }
+  
+  .time-range-selector {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .time-range-btn {
+    flex: 1;
+    text-align: center;
+    min-width: auto;
+  }
+  
+  .session-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--history-spacing-sm);
+  }
+  
+  .completion-badge {
+    align-self: flex-end;
+  }
+  
+  .session-name, .overview-title {
+    font-size: 1.125rem; /* Maintain readability */
+  }
+  
+  .main-stats, .stats-content {
+    font-size: 0.75rem;
+    line-height: 1.6;
+  }
+  
+  .pr-item, .session-pr-item {
+    font-size: 0.8125rem;
+  }
+  
+  .overview-card, .session-card {
+    padding: 0.875rem; /* Match mobile padding pattern */
+  }
+  
+  .empty-title {
+    font-size: 1rem;
+  }
+  
+  .empty-message {
+    font-size: 0.8125rem;
+  }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .workout-history-container {
+    padding: 0.5rem; /* Match WorkoutDetailView very small breakpoint */
+  }
+  
+  .session-card, .overview-card {
+    padding: var(--history-spacing-md);
+  }
+  
+  .session-name, .overview-title {
+    font-size: 1rem;
+  }
+  
+  .main-stats, .stats-content {
+    font-size: 0.6875rem;
+  }
+  
+  .completion-pill {
+    padding: 4px 8px;
+    font-size: 0.6875rem;
+  }
+  
+  .empty-state {
+    padding: var(--history-spacing-lg);
+  }
+  
+  .empty-icon {
+    font-size: 2.5rem;
+  }
+}
+
+/* ======================
+   ACCESSIBILITY & HIGH CONTRAST
+   ====================== */
+@media (prefers-contrast: high) {
+  :root {
+    --history-border: #4b5568;
+    --history-primary-hover: #5b93ff;
+  }
+  
+  .back-button:focus,
+  .time-range-btn:focus,
+  .retry-button:focus,
+  .cta-button:focus,
+  .show-more-button:focus {
+    outline: 2px solid var(--history-primary);
+    outline-offset: 2px;
+  }
+  
+  .session-card:focus {
+    outline: 2px solid var(--history-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* ======================
+   REDUCED MOTION
+   ====================== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  .session-card:hover,
+  .cta-button:hover,
+  .retry-button:hover {
+    transform: none;
+  }
+}

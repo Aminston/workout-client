@@ -1,5 +1,29 @@
-/* app.css - Just import the theme */
+/* src/App.css - Your existing clean structure */
 @import './styles/theme.css';
 @import './styles/buttons.css';
+
+/* ✅ ADD THIS: Mobile Navigation Styles */
+@import './components/Navigation/MobileNavBar.css';
+
+/* ✅ ADD THIS: Mobile navigation support */
+@media (max-width: 767px) {
+  /* Add bottom padding to prevent content overlap with mobile nav */
+  .app-main {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+  }
+  
+  /* Add breathing room for content */
+  .content-container {
+    padding-bottom: 1rem;
+  }
+  
+  /* Ensure modals appear above navigation */
+  .modal,
+  .overlay,
+  .popup,
+  .toast-container {
+    z-index: 1001; /* Higher than navigation (1000) */
+  }
+}
 
 /* Any app-specific overrides go here if needed */

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar/Navbar';
 import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import WorkoutDetailView from './components/WorkoutSchedule/WorkoutDetailView';
+import WorkoutHistory from './components/WorkoutHistory/WorkoutHistory'; // ✅ ADD THIS IMPORT
 import LandingPage from './pages/Landing/LandingPage';
 import ToastManager, { toast } from './components/ToastManager';
 import './App.css';
@@ -188,6 +189,20 @@ export default function App() {
               <main className="app-main">
                 <div className="content-container">
                   <WorkoutDetailView onWorkoutComplete={fetchSchedule} />
+                </div>
+              </main>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ ADD THIS: Workout History Route */}
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute token={token}>
+              <main className="app-main">
+                <div className="content-container">
+                  <WorkoutHistory />
                 </div>
               </main>
             </ProtectedRoute>

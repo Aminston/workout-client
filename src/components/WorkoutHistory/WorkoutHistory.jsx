@@ -456,13 +456,6 @@ const WorkoutHistory = () => {
       
       {/* Header with time range selector */}
       <div className="history-header">
-        <button 
-          className="back-button" 
-          onClick={() => navigate(-1)}
-          aria-label="Go back to previous page"
-        >
-          ← Back
-        </button>
         
         <div className="time-range-selector" role="tablist" aria-label="Time range selection">
           <button

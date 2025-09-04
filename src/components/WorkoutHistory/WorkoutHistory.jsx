@@ -647,4 +647,4 @@ const WorkoutHistory = () => {
   );
 };
 
-export default WorkoutHistory;
+export default WorkoutHistory; 

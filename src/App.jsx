@@ -9,13 +9,17 @@ import ToastManager, { toast } from './components/ToastManager';
 import MobileNavBar from './components/Navigation/MobileNavBar'; // ✅ ADD THIS IMPORT
 import './App.css';
 
-// ✅ ADD THIS: Auth check function
+// ✅ UPDATED: Only redirect if we're NOT already on landing page
 function checkAuthAndRedirect(response) {
   if (response.status === 401 || response.status === 403) {
     console.log('🔒 Auth error detected - redirecting to landing');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('userName');
-    window.location.href = '/';
+    
+    // Only redirect if not already on landing page
+    if (window.location.pathname !== '/') {
+      window.location.href = '/';
+    }
     return true;
   }
   return false;
@@ -71,8 +75,8 @@ export default function App() {
         headers: { Authorization: `Bearer ${usedToken}` }
       });
 
-      // ✅ ADD THIS LINE - Check for auth errors
-      if (checkAuthAndRedirect(res)) return;
+      // ✅ UPDATED: Only check auth errors if we have a response
+      if (res && checkAuthAndRedirect(res)) return;
 
       if (!res.ok) throw new Error('Failed to fetch schedule');
       const data = await res.json();
@@ -108,7 +112,10 @@ export default function App() {
       }
     } catch (err) {
       console.error('❌ Failed to fetch schedule:', err);
-      toast.show('danger', '❌ Failed to load schedule');
+      // ✅ UPDATED: Don't show error toast if it was an auth redirect
+      if (err.message !== 'Authentication expired') {
+        toast.show('danger', '❌ Failed to load schedule');
+      }
     }
   };
 

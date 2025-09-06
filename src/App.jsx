@@ -9,6 +9,18 @@ import ToastManager, { toast } from './components/ToastManager';
 import MobileNavBar from './components/Navigation/MobileNavBar'; // ✅ ADD THIS IMPORT
 import './App.css';
 
+// ✅ ADD THIS: Auth check function
+function checkAuthAndRedirect(response) {
+  if (response.status === 401 || response.status === 403) {
+    console.log('🔒 Auth error detected - redirecting to landing');
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('userName');
+    window.location.href = '/';
+    return true;
+  }
+  return false;
+}
+
 function ProtectedRoute({ token, children }) {
   return token ? children : <Navigate to="/" replace />;
 }
@@ -58,6 +70,9 @@ export default function App() {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/schedule/v2`, {
         headers: { Authorization: `Bearer ${usedToken}` }
       });
+
+      // ✅ ADD THIS LINE - Check for auth errors
+      if (checkAuthAndRedirect(res)) return;
 
       if (!res.ok) throw new Error('Failed to fetch schedule');
       const data = await res.json();

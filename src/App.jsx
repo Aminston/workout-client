@@ -5,18 +5,18 @@ import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import WorkoutDetailView from './components/WorkoutSchedule/WorkoutDetailView';
 import WorkoutHistory from './components/WorkoutHistory/WorkoutHistory';
 import LandingPage from './pages/Landing/LandingPage';
+import ProfileOnboardingModal from './components/ProfileOnboardingModal/ProfileOnboardingModal';
 import ToastManager, { toast } from './components/ToastManager';
-import MobileNavBar from './components/Navigation/MobileNavBar'; // ✅ ADD THIS IMPORT
+import MobileNavBar from './components/Navigation/MobileNavBar';
 import './App.css';
 
-// ✅ UPDATED: Only redirect if we're NOT already on landing page
+// Auth redirect function
 function checkAuthAndRedirect(response) {
   if (response.status === 401 || response.status === 403) {
     console.log('🔒 Auth error detected - redirecting to landing');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('userName');
     
-    // Only redirect if not already on landing page
     if (window.location.pathname !== '/') {
       window.location.href = '/';
     }
@@ -29,12 +29,10 @@ function ProtectedRoute({ token, children }) {
   return token ? children : <Navigate to="/" replace />;
 }
 
-// ✅ ADD THIS: Layout component to conditionally show mobile navigation
 const AppLayout = ({ children, showMobileNav = false }) => {
   return (
     <>
       {children}
-      {/* Show mobile navigation only on logged-in app pages */}
       {showMobileNav && <MobileNavBar />}
     </>
   );
@@ -48,13 +46,20 @@ export default function App() {
   const [meta, setMeta] = useState({
     program_start: '',
     expires_on: '',
-    user_name: ''
+    user_name: '',
+    profile_complete: true, // Default to true to avoid flashing
+    missing_profile_fields: []
   });
   const [loadingWorkout, setLoadingWorkout] = useState(false);
   
-  // Track if we've made the initial fetch to avoid duplicates
+  // ✅ NEW: Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(false);
+  
+  // Track fetch status
   const hasFetchedRef = useRef(false);
   const lastFetchRef = useRef(null);
+  const onboardingShownRef = useRef(false); // Prevent multiple onboarding shows
 
   const fetchSchedule = async (customToken, reason = 'unknown') => {
     const usedToken = customToken || token;
@@ -75,72 +80,83 @@ export default function App() {
         headers: { Authorization: `Bearer ${usedToken}` }
       });
 
-      // ✅ UPDATED: Only check auth errors if we have a response
       if (res && checkAuthAndRedirect(res)) return;
-
       if (!res.ok) throw new Error('Failed to fetch schedule');
+      
       const data = await res.json();
-
       console.log('📥 Fresh schedule data received:', data);
       
-      // Debug: Analyze the session data structure
-      if (data.schedule) {
-        data.schedule.forEach(dayData => {
-          const { day, workouts } = dayData;
-          const exercisesWithSessions = workouts.filter(w => w.sessions && w.sessions.length > 0);
-          const totalSessions = workouts.reduce((sum, w) => sum + (w.sessions ? w.sessions.length : 0), 0);
-          
-          console.log(`📊 ${day} Debug:`, {
-            totalExercises: workouts.length,
-            exercisesWithSessions: exercisesWithSessions.length,
-            totalSessions,
-            sessionDetails: exercisesWithSessions.map(ex => ({
-              name: ex.name,
-              sessionCount: ex.sessions.length,
-              completedSets: new Set(ex.sessions.filter(s => s.set_status === 'completed').map(s => s.set_number)).size,
-              totalSets: ex.sets
-            }))
-          });
-        });
-      }
+      // ✅ NEW: Handle profile completion status
+      const isProfileIncomplete = data.profile_complete === false;
+      const missingFields = data.missing_profile_fields || [];
+      
+      console.log('👤 Profile Status:', {
+        complete: data.profile_complete,
+        missing: missingFields,
+        shouldShowOnboarding: isProfileIncomplete && !onboardingShownRef.current
+      });
 
       setPersonalized(data.schedule || []);
       setMeta(data);
+
+      // ✅ NEW: Show onboarding if profile is incomplete
+      if (isProfileIncomplete && !onboardingShownRef.current && reason !== 'onboarding-complete') {
+        console.log('🚀 Profile incomplete - showing onboarding modal');
+        setShowOnboarding(true);
+        onboardingShownRef.current = true;
+      }
 
       if (data.from_ai) {
         toast.show('success', '✅ Your personalized workout plan is ready!');
       }
     } catch (err) {
       console.error('❌ Failed to fetch schedule:', err);
-      // ✅ UPDATED: Don't show error toast if it was an auth redirect
       if (err.message !== 'Authentication expired') {
         toast.show('danger', '❌ Failed to load schedule');
       }
     }
   };
 
-  // SINGLE useEffect to handle all schedule fetching scenarios
+  // ✅ NEW: Handle onboarding completion
+  const handleOnboardingComplete = async () => {
+    console.log('🎉 Onboarding completed - refreshing schedule');
+    setShowOnboarding(false);
+    onboardingShownRef.current = false; // Reset for future use
+    
+    // Small delay to ensure backend processing
+    setTimeout(() => {
+      fetchSchedule(token, 'onboarding-complete');
+    }, 1000);
+  };
+
+  // ✅ NEW: Handle onboarding skip/close (optional)
+  const handleOnboardingSkip = () => {
+    console.log('⏭️ Onboarding skipped');
+    setShowOnboarding(false);
+    onboardingShownRef.current = true; // Mark as shown to prevent re-showing
+  };
+
+  // Main schedule fetching effect
   useEffect(() => {
     if (!token) {
       hasFetchedRef.current = false;
+      onboardingShownRef.current = false;
       return;
     }
 
-    // Set username when token is available
     setUserName(localStorage.getItem('userName') || '');
 
-    // Scenario 1: Initial load or token change
+    // Initial load or token change
     if (!hasFetchedRef.current) {
       fetchSchedule(token, 'initial-load');
       hasFetchedRef.current = true;
       return;
     }
 
-    // Scenario 2: Navigation back to schedule with state (workout completion)
+    // Navigation back to schedule with state (workout completion)
     if (location.pathname === '/schedule' && location.state) {
       const state = location.state;
       
-      // Show completion message
       if (state?.message || state?.completedSets !== undefined) {
         console.log('🎉 Workout completed, showing message:', state.message);
         if (state.message) {
@@ -148,7 +164,6 @@ export default function App() {
         }
       }
       
-      // Only refresh if there's a meaningful state change
       if (state?.message || state?.completedSets !== undefined || state?.forceRefresh) {
         fetchSchedule(token, 'workout-completion');
       }
@@ -157,6 +172,8 @@ export default function App() {
 
   const handleLoginSuccess = () => {
     setUserName(localStorage.getItem('userName') || '');
+    // Reset onboarding state for new login
+    onboardingShownRef.current = false;
   };
 
   const handleSaveSuccess = () => {
@@ -217,7 +234,6 @@ export default function App() {
           }
         />
         
-        {/* Workout Detail Route */}
         <Route
           path="/workout-detail"
           element={
@@ -233,7 +249,6 @@ export default function App() {
           }
         />
 
-        {/* Workout History Route */}
         <Route
           path="/history"
           element={
@@ -249,6 +264,14 @@ export default function App() {
           }
         />
       </Routes>
+
+      {/* ✅ NEW: Onboarding Modal */}
+      <ProfileOnboardingModal
+        show={showOnboarding}
+        onComplete={handleOnboardingComplete}
+        missingFields={meta.missing_profile_fields || []}
+      />
+
       <ToastManager />
     </div>
   );

@@ -1,13 +1,40 @@
-/* WeeklyWorkout.jsx - Optimized with Enhanced Spam CTA */
+/* WeeklyWorkout.jsx - Updated with ProfileOnboardingModal */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ProfileOnboardingModal from '../ProfileOnboardingModal/ProfileOnboardingModal';
 import './WeeklyWorkout.css';
 
-export default function WeeklyWorkout({ personalized = [], meta = {}, setPersonalized, loadingWorkout = false }) {
+export default function WeeklyWorkout({ 
+  personalized = [], 
+  meta = {}, 
+  setPersonalized, 
+  loadingWorkout = false,
+  onRefreshSchedule // Add this prop to trigger schedule refresh
+}) {
   const navigate = useNavigate();
   const [ctaLoading, setCtaLoading] = useState(false);
   const [ctaError, setCtaError] = useState(null);
   const [ctaDismissed, setCtaDismissed] = useState(false);
+
+  // ✅ NEW: Profile completion modal state
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // ✅ NEW: Check if profile is incomplete on component mount/update
+  React.useEffect(() => {
+    if (meta?.profile_complete === false && !showProfileModal) {
+      setShowProfileModal(true);
+    }
+  }, [meta?.profile_complete]);
+
+  // ✅ NEW: Handle profile completion
+  const handleProfileComplete = async () => {
+    setShowProfileModal(false);
+    
+    // Refresh schedule to get updated data
+    if (onRefreshSchedule) {
+      await onRefreshSchedule(null, 'profile-completed');
+    }
+  };
 
   // Helper function to get the best session for a specific set
   const getBestSessionForSet = (sessions, setNumber) => {
@@ -272,21 +299,21 @@ export default function WeeklyWorkout({ personalized = [], meta = {}, setPersona
   // Determine if CTA should be shown - FIXED LOGIC
   // Only show CTA when user has a BASE workout (is_custom_workout: false)
   const shouldShowCTA = !ctaDismissed && 
-  meta?.program_id && // Only show when we have actual data
-  !meta?.is_custom_workout;
-
-  console.log('🎯 CTA Debug:', {
-    meta,
-    is_custom_workout: meta?.is_custom_workout,
-    typeof_is_custom_workout: typeof meta?.is_custom_workout,
-    shouldShowCTA,
-    ctaDismissed,
-  });
+    meta?.program_id && // Only show when we have actual data
+    !meta?.is_custom_workout &&
+    meta?.profile_complete; // ✅ NEW: Only show CTA if profile is complete
 
   return (
     <div className="workout-container">
+      {/* ✅ NEW: Profile Onboarding Modal */}
+      <ProfileOnboardingModal
+        show={showProfileModal}
+        onComplete={handleProfileComplete}
+        missingFields={meta?.missing_profile_fields || []}
+        missingFieldsDisplay={meta?.missing_profile_fields_display || []}
+      />
 
-      {/* Enhanced Spam CTA - Only show for base workouts */}
+      {/* Enhanced Spam CTA - Only show for base workouts with complete profile */}
       {shouldShowCTA && (
         <div className="spam-cta-container" role="banner" aria-label="Custom workout promotion">
           <div className="spam-cta-card">

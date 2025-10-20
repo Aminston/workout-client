@@ -1,8 +1,9 @@
 // src/components/WorkoutSchedule/WorkoutDetailView.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
+import RestTimerBubble from "./RestTimerBubble";
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -189,6 +190,8 @@ const fmtElapsed = (sec) => {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 };
 
+const DEFAULT_REST_SECONDS = 60;
+
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
@@ -204,8 +207,83 @@ export default function WorkoutDetailView() {
   const [saveStatus, setSaveStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [restTimer, setRestTimer] = useState({
+    isVisible: false,
+    seconds: 0,
+    startingSeconds: 0,
+  });
 
+  const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+
+  const clearRestInterval = useCallback(() => {
+    if (restIntervalRef.current) {
+      clearInterval(restIntervalRef.current);
+      restIntervalRef.current = null;
+    }
+  }, []);
+
+  const startRestTimer = useCallback(
+    (initialSeconds = DEFAULT_REST_SECONDS) => {
+      const normalized = Math.max(0, Math.round(initialSeconds));
+      clearRestInterval();
+
+      if (normalized <= 0) {
+        setRestTimer({ isVisible: false, seconds: 0, startingSeconds: 0 });
+        return;
+      }
+
+      setRestTimer({
+        isVisible: true,
+        seconds: normalized,
+        startingSeconds: normalized,
+      });
+
+      restIntervalRef.current = setInterval(() => {
+        setRestTimer((prev) => {
+          if (!prev.isVisible) return prev;
+          const nextSeconds = Math.max(0, prev.seconds - 1);
+          if (nextSeconds <= 0) {
+            clearRestInterval();
+            return { isVisible: false, seconds: 0, startingSeconds: prev.startingSeconds };
+          }
+          return { ...prev, seconds: nextSeconds };
+        });
+      }, 1000);
+    },
+    [clearRestInterval]
+  );
+
+  const adjustRestTimer = useCallback(
+    (delta) => {
+      setRestTimer((prev) => {
+        if (!prev.isVisible) return prev;
+        const nextSeconds = Math.max(0, Math.round(prev.seconds + delta));
+        if (nextSeconds <= 0) {
+          clearRestInterval();
+          return { isVisible: false, seconds: 0, startingSeconds: prev.startingSeconds };
+        }
+        const nextStarting = delta > 0 ? Math.max(prev.startingSeconds, nextSeconds) : prev.startingSeconds;
+        return {
+          ...prev,
+          seconds: nextSeconds,
+          startingSeconds: nextStarting,
+        };
+      });
+    },
+    [clearRestInterval]
+  );
+
+  const closeRestTimer = useCallback(() => {
+    clearRestInterval();
+    setRestTimer({ isVisible: false, seconds: 0, startingSeconds: 0 });
+  }, [clearRestInterval]);
+
+  useEffect(() => {
+    return () => {
+      clearRestInterval();
+    };
+  }, [clearRestInterval]);
 
   // derived
   const totalSets = useMemo(
@@ -281,7 +359,7 @@ export default function WorkoutDetailView() {
     const key = `${exerciseId}-${setId}`;
     if (inFlight.current.has(key)) return;
     inFlight.current.add(key);
-  
+
     // 1) Read current snapshot to build the next set FIRST
     const ex = exercises.find(e => e.id === exerciseId);
     if (!ex) {
@@ -293,7 +371,9 @@ export default function WorkoutDetailView() {
       inFlight.current.delete(key);
       return;
     }
-  
+
+    startRestTimer();
+
     const completedAt = new Date().toISOString();
     const duration = prevSet.startedAt
       ? Math.max(0, (new Date(completedAt) - new Date(prevSet.startedAt)) / 1000)
@@ -604,6 +684,14 @@ export default function WorkoutDetailView() {
 
   return (
     <div className="workout-detail-container">
+      {restTimer.isVisible && (
+        <RestTimerBubble
+          seconds={restTimer.seconds}
+          startingSeconds={restTimer.startingSeconds}
+          onAdjust={adjustRestTimer}
+          onClose={closeRestTimer}
+        />
+      )}
       {/* Header */}
       <div className="workout-detail-header">
         <button

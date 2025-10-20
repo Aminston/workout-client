@@ -1,9 +1,21 @@
 @import "../../styles/theme.css";
 
+.rest-timer-portal {
+  position: relative;
+  z-index: 0;
+}
+
 .rest-timer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1600;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  padding-bottom: calc(
+    clamp(1.5rem, 5vw, 2.5rem) + var(--nav-height, 70px) + env(safe-area-inset-bottom, 0px)
+  );
   pointer-events: auto;
 }
 
@@ -14,43 +26,38 @@
   backdrop-filter: blur(2px);
   pointer-events: auto;
   animation: rest-timer-fade 0.2s ease;
-  z-index: 1600;
+  z-index: 0;
 }
 
 .rest-timer-bubble {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
   background: var(--md-sys-color-surface-high, rgba(19, 22, 27, 0.98));
   color: var(--color-text-main, #f1f3f4);
   border-radius: 16px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 2rem 2.5rem;
-  max-width: min(480px, 90vw);
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  width: min(480px, 90vw);
   max-height: min(
     480px,
-    calc(90vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 16px)
+    calc(100vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 3rem)
   );
-  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: clamp(1.25rem, 3vw, 1.75rem);
   pointer-events: auto;
   animation: rest-timer-scale 0.24s ease;
-  z-index: 1601;
+  z-index: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
-  margin-bottom: calc(var(--nav-height, 70px) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @supports (height: 100dvh) {
   .rest-timer-bubble {
     max-height: min(
       480px,
-      calc(90dvh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 16px)
+      calc(100dvh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 3rem)
     );
   }
 }
@@ -63,7 +70,7 @@
 }
 
 .rest-timer-title {
-  font-size: clamp(1.25rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
   font-weight: 700;
 }
 
@@ -91,7 +98,7 @@
 }
 
 .rest-timer-subtitle {
-  font-size: clamp(1rem, 2vw, 1.125rem);
+  font-size: clamp(1.05rem, 2.6vw, 1.2rem);
   margin: 0;
   line-height: 1.6;
   color: rgba(241, 243, 244, 0.78);
@@ -100,7 +107,7 @@
 .rest-timer-controls {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: clamp(0.75rem, 4vw, 1.25rem);
 }
 
 .rest-timer-btn {
@@ -148,18 +155,18 @@
 
 @keyframes rest-timer-scale {
   from {
-    transform: translate(-50%, -50%) scale(0.92);
+    transform: scale(0.92);
     opacity: 0;
   }
   to {
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
     opacity: 1;
   }
 }
 
 @media (max-width: 540px) {
   .rest-timer-bubble {
-    padding: 1.5rem;
+    padding: clamp(1.5rem, 6vw, 2rem);
     gap: 1.25rem;
   }
 }

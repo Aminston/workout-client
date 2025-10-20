@@ -3,8 +3,8 @@
 .rest-timer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1400;
-  pointer-events: none;
+  z-index: 1600;
+  pointer-events: auto;
 }
 
 .rest-timer-backdrop {
@@ -14,7 +14,7 @@
   backdrop-filter: blur(2px);
   pointer-events: auto;
   animation: rest-timer-fade 0.2s ease;
-  z-index: 1400;
+  z-index: 1600;
 }
 
 .rest-timer-bubble {
@@ -29,8 +29,9 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2rem 2.5rem;
   max-width: min(480px, 90vw);
-  max-height: calc(
-    90vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px)
+  max-height: min(
+    480px,
+    calc(90vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 16px)
   );
   width: 100%;
   display: flex;
@@ -38,10 +39,20 @@
   gap: 1.5rem;
   pointer-events: auto;
   animation: rest-timer-scale 0.24s ease;
-  z-index: 1401;
+  z-index: 1601;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+  margin-bottom: calc(var(--nav-height, 70px) + env(safe-area-inset-bottom, 0px));
+}
+
+@supports (height: 100dvh) {
+  .rest-timer-bubble {
+    max-height: min(
+      480px,
+      calc(90dvh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 16px)
+    );
+  }
 }
 
 .rest-timer-header {

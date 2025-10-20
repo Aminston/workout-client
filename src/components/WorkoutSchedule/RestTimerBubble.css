@@ -3,7 +3,7 @@
 .rest-timer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1400;
   pointer-events: none;
 }
 
@@ -14,6 +14,7 @@
   backdrop-filter: blur(2px);
   pointer-events: auto;
   animation: rest-timer-fade 0.2s ease;
+  z-index: 1400;
 }
 
 .rest-timer-bubble {
@@ -28,12 +29,19 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 2rem 2.5rem;
   max-width: min(480px, 90vw);
+  max-height: calc(
+    90vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px)
+  );
   width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   pointer-events: auto;
   animation: rest-timer-scale 0.24s ease;
+  z-index: 1401;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
 }
 
 .rest-timer-header {

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestTimerBubble from "./RestTimerBubble";
+import ExerciseDetailModal from "./ExerciseDetailModal";
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -226,6 +227,9 @@ export default function WorkoutDetailView() {
     seconds: 0,
     startingSeconds: 0,
   });
+  const [selectedExerciseId, setSelectedExerciseId] = useState(null);
+  const [exerciseDetailCache, setExerciseDetailCache] = useState({});
+  const [detailStatus, setDetailStatus] = useState({ loading: false, error: null });
 
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
@@ -309,6 +313,13 @@ export default function WorkoutDetailView() {
     [exercises]
   );
   const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
+  const selectedExercise = useMemo(
+    () => exercises.find((ex) => ex.id === selectedExerciseId) || null,
+    [exercises, selectedExerciseId]
+  );
+  const selectedExerciseDetails = selectedExercise?.workout_id
+    ? exerciseDetailCache[selectedExercise.workout_id]
+    : null;
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
@@ -618,6 +629,7 @@ export default function WorkoutDetailView() {
           defaultValue={display}
           autoFocus
           onFocus={(e) => e.target.select()}
+          onClick={(event) => event.stopPropagation()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter")
@@ -632,19 +644,22 @@ export default function WorkoutDetailView() {
     }
 
     const display =
-    field === "weight"
-      ? weightConverter.display(set.weight, useMetric)
-      : set[field] ?? "-";
-  
-  return (
-    <span
-      className="editable-cell"
-      onClick={() => onCellClick(exercise.id, set.id, field)}
-      title={`Click to edit ${field}`}
-    >
-      {display}
-    </span>
-  );
+      field === "weight"
+        ? weightConverter.display(set.weight, useMetric)
+        : set[field] ?? "-";
+
+    return (
+      <span
+        className="editable-cell"
+        onClick={(event) => {
+          event.stopPropagation();
+          onCellClick(exercise.id, set.id, field);
+        }}
+        title={`Click to edit ${field}`}
+      >
+        {display}
+      </span>
+    );
   
   };
 
@@ -695,6 +710,72 @@ export default function WorkoutDetailView() {
       </div>
     );
   }
+
+  const handleExerciseCardClick = useCallback((exercise) => {
+    if (!exercise) return;
+    setDetailStatus({ loading: false, error: null });
+    setSelectedExerciseId(exercise.id);
+  }, []);
+
+  const closeExerciseDetail = useCallback(() => {
+    setSelectedExerciseId(null);
+    setDetailStatus({ loading: false, error: null });
+  }, []);
+
+  const openGoogleSearch = useCallback((exerciseName) => {
+    if (!exerciseName) return;
+    const a = document.createElement("a");
+    a.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(
+      exerciseName
+    )}&tbm=vid`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.click();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedExercise) return;
+
+    const workoutId = selectedExercise.workout_id;
+    if (!workoutId) {
+      setDetailStatus({ loading: false, error: "Missing workout identifier" });
+      return;
+    }
+
+    if (selectedExerciseDetails) {
+      setDetailStatus({ loading: false, error: null });
+      return;
+    }
+
+    let cancelled = false;
+    setDetailStatus({ loading: true, error: null });
+
+    (async () => {
+      try {
+        const res = await fetch(getApiUrl(`/workouts/${workoutId}`), {
+          headers: getAuthHeaders(),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(text || `Failed to load exercise details (${res.status})`);
+        }
+        const data = await res.json();
+        if (cancelled) return;
+        setExerciseDetailCache((prev) => ({ ...prev, [workoutId]: data }));
+        setDetailStatus({ loading: false, error: null });
+      } catch (err) {
+        if (cancelled) return;
+        setDetailStatus({
+          loading: false,
+          error: err?.message || "Failed to load exercise details",
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedExercise, selectedExerciseDetails]);
 
   return (
     <div className="workout-detail-container">
@@ -767,21 +848,21 @@ export default function WorkoutDetailView() {
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (
-          <div key={exercise.id} className="exercise-detail-card">
+          <div
+            key={exercise.id}
+            className="exercise-detail-card"
+            onClick={() => handleExerciseCardClick(exercise)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleExerciseCardClick(exercise);
+              }
+            }}
+          >
             <div className="exercise-header">
-              <h3
-                className="exercise-name exercise-clickable"
-                onClick={() => {
-                  const a = document.createElement("a");
-                  a.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(
-                    exercise.name
-                  )}&tbm=vid`;
-                  a.target = "_blank";
-                  a.rel = "noopener";
-                  a.click();
-                }}
-                title="Click to watch exercise tutorial videos"
-              >
+              <h3 className="exercise-name" title="Open exercise details">
                 {exercise.name}
               </h3>
               <span
@@ -809,7 +890,7 @@ export default function WorkoutDetailView() {
               </div>
 
               {exercise.sets.length === 0 ? (
-                <div className="set-row">
+                <div className="set-row" onClick={(event) => event.stopPropagation()}>
                   <span className="set-number" style={{ gridColumn: "1 / -1" }}>
                     No sets available for this exercise yet.
                   </span>
@@ -821,6 +902,7 @@ export default function WorkoutDetailView() {
                     className={`set-row ${
                       set.status === "in-progress" ? "set-active" : ""
                     } ${set.status === "done" ? "set-completed" : ""}`}
+                    onClick={(event) => event.stopPropagation()}
                   >
                     <span className="set-number">{set.id}</span>
 
@@ -852,14 +934,20 @@ export default function WorkoutDetailView() {
                       ) : set.status === "in-progress" ? (
                         <button
                           className="btn btn-warning btn-sm"
-                          onClick={() => handleComplete(exercise.id, set.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleComplete(exercise.id, set.id);
+                          }}
                         >
                           End
                         </button>
                       ) : (
                         <button
                           className="btn btn-success btn-sm"
-                          onClick={() => handleStart(exercise.id, set.id)}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleStart(exercise.id, set.id);
+                          }}
                         >
                           Start
                         </button>
@@ -872,6 +960,14 @@ export default function WorkoutDetailView() {
           </div>
         ))}
       </div>
+      <ExerciseDetailModal
+        open={Boolean(selectedExercise)}
+        onClose={closeExerciseDetail}
+        exercise={selectedExercise}
+        details={selectedExerciseDetails}
+        status={detailStatus}
+        onGoogleSearch={openGoogleSearch}
+      />
     </div>
   );
 }

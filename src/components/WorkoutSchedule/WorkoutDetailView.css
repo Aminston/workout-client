@@ -187,6 +187,262 @@
 }
 
 /* ======================
+   EXERCISE DETAIL MODAL
+   ====================== */
+.exercise-detail-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: rgba(8, 10, 14, 0.78);
+  backdrop-filter: blur(4px);
+  z-index: 1300;
+}
+
+.exercise-detail-modal {
+  position: relative;
+  width: min(900px, 96vw);
+  max-height: 90vh;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 28px 52px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  color: var(--color-text-main);
+  display: flex;
+  flex-direction: column;
+}
+
+.exercise-detail-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, var(--alpha-02));
+  background: rgba(8, 10, 14, 0.65);
+  color: var(--color-text-main);
+  font-size: 1.35rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.exercise-detail-close:hover,
+.exercise-detail-close:focus {
+  background: rgba(8, 10, 14, 0.85);
+  transform: scale(1.05);
+  outline: none;
+}
+
+.exercise-detail-hero {
+  position: relative;
+  min-height: 220px;
+  background: linear-gradient(180deg, rgba(20, 24, 33, 0.9) 0%, rgba(20, 24, 33, 0.95) 100%);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 2.5rem 2.5rem 2rem;
+}
+
+.exercise-detail-hero.with-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 9, 12, 0.35) 0%, rgba(7, 9, 12, 0.9) 100%);
+}
+
+.exercise-detail-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.exercise-detail-title-button {
+  font-size: 1.9rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.exercise-detail-title-button:hover,
+.exercise-detail-title-button:focus {
+  color: var(--md-sys-color-primary);
+  border-color: rgba(143, 185, 255, var(--alpha-04));
+  outline: none;
+}
+
+.exercise-detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.exercise-detail-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: rgba(143, 185, 255, var(--alpha-02));
+  border: 1px solid rgba(143, 185, 255, var(--alpha-04));
+  color: var(--color-text-main);
+  font-size: 0.85rem;
+  letter-spacing: 0.01em;
+  text-transform: capitalize;
+}
+
+.exercise-detail-body {
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+}
+
+.exercise-detail-status {
+  background: rgba(143, 185, 255, var(--alpha-02));
+  border: 1px solid rgba(143, 185, 255, var(--alpha-04));
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--color-text-main);
+}
+
+.exercise-detail-status.error {
+  background: rgba(255, 91, 91, var(--alpha-02));
+  border-color: rgba(255, 91, 91, var(--alpha-04));
+  color: var(--md-sys-color-error);
+}
+
+.exercise-detail-section + .exercise-detail-section {
+  margin-top: 1.75rem;
+}
+
+.exercise-detail-section h4 {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.exercise-detail-section p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+.exercise-detail-muscles {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.exercise-detail-muscle-group {
+  flex: 1 1 200px;
+  background: rgba(24, 29, 38, 0.75);
+  border: 1px solid rgba(58, 67, 83, 0.6);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.exercise-detail-muscle-group .label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.exercise-detail-muscle-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.exercise-detail-muscle-group li {
+  font-size: 0.95rem;
+  color: var(--color-text-main);
+}
+
+.exercise-detail-instructions {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  color: var(--color-text-secondary);
+}
+
+.exercise-detail-instructions li {
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .exercise-detail-overlay {
+    padding: 1.5rem;
+  }
+
+  .exercise-detail-modal {
+    width: min(640px, 94vw);
+    max-height: 92vh;
+  }
+
+  .exercise-detail-hero {
+    padding: 2rem 1.75rem 1.75rem;
+    min-height: 200px;
+  }
+
+  .exercise-detail-body {
+    padding: 1.75rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .exercise-detail-overlay {
+    padding: 1rem;
+  }
+
+  .exercise-detail-modal {
+    border-radius: var(--radius-md);
+  }
+
+  .exercise-detail-hero {
+    padding: 1.5rem;
+    min-height: 180px;
+  }
+
+  .exercise-detail-title-button {
+    font-size: 1.6rem;
+  }
+
+  .exercise-detail-body {
+    padding: 1.5rem;
+  }
+
+  .exercise-detail-muscles {
+    flex-direction: column;
+  }
+}
+
+/* ======================
    HEADER SECTION
    ====================== */
 .workout-detail-header {

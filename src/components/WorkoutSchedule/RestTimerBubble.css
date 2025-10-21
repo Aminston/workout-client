@@ -1,0 +1,176 @@
+@import "../../styles/theme.css";
+
+.rest-timer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  padding-bottom: calc(
+    clamp(1.5rem, 5vw, 2.5rem) + var(--nav-height, 70px) + env(safe-area-inset-bottom, 0px)
+  );
+  pointer-events: auto;
+}
+
+.rest-timer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+  animation: rest-timer-fade 0.2s ease;
+  z-index: 0;
+}
+
+.rest-timer-bubble {
+  position: relative;
+  background: var(--md-sys-color-surface-high, rgba(19, 22, 27, 0.98));
+  color: var(--color-text-main, #f1f3f4);
+  border-radius: 16px;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: clamp(1.75rem, 4vw, 2.5rem);
+  width: min(480px, 90vw);
+  max-height: min(
+    480px,
+    calc(100vh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 3rem)
+  );
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 3vw, 1.75rem);
+  pointer-events: auto;
+  animation: rest-timer-scale 0.24s ease;
+  z-index: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@supports (height: 100dvh) {
+  .rest-timer-bubble {
+    max-height: min(
+      480px,
+      calc(100dvh - var(--nav-height, 70px) - env(safe-area-inset-bottom, 0px) - 3rem)
+    );
+  }
+}
+
+.rest-timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rest-timer-title {
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  font-weight: 700;
+}
+
+.rest-timer-close {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: inherit;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.2s ease),
+    transform var(--transition-fast, 0.2s ease);
+}
+
+.rest-timer-close:hover,
+.rest-timer-close:focus-visible {
+  background: rgba(143, 185, 255, 0.22);
+  transform: scale(1.05);
+  outline: none;
+}
+
+.rest-timer-subtitle {
+  font-size: clamp(1.05rem, 2.6vw, 1.2rem);
+  margin: 0;
+  line-height: 1.6;
+  color: rgba(241, 243, 244, 0.78);
+}
+
+.rest-timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: clamp(0.75rem, 4vw, 1.25rem);
+}
+
+.rest-timer-btn {
+  min-width: 96px;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.2s ease),
+    transform var(--transition-fast, 0.2s ease);
+}
+
+.rest-timer-btn:hover,
+.rest-timer-btn:focus-visible {
+  background: rgba(143, 185, 255, 0.24);
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.rest-timer-progress {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.rest-timer-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8fb9ff, #46e68a);
+  transition: width 0.3s ease;
+}
+
+@keyframes rest-timer-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rest-timer-scale {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 540px) {
+  .rest-timer-bubble {
+    padding: clamp(1.5rem, 6vw, 2rem);
+    gap: 1.25rem;
+  }
+}
+
+body.rest-timer-open {
+  overflow: hidden;
+}
+
+body.rest-timer-open .mobile-nav-bar {
+  z-index: 100;
+  pointer-events: none;
+}

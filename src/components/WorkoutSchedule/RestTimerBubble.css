@@ -103,10 +103,15 @@
   display: flex;
   justify-content: center;
   gap: clamp(0.75rem, 4vw, 1.25rem);
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
 }
 
 .rest-timer-btn {
-  min-width: 96px;
+  flex: 1 1 0;
+  min-width: 0;
   padding: 0.75rem 1.5rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -114,6 +119,7 @@
   color: inherit;
   font-weight: 700;
   font-size: 1rem;
+  text-align: center;
   cursor: pointer;
   transition: background var(--transition-fast, 0.2s ease),
     transform var(--transition-fast, 0.2s ease);
@@ -135,8 +141,11 @@
 
 .rest-timer-progress-fill {
   height: 100%;
+  width: 100%;
   background: linear-gradient(90deg, #8fb9ff, #46e68a);
-  transition: width 0.3s ease;
+  transform-origin: left center;
+  transform: scaleX(var(--rest-progress-scale, 1));
+  transition: transform 0.3s ease;
 }
 
 @keyframes rest-timer-fade {

@@ -93,7 +93,7 @@ export default function RestTimerBubble({
         <div className="rest-timer-progress" role="presentation">
           <div
             className="rest-timer-progress-fill"
-            style={{ width: `${remainingPercent}%` }}
+            style={{ "--rest-progress-scale": `${remainingPercent / 100}` }}
           />
         </div>
       </div>

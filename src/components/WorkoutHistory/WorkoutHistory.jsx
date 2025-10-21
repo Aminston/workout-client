@@ -2,7 +2,6 @@
 // Complete production-ready implementation aligned with WorkoutDetailView
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './WorkoutHistory.css';
 
 // API utilities
@@ -45,12 +44,6 @@ const formatVolume = (volume) => {
     return `${(volume / 1000).toFixed(1)}k`;
   }
   return `${Math.round(volume)}kg`;
-};
-
-const getCompletionColor = (percentage) => {
-  if (percentage >= 90) return 'completion-excellent';
-  if (percentage >= 75) return 'completion-good';
-  return 'completion-needs-work';
 };
 
 const getCategoryEmoji = (category) => {
@@ -142,8 +135,6 @@ const historyApi = {
 };
 
 const WorkoutHistory = () => {
-  const navigate = useNavigate();
-  
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -296,103 +287,6 @@ const WorkoutHistory = () => {
     };
   }, [weeklyStats, processedWorkoutSessions, prsByCategory]);
 
-  // Handle session click - navigate to detailed view
-  const handleSessionClick = useCallback(async (session) => {
-    try {
-      console.log('📱 Loading session details for:', session.name, session.rawDate);
-      
-      // Create exercises from session data
-      const exerciseGroups = session.rawSessions.reduce((acc, rawSession) => {
-        const key = rawSession.user_program_schedule_id;
-        if (!acc[key]) {
-          acc[key] = {
-            id: rawSession.user_program_schedule_id,
-            scheduleId: rawSession.user_program_schedule_id,
-            workout_id: rawSession.workout_id,
-            name: rawSession.exercise_name,
-            category: rawSession.exercise_category,
-            type: rawSession.exercise_type || 'strength',
-            sets: [],
-            status: 'done',
-          };
-        }
-        
-        // Add set to exercise
-        acc[key].sets.push({
-          id: rawSession.set_number || acc[key].sets.length + 1,
-          reps: rawSession.reps || 0,
-          weight: rawSession.weight || 0,
-          weightUnit: rawSession.weight_unit || 'kg',
-          duration: rawSession.elapsed_time || null,
-          status: 'done',
-          completedAt: rawSession.created_at,
-          isFromSession: true,
-          isSynced: true,
-        });
-        
-        return acc;
-      }, {});
-
-      // Sort sets within each exercise
-      Object.values(exerciseGroups).forEach(exercise => {
-        exercise.sets.sort((a, b) => a.id - b.id);
-      });
-
-      const exercises = Object.values(exerciseGroups);
-
-      const workoutDetailData = {
-        day: session.name,
-        category: '',
-        scheduleId: session.rawSessions[0]?.user_program_schedule_id,
-        exercises: exercises,
-        
-        // Progress metadata
-        totalSets: session.sets.completed,
-        completedSets: session.sets.completed,
-        progressPercentage: session.completion,
-        
-        // Workout state - set to review mode for historical data
-        isCompleted: true,
-        isReviewMode: true,
-        
-        // Session metadata
-        sessionDate: session.rawDate,
-        workoutName: session.name,
-      };
-
-      console.log('🎯 Navigating to historical workout:', workoutDetailData);
-
-      navigate('/workout-detail', { 
-        state: { 
-          workoutData: workoutDetailData,
-          isHistoryMode: true,
-          originalApiData: {
-            day_name: session.name,
-            workouts: exercises.map(ex => ({
-              scheduleId: ex.scheduleId,
-              workout_id: ex.workout_id,
-              name: ex.name,
-              category: ex.category,
-              type: ex.type,
-              sessions: ex.sets.map(set => ({
-                set_number: set.id,
-                reps: set.reps,
-                weight: { value: set.weight, unit: set.weightUnit },
-                elapsed_time: set.duration,
-                set_status: 'completed',
-                created_at: set.completedAt,
-              }))
-            })),
-          }
-        } 
-      });
-
-    } catch (err) {
-      console.error('❌ Error loading session details:', err);
-      alert(`Error loading session: ${err.message}`);
-    }
-  }, [navigate]);
-
   // Handle time range change
   const handleTimeRangeChange = useCallback((range) => {
     if (range !== timeRange) {
@@ -404,14 +298,6 @@ const WorkoutHistory = () => {
   const handleRetry = useCallback(() => {
     loadHistoryData(timeRange);
   }, [loadHistoryData, timeRange]);
-
-  // Handle keyboard navigation for session cards
-  const handleKeyDown = useCallback((event, session) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleSessionClick(session);
-    }
-  }, [handleSessionClick]);
 
   // Load data on mount and time range change
   useEffect(() => {
@@ -525,116 +411,16 @@ const WorkoutHistory = () => {
           </div>
         )}
 
-        {/* Divider */}
-        {weeklyOverview && processedWorkoutSessions.length > 0 && (
-          <div className="section-divider" aria-hidden="true"></div>
+        {!weeklyOverview && (
+          <div className="empty-state" role="status">
+            <div className="empty-icon" aria-hidden="true">📭</div>
+            <h3 className="empty-title">No History Yet</h3>
+            <p className="empty-message">
+              Your personal records will appear here once you log some workouts.
+            </p>
+          </div>
         )}
 
-        {/* Individual Workout Sessions */}
-        <div className="sessions-container">
-          {processedWorkoutSessions.length > 0 ? (
-            processedWorkoutSessions.map((session) => (
-              <div 
-                key={`${session.rawDate}-${session.name}`} 
-                className="session-card"
-                onClick={() => handleSessionClick(session)}
-                onKeyDown={(e) => handleKeyDown(e, session)}
-                tabIndex={0}
-                role="button"
-                aria-label={`View details for ${session.name} workout on ${session.date}`}
-              >
-                
-                {/* Session Header */}
-                <div className="session-header">
-                  <div className="session-info">
-                    <h3 className="session-name">{session.name}</h3>
-                    <p className="session-date">{session.date}</p>
-                  </div>
-                  <div className="completion-badge">
-                    <div className={`completion-pill ${getCompletionColor(session.completion)}`}>
-                      {session.completion}%
-                    </div>
-                  </div>
-                </div>
-
-                {/* Performance Stats */}
-                <div className="stats-section">
-                  <div className="stats-title">Performance</div>
-                  <div className="stats-content">
-                    <span className="stat-highlight">
-                      {session.exercises.completed}/{session.exercises.total}
-                    </span> Exercises
-                    <span className="stat-separator" aria-hidden="true">•</span>
-                    <span className="stat-highlight">
-                      {session.sets.completed}/{session.sets.total}
-                    </span> Sets
-                  </div>
-                </div>
-
-                {/* Effort Stats */}
-                <div className="stats-section">
-                  <div className="stats-title">Effort</div>
-                  <div className="stats-content">
-                    <span className="stat-highlight">{session.duration}</span> Duration
-                    <span className="stat-separator" aria-hidden="true">•</span>
-                    <span className="stat-highlight">{session.volume}</span> Volume
-                  </div>
-                </div>
-
-                {/* Session PRs */}
-                {session.prsByCategory.length > 0 && (
-                  <>
-                    <div className="pr-divider" aria-hidden="true"></div>
-                    <div className="session-pr-section">
-                      <div className="section-title">PR by Category</div>
-                      <div className="session-pr-list">
-                        {session.prsByCategory.map((pr, prIndex) => (
-                          <div key={`${pr.category}-${prIndex}`} className="session-pr-item">
-                            <div className="pr-category">
-                              <div className="category-icon" aria-hidden="true"></div>
-                              <span className="category-name">{pr.category}</span>
-                            </div>
-                            <span className="pr-weight">{pr.weight}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="empty-state">
-              <div className="empty-icon" role="img" aria-label="No workouts">💪</div>
-              <h3 className="empty-title">No Workouts Yet</h3>
-              <p className="empty-message">
-                Start your first workout to see your history here.
-              </p>
-              <button 
-                className="cta-button" 
-                onClick={() => navigate('/schedule')}
-                aria-label="Navigate to workout schedule"
-              >
-                Start Workout
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Show more button - only if we have more than 5 sessions */}
-        {processedWorkoutSessions.length > 5 && (
-          <button 
-            className="show-more-button"
-            onClick={() => {
-              console.log('Show more clicked - implement pagination if needed');
-              // Could implement pagination or show all functionality here
-            }}
-            aria-label="Show more workout history"
-          >
-            View All History
-          </button>
-        )}
-        
       </div>
     </div>
   );

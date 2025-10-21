@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import "./RestTimerBubble.css";
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -9,16 +10,62 @@ export default function RestTimerBubble({
   onAdjust,
   onClose,
 }) {
-  const displaySeconds = Math.max(0, Math.round(seconds || 0));
-  const initial = Math.max(1, Math.round(startingSeconds || 1));
-  const progress = 100 - clamp((displaySeconds / initial) * 100, 0, 100);
+  const [portalEl, setPortalEl] = useState(null);
+  const subtitleId = useId();
+  const titleId = useId();
 
-  return (
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    const el = document.createElement("div");
+    el.className = "rest-timer-portal";
+    document.body.appendChild(el);
+    setPortalEl(el);
+
+    return () => {
+      document.body.removeChild(el);
+      setPortalEl(null);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+
+    document.body.classList.add("rest-timer-open");
+    return () => {
+      document.body.classList.remove("rest-timer-open");
+    };
+  }, []);
+
+  const displaySeconds = useMemo(
+    () => Math.max(0, Math.round(seconds || 0)),
+    [seconds]
+  );
+  const initial = useMemo(
+    () => Math.max(1, Math.round(startingSeconds || 1)),
+    [startingSeconds]
+  );
+  const remainingPercent = useMemo(
+    () => clamp((displaySeconds / initial) * 100, 0, 100),
+    [displaySeconds, initial]
+  );
+
+  if (!portalEl) return null;
+
+  return createPortal(
     <div className="rest-timer-overlay" role="presentation">
       <div className="rest-timer-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className="rest-timer-bubble" role="status" aria-live="polite">
+      <div
+        className="rest-timer-bubble"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={subtitleId}
+      >
         <div className="rest-timer-header">
-          <span className="rest-timer-title">Descanso: {displaySeconds}s</span>
+          <span className="rest-timer-title" id={titleId} aria-live="polite">
+            Descanso: {displaySeconds}s
+          </span>
           <button
             type="button"
             className="rest-timer-close"
@@ -29,7 +76,9 @@ export default function RestTimerBubble({
           </button>
         </div>
 
-        <p className="rest-timer-subtitle">Ajusta tu descanso antes de continuar.</p>
+        <p className="rest-timer-subtitle" id={subtitleId}>
+          Ajusta tu descanso antes de continuar.
+        </p>
 
         <div className="rest-timer-controls" aria-label="Controles del temporizador de descanso">
           <button
@@ -51,9 +100,13 @@ export default function RestTimerBubble({
         </div>
 
         <div className="rest-timer-progress" role="presentation">
-          <div className="rest-timer-progress-fill" style={{ width: `${progress}%` }} />
+          <div
+            className="rest-timer-progress-fill"
+            style={{ width: `${remainingPercent}%` }}
+          />
         </div>
       </div>
-    </div>
+    </div>,
+    portalEl
   );
 }

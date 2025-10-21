@@ -120,11 +120,25 @@ function buildExercisesFromDay(dayData) {
           isSynced: true,
         });
       } else {
-      // Pending - use program defaults (base reps & weight)
-      sets. push ({
-        id: i,
-        reps: numOr(w. reps, 0), weight: numOr(w.weight?. value, 0), weightUnit: w.weight?.unit || "kg", duration: null, status: "pending", completedAt: null, isFromSession: false, isSynced: false,
-        }) ;
+        // Pending - use program defaults (base reps & weight)
+        const defaultWeight =
+          w.weight?.value != null
+            ? w.weight.value
+            : w.weight_value != null
+            ? w.weight_value
+            : w.weight ?? 0;
+
+        sets.push({
+          id: i,
+          reps: numOr(w.reps, 0),
+          weight: numOr(defaultWeight, 0),
+          weightUnit: w.weight?.unit || w.weight_unit || "kg",
+          duration: null,
+          status: "pending",
+          completedAt: null,
+          isFromSession: false,
+          isSynced: false,
+        });
       }
     }
 

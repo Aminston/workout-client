@@ -164,6 +164,73 @@ function buildExercisesFromDay(dayData) {
   });
 }
 
+function adaptPrebuiltExercises(exercises) {
+  if (!Array.isArray(exercises)) return [];
+
+  return exercises.map((exercise, exerciseIndex) => {
+    const {
+      id,
+      scheduleId,
+      workout_id,
+      name,
+      category,
+      type,
+      sets,
+      status,
+    } = exercise || {};
+
+    const normalizedSets = Array.isArray(sets)
+      ? sets.map((set, setIndex) => {
+          const repsCandidate =
+            set?.reps ?? set?.actualReps ?? set?.targetReps ?? null;
+          const weightCandidate =
+            set?.weight ?? set?.actualWeight ?? set?.targetWeight ?? null;
+          const durationCandidate = set?.duration ?? set?.time ?? null;
+
+          const derivedStatus = set?.status
+            ? String(set.status)
+            : repsCandidate != null || weightCandidate != null
+            ? "done"
+            : "pending";
+
+          return {
+            id: set?.id ?? set?.setId ?? set?.setNumber ?? setIndex + 1,
+            reps: numOr(repsCandidate, 0),
+            weight: numOr(weightCandidate, 0),
+            weightUnit: set?.weightUnit || "kg",
+            duration: durationCandidate != null ? Number(durationCandidate) : null,
+            status: derivedStatus,
+            completedAt: set?.completedAt ?? set?.lastUpdated ?? null,
+            isFromSession: Boolean(set?.sessionId),
+            isSynced: Boolean(set?.sessionId),
+          };
+        })
+      : [];
+
+    const doneCount = normalizedSets.filter((s) => s.status === "done").length;
+    const computedStatus =
+      status ??
+      (doneCount === normalizedSets.length && normalizedSets.length > 0
+        ? "done"
+        : doneCount > 0
+        ? "in-progress"
+        : "pending");
+
+    const fallbackId = scheduleId ?? id ?? `exercise-${exerciseIndex + 1}`;
+
+    return {
+      id: fallbackId,
+      scheduleId: scheduleId ?? fallbackId,
+      workout_id: workout_id ?? fallbackId,
+      name: name || "Untitled Exercise",
+      category: category || null,
+      type: type || null,
+      sets: normalizedSets,
+      status: computedStatus,
+    };
+  });
+}
+
 /* ================== API helpers ================== */
 const getApiUrl = (endpoint) => {
   const base = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -325,7 +392,7 @@ export default function WorkoutDetailView() {
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
+    const loadWorkout = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -333,34 +400,53 @@ export default function WorkoutDetailView() {
         setHasUnsaved(false);
         setSaveStatus(null);
 
-        const originalApiData = location.state?.originalApiData;
-        const passedWorkoutData = location.state?.workoutData;
-        const dayData =
-          originalApiData ??
-          (passedWorkoutData && passedWorkoutData.originalApiData);
+        const state = location.state || {};
+        const originalApiData = state.originalApiData;
+        const passedWorkoutData = state.workoutData;
 
-        if (!dayData) throw new Error("API data not found");
-        if (!Array.isArray(dayData.workouts))
-          throw new Error("Invalid workout data: missing workouts array.");
+        if (originalApiData?.workouts && Array.isArray(originalApiData.workouts)) {
+          const built = buildExercisesFromDay(originalApiData);
+          if (!mounted) return;
+          setExercises(built);
+          setWorkoutMeta({
+            day:
+              originalApiData.day_name ||
+              originalApiData.day ||
+              (originalApiData.day_number != null
+                ? `Day ${originalApiData.day_number}`
+                : "Workout"),
+          });
+          return;
+        }
 
-        const built = buildExercisesFromDay(dayData);
-        if (!mounted) return;
+        if (passedWorkoutData?.exercises && Array.isArray(passedWorkoutData.exercises)) {
+          const adapted = adaptPrebuiltExercises(passedWorkoutData.exercises);
+          if (!mounted) return;
+          setExercises(adapted);
+          setWorkoutMeta({
+            day:
+              passedWorkoutData.day ||
+              passedWorkoutData.dayName ||
+              passedWorkoutData.title ||
+              "Workout",
+          });
+          return;
+        }
 
-        setExercises(built);
-        setWorkoutMeta({
-          day: dayData.day_name || `Day ${dayData.day_number}`,
-        });
+        throw new Error("API data not found");
       } catch (e) {
         if (mounted) setError(e.message || "Failed to load workout");
       } finally {
         if (mounted) setLoading(false);
       }
-    })();
+    };
+
+    loadWorkout();
 
     return () => {
       mounted = false;
     };
-  }, [location.key, JSON.stringify(location.state)]);
+  }, [location.key]);
 
   /* ---------- actions ---------- */
   const handleStart = (exerciseId, setId) => {

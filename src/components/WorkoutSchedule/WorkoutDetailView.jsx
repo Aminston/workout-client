@@ -401,8 +401,11 @@ export default function WorkoutDetailView() {
         setSaveStatus(null);
 
         const state = location.state || {};
-        const originalApiData = state.originalApiData;
         const passedWorkoutData = state.workoutData;
+        const originalApiData =
+          state.originalApiData ||
+          passedWorkoutData?.originalApiData ||
+          null;
 
         if (originalApiData?.workouts && Array.isArray(originalApiData.workouts)) {
           const built = buildExercisesFromDay(originalApiData);

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestTimerBubble from "./RestTimerBubble";
+import ExerciseDetailModal from "./ExerciseDetailModal";
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -226,6 +227,13 @@ export default function WorkoutDetailView() {
     seconds: 0,
     startingSeconds: 0,
   });
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
+  const [exerciseDetailsCache, setExerciseDetailsCache] = useState({});
+  const [exerciseDetailStatus, setExerciseDetailStatus] = useState({
+    state: "idle",
+    message: "",
+  });
 
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
@@ -236,6 +244,81 @@ export default function WorkoutDetailView() {
       restIntervalRef.current = null;
     }
   }, []);
+
+  const activeWorkoutId = activeExercise?.workout_id ?? null;
+
+  const openExerciseModal = useCallback(
+    (exercise) => {
+      if (!exercise) return;
+      const workoutId = exercise.workout_id ?? null;
+      setActiveExercise(exercise);
+      if (workoutId && exerciseDetailsCache[workoutId]) {
+        setExerciseDetailStatus({ state: "success", message: "" });
+      } else if (workoutId) {
+        setExerciseDetailStatus({ state: "loading", message: "" });
+      } else {
+        setExerciseDetailStatus({ state: "success", message: "" });
+      }
+      setIsExerciseModalOpen(true);
+    },
+    [exerciseDetailsCache]
+  );
+
+  const closeExerciseModal = useCallback(() => {
+    setIsExerciseModalOpen(false);
+    setActiveExercise(null);
+    setExerciseDetailStatus({ state: "idle", message: "" });
+  }, []);
+
+  const handleGoogleSearch = useCallback((exerciseName) => {
+    if (!exerciseName) return;
+    const a = document.createElement("a");
+    a.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(
+      exerciseName
+    )}&tbm=vid`;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.click();
+  }, []);
+
+  const fetchExerciseDetails = useCallback(
+    async (workoutId, force = false) => {
+      if (!workoutId) return null;
+      if (!force && exerciseDetailsCache[workoutId]) {
+        setExerciseDetailStatus((prev) =>
+          prev.state === "success" ? prev : { state: "success", message: "" }
+        );
+        return exerciseDetailsCache[workoutId];
+      }
+
+      setExerciseDetailStatus({ state: "loading", message: "" });
+
+      try {
+        const response = await fetch(getApiUrl(`/workouts/${workoutId}`), {
+          headers: getAuthHeaders(),
+        });
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          throw new Error(
+            text ? `Unable to load exercise details: ${text}` : "Unable to load exercise details"
+          );
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        setExerciseDetailsCache((prev) => ({ ...prev, [workoutId]: payload }));
+        setExerciseDetailStatus({ state: "success", message: "" });
+        return payload;
+      } catch (err) {
+        setExerciseDetailStatus({
+          state: "error",
+          message: err?.message || "Failed to load exercise details",
+        });
+        return null;
+      }
+    },
+    [exerciseDetailsCache]
+  );
 
   const startRestTimer = useCallback(
     (initialSeconds = DEFAULT_REST_SECONDS) => {
@@ -299,6 +382,11 @@ export default function WorkoutDetailView() {
     };
   }, [clearRestInterval]);
 
+  useEffect(() => {
+    if (!isExerciseModalOpen || !activeWorkoutId) return;
+    fetchExerciseDetails(activeWorkoutId);
+  }, [isExerciseModalOpen, activeWorkoutId, fetchExerciseDetails]);
+
   // derived
   const totalSets = useMemo(
     () => exercises.reduce((sum, e) => sum + e.sets.length, 0),
@@ -309,6 +397,9 @@ export default function WorkoutDetailView() {
     [exercises]
   );
   const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
+  const activeExerciseDetails = activeWorkoutId
+    ? exerciseDetailsCache[activeWorkoutId]
+    : null;
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
@@ -619,6 +710,7 @@ export default function WorkoutDetailView() {
           autoFocus
           onFocus={(e) => e.target.select()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
             if (e.key === "Enter")
               onCellEdit(exercise.id, set.id, field, e.target.value);
@@ -632,20 +724,23 @@ export default function WorkoutDetailView() {
     }
 
     const display =
-    field === "weight"
-      ? weightConverter.display(set.weight, useMetric)
-      : set[field] ?? "-";
-  
-  return (
-    <span
-      className="editable-cell"
-      onClick={() => onCellClick(exercise.id, set.id, field)}
-      title={`Click to edit ${field}`}
-    >
-      {display}
-    </span>
-  );
-  
+      field === "weight"
+        ? weightConverter.display(set.weight, useMetric)
+        : set[field] ?? "-";
+
+    return (
+      <span
+        className="editable-cell"
+        onClick={(e) => {
+          e.stopPropagation();
+          onCellClick(exercise.id, set.id, field);
+        }}
+        title={`Click to edit ${field}`}
+      >
+        {display}
+      </span>
+    );
+
   };
 
   /* ---------- leave warning ---------- */
@@ -767,21 +862,23 @@ export default function WorkoutDetailView() {
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (
-          <div key={exercise.id} className="exercise-detail-card">
+          <div
+            key={exercise.id}
+            className="exercise-detail-card"
+            role="button"
+            tabIndex={0}
+            aria-label={`View details for ${exercise.name}`}
+            onClick={() => openExerciseModal(exercise)}
+            onKeyDown={(e) => {
+              if (e.target !== e.currentTarget) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openExerciseModal(exercise);
+              }
+            }}
+          >
             <div className="exercise-header">
-              <h3
-                className="exercise-name exercise-clickable"
-                onClick={() => {
-                  const a = document.createElement("a");
-                  a.href = `https://www.google.com/search?q=how+to+${encodeURIComponent(
-                    exercise.name
-                  )}&tbm=vid`;
-                  a.target = "_blank";
-                  a.rel = "noopener";
-                  a.click();
-                }}
-                title="Click to watch exercise tutorial videos"
-              >
+              <h3 className="exercise-name" title="View exercise details">
                 {exercise.name}
               </h3>
               <span
@@ -852,14 +949,20 @@ export default function WorkoutDetailView() {
                       ) : set.status === "in-progress" ? (
                         <button
                           className="btn btn-warning btn-sm"
-                          onClick={() => handleComplete(exercise.id, set.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleComplete(exercise.id, set.id);
+                          }}
                         >
                           End
                         </button>
                       ) : (
                         <button
                           className="btn btn-success btn-sm"
-                          onClick={() => handleStart(exercise.id, set.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStart(exercise.id, set.id);
+                          }}
                         >
                           Start
                         </button>
@@ -872,6 +975,20 @@ export default function WorkoutDetailView() {
           </div>
         ))}
       </div>
+
+      <ExerciseDetailModal
+        open={isExerciseModalOpen}
+        onClose={closeExerciseModal}
+        exercise={activeExercise}
+        details={activeExerciseDetails}
+        status={exerciseDetailStatus}
+        onGoogleSearch={handleGoogleSearch}
+        onRetry={
+          activeWorkoutId
+            ? () => fetchExerciseDetails(activeWorkoutId, true)
+            : undefined
+        }
+      />
     </div>
   );
 }

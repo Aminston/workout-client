@@ -167,6 +167,20 @@ export default function ExerciseDetailModal({
   const detailData = useMemo(() => resolveDetailData(details), [details]);
   const exerciseName = exercise?.name || coalesceText(detailData.name) || "Exercise";
   const heroImage = useMemo(() => pickHeroImage(detailData, exercise), [detailData, exercise]);
+  const subtitle = useMemo(
+    () =>
+      coalesceText(
+        detailData.subtitle,
+        detailData.short_description,
+        detailData.shortDescription,
+        detailData.tagline,
+        detailData.intro,
+        detailData.summary,
+        exercise?.summary,
+        exercise?.short_description
+      ),
+    [detailData, exercise]
+  );
   const primaryMuscles = useMemo(
     () =>
       coalesceText(
@@ -258,7 +272,6 @@ export default function ExerciseDetailModal({
     () =>
       coalesceText(
         detailData.description,
-        detailData.summary,
         detailData.long_description,
         detailData.overview,
         detailData.tips,
@@ -373,35 +386,6 @@ export default function ExerciseDetailModal({
           ×
         </button>
 
-        <div className="exercise-modal-hero">
-          {heroImage ? (
-            <img
-              src={heroImage}
-              alt={`${exerciseName} preview`}
-              className="exercise-modal-hero__image"
-            />
-          ) : (
-            <div className="exercise-modal-hero__placeholder" aria-hidden="true" />
-          )}
-          <div className="exercise-modal-hero__overlay" />
-          <div className="exercise-modal-hero__content">
-            <button
-              type="button"
-              className="exercise-modal-title"
-              onClick={handleTitleClick}
-              title="Search for tutorials on Google"
-            >
-              {exerciseName}
-              <span aria-hidden="true" className="exercise-modal-title__icon">
-                ↗
-              </span>
-            </button>
-            {hasContent(primaryMuscles) && (
-              <p className="exercise-modal-subtitle">{primaryMuscles}</p>
-            )}
-          </div>
-        </div>
-
         <div className="exercise-modal-body" id={descriptionId}>
           {showInitialSpinner ? (
             <div className="exercise-modal-loading">
@@ -410,6 +394,51 @@ export default function ExerciseDetailModal({
             </div>
           ) : (
             <>
+              <header className="exercise-modal-header">
+                <div className="exercise-modal-header__text">
+                  {hasContent(category) && (
+                    <span className="exercise-modal-header__eyebrow">{category}</span>
+                  )}
+                  <button
+                    type="button"
+                    className="exercise-modal-title"
+                    onClick={handleTitleClick}
+                    title="Search for tutorials on Google"
+                  >
+                    {exerciseName}
+                    <span aria-hidden="true" className="exercise-modal-title__icon">
+                      ↗
+                    </span>
+                  </button>
+                  {hasContent(subtitle) && (
+                    <p className="exercise-modal-subtitle">{subtitle}</p>
+                  )}
+                  {!hasContent(subtitle) && hasContent(primaryMuscles) && (
+                    <p className="exercise-modal-subtitle">{primaryMuscles}</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="exercise-modal-google"
+                  onClick={handleTitleClick}
+                >
+                  Ver en Google
+                  <span aria-hidden="true" className="exercise-modal-google__icon">
+                    ↗
+                  </span>
+                </button>
+              </header>
+
+              {heroImage && (
+                <div className="exercise-modal-media" role="presentation">
+                  <img
+                    src={heroImage}
+                    alt=""
+                    className="exercise-modal-media__image"
+                  />
+                </div>
+              )}
+
               {statusState === "error" && (
                 <div className="exercise-modal-error">
                   <p>{statusMessage || "We couldn't load more information for this exercise."}</p>

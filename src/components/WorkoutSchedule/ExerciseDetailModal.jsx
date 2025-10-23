@@ -99,12 +99,20 @@ const extractInstructionItems = (value) => {
   }
 
   if (typeof value === "string") {
-    const pieces = value
-      .split(/\r?\n|\u2022|\u25CF|;/)
+    const normalized = value.replace(/\r?\n/g, "\n").trim();
+    const numberedSteps = normalized.match(
+      /\d+[.)]\s*[\s\S]+?(?=(?:\s*\d+[.)]\s)|$)/g
+    );
+    if (numberedSteps && numberedSteps.length > 0) {
+      return numberedSteps.map((step) => step.trim());
+    }
+
+    const pieces = normalized
+      .split(/\n|\u2022|\u25CF|;|•|·|\s{2,}/)
       .map((piece) => piece.trim())
       .filter(Boolean);
     if (pieces.length) return pieces;
-    return [value.trim()].filter(Boolean);
+    return [normalized].filter(Boolean);
   }
 
   if (typeof value === "object") {
@@ -120,6 +128,34 @@ const extractInstructionItems = (value) => {
   }
 
   return [];
+};
+
+const normalizeLabel = (text) => {
+  if (!text || typeof text !== "string") return text;
+  const trimmed = text.trim();
+  if (!trimmed) return trimmed;
+  const needsNormalization = /[_-]/.test(trimmed) || trimmed === trimmed.toLowerCase();
+  if (!needsNormalization) return trimmed;
+  return trimmed
+    .replace(/_+/g, " ")
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((word) =>
+      word
+        .split("-")
+        .map((segment) =>
+          segment ? segment.charAt(0).toUpperCase() + segment.slice(1) : ""
+        )
+        .join("-")
+    )
+    .join(" ");
+};
+
+const cleanInstruction = (step) => {
+  if (typeof step !== "string") return "";
+  const normalized = step.replace(/\s+/g, " ").trim();
+  if (!normalized) return "";
+  return normalized.replace(/^\d+[.)]\s*/, "").trim();
 };
 
 const pickHeroImage = (detailData, exercise) => {
@@ -152,7 +188,12 @@ const pickHeroImage = (detailData, exercise) => {
   return null;
 };
 
-const hasContent = (value) => typeof value === "string" ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : !!value;
+const hasContent = (value) =>
+  typeof value === "string"
+    ? value.trim().length > 0
+    : Array.isArray(value)
+    ? value.length > 0
+    : !!value;
 
 export default function ExerciseDetailModal({
   open,
@@ -165,7 +206,14 @@ export default function ExerciseDetailModal({
 }) {
   const dialogRef = useRef(null);
   const detailData = useMemo(() => resolveDetailData(details), [details]);
-  const exerciseName = exercise?.name || coalesceText(detailData.name) || "Exercise";
+  const exerciseNameRaw = useMemo(
+    () => exercise?.name || coalesceText(detailData.name) || "Exercise",
+    [detailData, exercise]
+  );
+  const exerciseName = useMemo(
+    () => normalizeLabel(exerciseNameRaw) || "Exercise",
+    [exerciseNameRaw]
+  );
   const heroImage = useMemo(() => pickHeroImage(detailData, exercise), [detailData, exercise]);
   const subtitle = useMemo(
     () =>
@@ -181,93 +229,92 @@ export default function ExerciseDetailModal({
       ),
     [detailData, exercise]
   );
-  const primaryMuscles = useMemo(
-    () =>
-      coalesceText(
-        detailData.primary_muscles,
-        detailData.primaryMuscle,
-        detailData.primaryMuscleGroup,
-        detailData.primaryMuscles,
-        detailData.target_muscle,
-        detailData.targetMuscle,
-        detailData.target,
-        detailData.muscle_group,
-        detailData.muscleGroup,
-        exercise?.primary_muscles,
-        exercise?.primaryMuscle
-      ),
-    [detailData, exercise]
-  );
-  const secondaryMuscles = useMemo(
-    () =>
-      coalesceText(
-        detailData.secondary_muscles,
-        detailData.secondaryMuscle,
-        detailData.secondaryMuscles,
-        detailData.assisting_muscles,
-        detailData.synergists,
-        exercise?.secondary_muscles
-      ),
-    [detailData, exercise]
-  );
-  const equipment = useMemo(
-    () =>
-      coalesceText(
-        detailData.equipment_needed,
-        detailData.equipment,
-        detailData.equipmentRequired,
-        detailData.equipmentType,
-        detailData.equipment_name,
-        detailData.equipmentName,
-        exercise?.equipment
-      ),
-    [detailData, exercise]
-  );
-  const workoutType = useMemo(
-    () =>
-      coalesceText(
-        detailData.type,
-        detailData.exercise_type,
-        detailData.exerciseType,
-        detailData.category_type,
-        exercise?.type
-      ),
-    [detailData, exercise]
-  );
-  const difficulty = useMemo(
-    () =>
-      coalesceText(
-        detailData.difficulty,
-        detailData.difficulty_level,
-        detailData.level,
-        detailData.skill_level,
-        detailData.intensity
-      ),
-    [detailData]
-  );
-  const category = useMemo(
-    () =>
-      coalesceText(
-        detailData.category,
-        detailData.exercise_category,
-        detailData.body_part,
-        detailData.bodyPart,
-        detailData.focus,
-        exercise?.category
-      ),
-    [detailData, exercise]
-  );
-  const movementPattern = useMemo(
-    () =>
-      coalesceText(
-        detailData.movement_pattern,
-        detailData.movementPattern,
-        detailData.movement,
-        detailData.mechanic,
-        detailData.motion
-      ),
-    [detailData]
-  );
+  const primaryMuscles = useMemo(() => {
+    const value = coalesceText(
+      detailData.primary_muscles,
+      detailData.primaryMuscle,
+      detailData.primaryMuscleGroup,
+      detailData.primaryMuscles,
+      detailData.target_muscle,
+      detailData.targetMuscle,
+      detailData.target,
+      detailData.muscle_group,
+      detailData.muscleGroup,
+      exercise?.primary_muscles,
+      exercise?.primaryMuscle
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData, exercise]);
+
+  const secondaryMuscles = useMemo(() => {
+    const value = coalesceText(
+      detailData.secondary_muscles,
+      detailData.secondaryMuscle,
+      detailData.secondaryMuscles,
+      detailData.assisting_muscles,
+      detailData.synergists,
+      exercise?.secondary_muscles
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData, exercise]);
+
+  const equipment = useMemo(() => {
+    const value = coalesceText(
+      detailData.equipment_needed,
+      detailData.equipment,
+      detailData.equipmentRequired,
+      detailData.equipmentType,
+      detailData.equipment_name,
+      detailData.equipmentName,
+      exercise?.equipment
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData, exercise]);
+
+  const workoutType = useMemo(() => {
+    const value = coalesceText(
+      detailData.type,
+      detailData.exercise_type,
+      detailData.exerciseType,
+      detailData.category_type,
+      exercise?.type
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData, exercise]);
+
+  const difficulty = useMemo(() => {
+    const value = coalesceText(
+      detailData.difficulty,
+      detailData.difficulty_level,
+      detailData.level,
+      detailData.skill_level,
+      detailData.intensity
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData]);
+
+  const category = useMemo(() => {
+    const value = coalesceText(
+      detailData.category,
+      detailData.exercise_category,
+      detailData.body_part,
+      detailData.bodyPart,
+      detailData.focus,
+      exercise?.category
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData, exercise]);
+
+  const movementPattern = useMemo(() => {
+    const value = coalesceText(
+      detailData.movement_pattern,
+      detailData.movementPattern,
+      detailData.movement,
+      detailData.mechanic,
+      detailData.motion
+    );
+    return normalizeLabel(value) || value;
+  }, [detailData]);
   const description = useMemo(
     () =>
       coalesceText(
@@ -280,19 +327,25 @@ export default function ExerciseDetailModal({
       ),
     [detailData, exercise]
   );
-  const instructions = useMemo(
-    () =>
-      extractInstructionItems(
-        detailData.instructions ||
-          detailData.steps ||
-          detailData.directions ||
-          detailData.how_to ||
-          detailData.howTo ||
-          detailData.guide ||
-          exercise?.instructions
-      ),
-    [detailData, exercise]
-  );
+  const instructions = useMemo(() => {
+    const rawInstructions = extractInstructionItems(
+      detailData.instructions ||
+        detailData.steps ||
+        detailData.directions ||
+        detailData.how_to ||
+        detailData.howTo ||
+        detailData.guide ||
+        exercise?.instructions
+    );
+
+    const cleaned = rawInstructions
+      .map((step) => cleanInstruction(step))
+      .filter(Boolean);
+
+    if (cleaned.length === 0) return [];
+
+    return Array.from(new Set(cleaned));
+  }, [detailData, exercise]);
 
   const infoPairs = useMemo(() => {
     const entries = [
@@ -386,7 +439,7 @@ export default function ExerciseDetailModal({
           <span aria-hidden="true">×</span>
         </button>
 
-        <div className="exercise-modal-body" id={descriptionId}>
+        <div className="exercise-modal-body">
           {showInitialSpinner ? (
             <div className="exercise-modal-loading">
               <div className="spinner-border text-primary" role="status" />
@@ -426,17 +479,15 @@ export default function ExerciseDetailModal({
                   {!hasContent(subtitle) && hasContent(primaryMuscles) && (
                     <p className="exercise-modal-subtitle">{primaryMuscles}</p>
                   )}
+                  {hasContent(description) && (
+                    <p
+                      className="exercise-modal-description exercise-modal-description--inline"
+                      id={descriptionId}
+                    >
+                      {description}
+                    </p>
+                  )}
                 </div>
-                <button
-                  type="button"
-                  className="exercise-modal-google"
-                  onClick={handleTitleClick}
-                >
-                  Ver en Google
-                  <span aria-hidden="true" className="exercise-modal-google__icon">
-                    ↗
-                  </span>
-                </button>
               </header>
 
               {statusState === "error" && (
@@ -464,12 +515,6 @@ export default function ExerciseDetailModal({
                       </span>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {hasContent(description) && (
-                <div className="exercise-modal-section">
-                  <p className="exercise-modal-description">{description}</p>
                 </div>
               )}
 

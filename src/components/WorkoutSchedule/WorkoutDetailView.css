@@ -721,11 +721,12 @@
   color: rgba(143, 185, 255, 0.8);
 }
 
+
 .exercise-modal-title {
   background: none;
   border: none;
   padding: 0;
-  color: var(--color-text-main);
+  color: var(--md-sys-color-primary);
   font-size: clamp(1.45rem, 3vw, 1.85rem);
   font-weight: 700;
   text-align: left;
@@ -738,7 +739,7 @@
 
 .exercise-modal-title:hover,
 .exercise-modal-title:focus-visible {
-  color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary-hover);
 }
 
 .exercise-modal-title:focus-visible {
@@ -759,35 +760,11 @@
   max-width: 38ch;
 }
 
-.exercise-modal-google {
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--md-sys-color-primary);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 600;
+.exercise-modal-description--inline {
+  color: var(--color-text-main);
   font-size: 0.95rem;
-  cursor: pointer;
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-.exercise-modal-google:hover,
-.exercise-modal-google:focus-visible {
-  color: var(--md-sys-color-primary-hover);
-  text-decoration: underline;
-}
-
-.exercise-modal-google:focus-visible {
-  outline: 2px solid rgba(143, 185, 255, 0.45);
-  outline-offset: 2px;
-}
-
-.exercise-modal-google__icon {
-  font-size: 0.95rem;
-  transform: translateY(-1px);
+  line-height: 1.6;
+  margin-top: 0.35rem;
 }
 
 .exercise-modal-loading {

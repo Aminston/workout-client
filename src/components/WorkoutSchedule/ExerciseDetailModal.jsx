@@ -476,9 +476,6 @@ export default function ExerciseDetailModal({
                   {hasContent(subtitle) && (
                     <p className="exercise-modal-subtitle">{subtitle}</p>
                   )}
-                  {!hasContent(subtitle) && hasContent(primaryMuscles) && (
-                    <p className="exercise-modal-subtitle">{primaryMuscles}</p>
-                  )}
                   {hasContent(description) && (
                     <p
                       className="exercise-modal-description exercise-modal-description--inline"

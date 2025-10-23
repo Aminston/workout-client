@@ -591,6 +591,7 @@
 /* ======================
    EXERCISE DETAIL MODAL
    ====================== */
+
 .exercise-detail-modal-overlay {
   position: fixed;
   inset: 0;
@@ -602,29 +603,27 @@
   padding-bottom: calc(
     clamp(1.5rem, 4vw, 2.5rem) + var(--nav-height, 70px) + env(safe-area-inset-bottom, 0px)
   );
-  pointer-events: auto;
 }
 
 .exercise-detail-modal-overlay::before {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(7, 9, 13, 0.78);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
   z-index: 0;
-  pointer-events: none;
   animation: exercise-detail-fade 0.2s ease;
 }
 
 .exercise-detail-modal {
-  width: min(720px, 100%);
-  max-height: 90vh;
-  border-radius: calc(var(--radius-lg) + 4px);
-  padding: clamp(1.25rem, 2vw, 1.75rem);
-  background: linear-gradient(135deg, rgba(19, 23, 31, 0.95), rgba(15, 18, 26, 0.98));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55);
+  width: min(680px, 100%);
+  max-height: 88vh;
+  border-radius: 20px;
+  padding: clamp(1.5rem, 3vw, 2rem);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -635,18 +634,18 @@
 
 .exercise-detail-modal__close {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
+  top: 1.25rem;
+  right: 1.25rem;
   width: 2.25rem;
   height: 2.25rem;
-  border-radius: 50%;
+  border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(15, 18, 26, 0.75);
+  background: rgba(15, 18, 26, 0.65);
   color: var(--color-text-main);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   line-height: 1;
   cursor: pointer;
   transition: transform var(--transition-fast), background var(--transition-fast),
@@ -655,8 +654,8 @@
 }
 
 .exercise-detail-modal__close:hover {
-  transform: scale(1.05);
-  background: rgba(143, 185, 255, 0.22);
+  transform: translateY(-1px);
+  background: rgba(143, 185, 255, 0.2);
   color: var(--md-sys-color-primary);
 }
 
@@ -668,14 +667,7 @@
 .exercise-modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: clamp(1.5rem, 3vw, 2rem);
-  background: rgba(19, 24, 33, 0.85);
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  padding-top: 0.5rem;
 }
 
 .exercise-modal-body::-webkit-scrollbar {
@@ -687,23 +679,43 @@
   border-radius: 999px;
 }
 
+.exercise-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.exercise-modal-hero {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 13, 18, 0.6);
+}
+
+.exercise-modal-hero__image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
 .exercise-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1.25rem;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.exercise-modal-header__text {
+.exercise-modal-heading {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.4rem;
   min-width: 240px;
 }
 
 .exercise-modal-header__eyebrow {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(143, 185, 255, 0.8);
@@ -714,21 +726,19 @@
   border: none;
   padding: 0;
   color: var(--color-text-main);
-  font-size: clamp(1.5rem, 3vw, 1.85rem);
+  font-size: clamp(1.45rem, 3vw, 1.85rem);
   font-weight: 700;
   text-align: left;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 .exercise-modal-title:hover,
 .exercise-modal-title:focus-visible {
   color: var(--md-sys-color-primary);
-  text-decoration: none;
 }
 
 .exercise-modal-title:focus-visible {
@@ -737,67 +747,47 @@
 }
 
 .exercise-modal-title__icon {
-  font-size: 1.1rem;
-  opacity: 0.75;
-  transform: translateY(-2px);
+  font-size: 1rem;
+  opacity: 0.8;
+  transform: translateY(-1px);
 }
 
 .exercise-modal-subtitle {
   color: var(--color-text-secondary);
   font-size: 0.95rem;
   font-weight: 500;
-  letter-spacing: 0.01em;
   max-width: 38ch;
 }
 
 .exercise-modal-google {
-  background: rgba(143, 185, 255, 0.12);
-  border: 1px solid rgba(143, 185, 255, 0.32);
+  background: none;
+  border: none;
+  padding: 0;
   color: var(--md-sys-color-primary);
-  border-radius: 999px;
-  padding: 0.6rem 1rem;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background var(--transition-fast), border var(--transition-fast),
-    transform var(--transition-fast);
+  text-decoration: none;
+  transition: color var(--transition-fast);
 }
 
 .exercise-modal-google:hover,
 .exercise-modal-google:focus-visible {
-  background: rgba(143, 185, 255, 0.24);
-  border-color: rgba(143, 185, 255, 0.45);
-  transform: translateY(-1px);
+  color: var(--md-sys-color-primary-hover);
+  text-decoration: underline;
 }
 
 .exercise-modal-google:focus-visible {
-  outline: 2px solid rgba(143, 185, 255, 0.6);
+  outline: 2px solid rgba(143, 185, 255, 0.45);
   outline-offset: 2px;
 }
 
 .exercise-modal-google__icon {
   font-size: 0.95rem;
   transform: translateY(-1px);
-}
-
-.exercise-modal-media {
-  width: 100%;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(12, 15, 22, 0.6);
-}
-
-.exercise-modal-media__image {
-  width: 100%;
-  height: auto;
-  display: block;
-  object-fit: cover;
 }
 
 .exercise-modal-loading {
@@ -807,6 +797,31 @@
   gap: 0.75rem;
   color: var(--color-text-secondary);
   min-height: 220px;
+}
+
+.exercise-modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.exercise-modal-section + .exercise-modal-section {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.25rem;
+  margin-top: 0.25rem;
+}
+
+.exercise-modal-section--tags {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.exercise-modal-section__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-main);
 }
 
 .exercise-modal-error {
@@ -835,14 +850,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4rem 1rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  text-transform: none;
   letter-spacing: 0.01em;
   border: 1px solid transparent;
-  min-height: 2rem;
 }
 
 .exercise-modal-badge--accent {
@@ -852,13 +865,13 @@
 
 .exercise-modal-badge--outline {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.16);
   color: var(--color-text-main);
 }
 
 .exercise-modal-description {
   margin: 0;
-  color: rgba(232, 234, 237, 0.9);
+  color: rgba(232, 234, 237, 0.92);
   line-height: 1.6;
   font-size: 0.98rem;
 }
@@ -866,18 +879,18 @@
 .exercise-modal-info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 0.9rem 1.2rem;
+  gap: 0.75rem 1rem;
 }
 
 .exercise-modal-info {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
   padding: 0.85rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  min-height: 110px;
+  min-height: 100px;
 }
 
 .exercise-modal-info__label {
@@ -893,26 +906,18 @@
   word-break: break-word;
 }
 
-.exercise-modal-section h3 {
-  margin: 0 0 0.75rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--color-text-main);
-}
-
 .exercise-modal-instructions {
   margin: 0;
   padding-left: 1.25rem;
   display: grid;
-  gap: 0.6rem;
-  color: rgba(232, 234, 237, 0.9);
-  counter-reset: instruction-step;
+  gap: 0.55rem;
+  color: rgba(232, 234, 237, 0.95);
+  list-style: decimal;
+  font-size: 0.95rem;
 }
 
 .exercise-modal-instructions li {
   line-height: 1.5;
-  position: relative;
-  padding-left: 0.25rem;
 }
 
 .exercise-modal-empty {
@@ -920,7 +925,6 @@
   color: var(--color-text-secondary);
   font-style: italic;
 }
-
 @keyframes exercise-detail-fade {
   from {
     opacity: 0;
@@ -955,7 +959,7 @@
   }
 
   .exercise-modal-body {
-    padding: 1.35rem;
+    padding: 0.75rem 0 0;
   }
 
   .exercise-modal-google {
@@ -978,7 +982,7 @@
   }
 
   .exercise-modal-body {
-    padding: 1.1rem;
+    padding: 0.85rem 0 0;
   }
 
   .exercise-modal-info-grid {

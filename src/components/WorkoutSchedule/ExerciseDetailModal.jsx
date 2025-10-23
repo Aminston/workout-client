@@ -383,7 +383,7 @@ export default function ExerciseDetailModal({
           onClick={onClose}
           aria-label="Close exercise details"
         >
-          ×
+          <span aria-hidden="true">×</span>
         </button>
 
         <div className="exercise-modal-body" id={descriptionId}>
@@ -393,9 +393,19 @@ export default function ExerciseDetailModal({
               <span>Loading exercise details...</span>
             </div>
           ) : (
-            <>
+            <div className="exercise-modal-content">
+              {heroImage && (
+                <div className="exercise-modal-hero" role="presentation">
+                  <img
+                    src={heroImage}
+                    alt=""
+                    className="exercise-modal-hero__image"
+                  />
+                </div>
+              )}
+
               <header className="exercise-modal-header">
-                <div className="exercise-modal-header__text">
+                <div className="exercise-modal-heading">
                   {hasContent(category) && (
                     <span className="exercise-modal-header__eyebrow">{category}</span>
                   )}
@@ -405,7 +415,7 @@ export default function ExerciseDetailModal({
                     onClick={handleTitleClick}
                     title="Search for tutorials on Google"
                   >
-                    {exerciseName}
+                    <span>{exerciseName}</span>
                     <span aria-hidden="true" className="exercise-modal-title__icon">
                       ↗
                     </span>
@@ -429,58 +439,56 @@ export default function ExerciseDetailModal({
                 </button>
               </header>
 
-              {heroImage && (
-                <div className="exercise-modal-media" role="presentation">
-                  <img
-                    src={heroImage}
-                    alt=""
-                    className="exercise-modal-media__image"
-                  />
-                </div>
-              )}
-
               {statusState === "error" && (
-                <div className="exercise-modal-error">
-                  <p>{statusMessage || "We couldn't load more information for this exercise."}</p>
-                  {onRetry && (
-                    <button type="button" className="btn btn-secondary" onClick={onRetry}>
-                      Try again
-                    </button>
-                  )}
+                <div className="exercise-modal-section exercise-modal-section--status">
+                  <div className="exercise-modal-error">
+                    <p>{statusMessage || "We couldn't load more information for this exercise."}</p>
+                    {onRetry && (
+                      <button type="button" className="btn btn-secondary" onClick={onRetry}>
+                        Try again
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
               {badges.length > 0 && (
-                <div className="exercise-modal-badges">
-                  {badges.map((badge) => (
-                    <span
-                      key={badge.key}
-                      className={`exercise-modal-badge exercise-modal-badge--${badge.variant}`}
-                    >
-                      {badge.label}
-                    </span>
-                  ))}
+                <div className="exercise-modal-section exercise-modal-section--tags">
+                  <div className="exercise-modal-badges">
+                    {badges.map((badge) => (
+                      <span
+                        key={badge.key}
+                        className={`exercise-modal-badge exercise-modal-badge--${badge.variant}`}
+                      >
+                        {badge.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {hasContent(description) && (
-                <p className="exercise-modal-description">{description}</p>
+                <div className="exercise-modal-section">
+                  <p className="exercise-modal-description">{description}</p>
+                </div>
               )}
 
               {infoPairs.length > 0 && (
-                <div className="exercise-modal-info-grid">
-                  {infoPairs.map((item) => (
-                    <div key={item.label} className="exercise-modal-info">
-                      <span className="exercise-modal-info__label">{item.label}</span>
-                      <span className="exercise-modal-info__value">{item.value}</span>
-                    </div>
-                  ))}
+                <div className="exercise-modal-section">
+                  <div className="exercise-modal-info-grid">
+                    {infoPairs.map((item) => (
+                      <div key={item.label} className="exercise-modal-info">
+                        <span className="exercise-modal-info__label">{item.label}</span>
+                        <span className="exercise-modal-info__value">{item.value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {instructions.length > 0 && (
                 <div className="exercise-modal-section">
-                  <h3>Instructions</h3>
+                  <h3 className="exercise-modal-section__title">Instructions</h3>
                   <ol className="exercise-modal-instructions">
                     {instructions.map((step, index) => (
                       <li key={index}>{step}</li>
@@ -489,10 +497,16 @@ export default function ExerciseDetailModal({
                 </div>
               )}
 
-              {!hasContent(description) && infoPairs.length === 0 && instructions.length === 0 && (
-                <p className="exercise-modal-empty">Detailed information is not available for this exercise yet.</p>
-              )}
-            </>
+              {!hasContent(description) &&
+                infoPairs.length === 0 &&
+                instructions.length === 0 && (
+                  <div className="exercise-modal-section">
+                    <p className="exercise-modal-empty">
+                      Detailed information is not available for this exercise yet.
+                    </p>
+                  </div>
+                )}
+            </div>
           )}
         </div>
       </div>

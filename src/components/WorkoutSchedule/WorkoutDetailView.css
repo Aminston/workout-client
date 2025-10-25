@@ -985,7 +985,7 @@
 
 .exercise-alternatives-modal .exercise-modal-body {
   overflow: hidden;
-  padding-top: 0.5rem;
+  padding-top: 0.25rem;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -1059,26 +1059,20 @@
   box-shadow: none;
 }
 
-.exercise-alternatives-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  flex: 1;
-  height: 100%;
-  min-height: 0;
-}
-
-.exercise-alternatives-scroll-wrapper {
+.exercise-alternatives-body {
   position: relative;
   flex: 1;
   min-height: 0;
+  margin-top: 1.1rem;
+  padding-bottom: 0.25rem;
 }
 
 .exercise-alternatives-scroll {
   position: relative;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: 0.4rem;
+  padding: 0.15rem 0.4rem 0.65rem 0;
   scroll-behavior: smooth;
 }
 
@@ -1363,6 +1357,20 @@
 
   .modal-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .exercise-alternatives-modal .exercise-modal-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .exercise-alternatives-modal .modal-btn {
+    width: auto;
+    flex: 0 0 auto;
   }
 }
   

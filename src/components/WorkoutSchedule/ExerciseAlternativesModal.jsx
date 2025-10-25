@@ -333,45 +333,41 @@ export default function ExerciseAlternativesModal({
           <span aria-hidden="true">×</span>
         </button>
 
-        <div className="exercise-modal-body">
-          <div className="exercise-modal-content exercise-alternatives-content">
-            <header className="exercise-modal-header">
-              <div className="exercise-modal-heading">
-                <span className="exercise-modal-header__eyebrow">Alternativas</span>
-                <h2
-                  id="exercise-alternatives-title"
-                  className="exercise-modal-title exercise-modal-title--static"
-                >
-                  {exerciseName ? `Reemplazar "${exerciseName}"` : "Elige una alternativa"}
-                </h2>
-                <p className="exercise-modal-subtitle">
-                  Selecciona una opción compatible para reemplazar tu ejercicio.
-                </p>
-              </div>
-            </header>
-
-            <div className="exercise-alternatives-scroll-wrapper">
-              <div
-                className={`exercise-alternatives-fade exercise-alternatives-fade--top${
-                  showTopFade ? " is-visible" : ""
-                }`}
-                aria-hidden="true"
-              />
-              <div
-                ref={scrollContainerRef}
-                className="exercise-alternatives-scroll"
-                onScroll={updateScrollFades}
-              >
-                {renderAlternatives()}
-              </div>
-              <div
-                className={`exercise-alternatives-fade exercise-alternatives-fade--bottom${
-                  showBottomFade ? " is-visible" : ""
-                }`}
-                aria-hidden="true"
-              />
-            </div>
+        <header className="exercise-modal-header">
+          <div className="exercise-modal-heading">
+            <span className="exercise-modal-header__eyebrow">Alternativas</span>
+            <h2
+              id="exercise-alternatives-title"
+              className="exercise-modal-title exercise-modal-title--static"
+            >
+              {exerciseName ? `Reemplazar "${exerciseName}"` : "Elige una alternativa"}
+            </h2>
+            <p className="exercise-modal-subtitle">
+              Selecciona una opción compatible para reemplazar tu ejercicio.
+            </p>
           </div>
+        </header>
+
+        <div className="exercise-modal-body exercise-alternatives-body">
+          <div
+            className={`exercise-alternatives-fade exercise-alternatives-fade--top${
+              showTopFade ? " is-visible" : ""
+            }`}
+            aria-hidden="true"
+          />
+          <div
+            ref={scrollContainerRef}
+            className="exercise-alternatives-scroll"
+            onScroll={updateScrollFades}
+          >
+            {renderAlternatives()}
+          </div>
+          <div
+            className={`exercise-alternatives-fade exercise-alternatives-fade--bottom${
+              showBottomFade ? " is-visible" : ""
+            }`}
+            aria-hidden="true"
+          />
         </div>
 
         <footer className="exercise-modal-footer">

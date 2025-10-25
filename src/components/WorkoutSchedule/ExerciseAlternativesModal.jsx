@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./WorkoutDetailView.css";
+import "./ExerciseAlternativesModal.css";
 
 const getAlternativeId = (alt, fallback) => {
   if (!alt || typeof alt !== "object") return fallback ?? null;

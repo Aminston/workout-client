@@ -460,11 +460,49 @@
    ====================== */
 .exercise-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; gap: 1rem; min-height: 2rem; }
 
+.exercise-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .exercise-name {
   font-size: 1.125rem; font-weight: 700; color: var(--md-sys-color-primary);
   margin: 0; text-decoration: none; line-height: 1.2; flex: 1;
 }
 .exercise-name:hover { text-decoration: underline; }
+
+.exercise-swap-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.exercise-swap-trigger:hover,
+.exercise-swap-trigger:focus-visible {
+  color: var(--md-sys-color-primary);
+  border-color: rgba(143, 185, 255, 0.65);
+  background: rgba(143, 185, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.25);
+  transform: translateY(-1px);
+}
+
+.exercise-swap-trigger:focus-visible {
+  outline: 2px solid rgba(143, 185, 255, 0.45);
+  outline-offset: 2px;
+}
 
 .exercise-status-badge { align-self:center; }
 

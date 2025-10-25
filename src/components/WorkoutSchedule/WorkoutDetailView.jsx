@@ -5,6 +5,7 @@ import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestTimerBubble from "./RestTimerBubble";
 import ExerciseDetailModal from "./ExerciseDetailModal";
+import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -207,6 +208,35 @@ const fmtElapsed = (sec) => {
 
 const DEFAULT_REST_SECONDS = 60;
 
+const normalizeAlternativesResponse = (payload, scheduleId) => {
+  if (!payload) return [];
+
+  const scheduleKey =
+    scheduleId != null ? [String(scheduleId), Number(scheduleId)] : [];
+
+  const tryExtract = (source) => {
+    if (!source) return null;
+    if (Array.isArray(source)) return source;
+    if (typeof source !== "object") return null;
+
+    for (const key of scheduleKey) {
+      if (key != null && Array.isArray(source[key])) return source[key];
+    }
+
+    const values = Object.values(source).filter(Array.isArray);
+    if (values.length > 0) return values[0];
+    return null;
+  };
+
+  return (
+    tryExtract(payload.alternatives) ||
+    tryExtract(payload.data?.alternatives) ||
+    tryExtract(payload.data) ||
+    tryExtract(payload) ||
+    []
+  );
+};
+
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
@@ -234,6 +264,15 @@ export default function WorkoutDetailView() {
     state: "idle",
     message: "",
   });
+  const [isAlternativesModalOpen, setIsAlternativesModalOpen] = useState(false);
+  const [alternativesTargetExercise, setAlternativesTargetExercise] = useState(null);
+  const [alternativesCache, setAlternativesCache] = useState({});
+  const [alternativesStatus, setAlternativesStatus] = useState({
+    state: "idle",
+    message: "",
+  });
+  const [selectedAlternativeId, setSelectedAlternativeId] = useState(null);
+  const [selectedAlternative, setSelectedAlternative] = useState(null);
 
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
@@ -246,6 +285,123 @@ export default function WorkoutDetailView() {
   }, []);
 
   const activeWorkoutId = activeExercise?.workout_id ?? null;
+
+  const fetchAlternativesForExercise = useCallback(
+    async (exercise) => {
+      const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
+      if (!scheduleId) {
+        setAlternativesStatus({
+          state: "error",
+          message: "No se pudo identificar el ejercicio para buscar alternativas.",
+        });
+        return;
+      }
+
+      setAlternativesStatus({ state: "loading", message: "" });
+
+      try {
+        const response = await fetch(
+          getApiUrl(
+            `/schedule/workouts/alternatives?ids=${encodeURIComponent(scheduleId)}`
+          ),
+          {
+            headers: getAuthHeaders(),
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          throw new Error(
+            text || "No se pudieron cargar las alternativas del ejercicio."
+          );
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        const normalized = normalizeAlternativesResponse(payload, scheduleId);
+
+        setAlternativesCache((prev) => ({
+          ...prev,
+          [scheduleId]: Array.isArray(normalized) ? normalized : [],
+        }));
+
+        setAlternativesStatus({
+          state: "success",
+          message: normalized?.length
+            ? ""
+            : "No encontramos alternativas para este ejercicio.",
+        });
+      } catch (err) {
+        setAlternativesStatus({
+          state: "error",
+          message:
+            err?.message || "No se pudieron cargar las alternativas del ejercicio.",
+        });
+      }
+    },
+    []
+  );
+
+  const openAlternativesModal = useCallback(
+    (exercise) => {
+      if (!exercise) return;
+      const scheduleId = exercise.scheduleId ?? exercise.id ?? null;
+
+      setAlternativesTargetExercise(exercise);
+      setSelectedAlternativeId(null);
+      setSelectedAlternative(null);
+
+      if (scheduleId && Array.isArray(alternativesCache[scheduleId])) {
+        const cached = alternativesCache[scheduleId];
+        setAlternativesStatus({
+          state: "success",
+          message: cached.length
+            ? ""
+            : "No encontramos alternativas para este ejercicio.",
+        });
+      } else if (scheduleId) {
+        fetchAlternativesForExercise(exercise);
+      } else {
+        setAlternativesStatus({
+          state: "error",
+          message: "No se pudo identificar el ejercicio para buscar alternativas.",
+        });
+      }
+
+      setIsAlternativesModalOpen(true);
+    },
+    [alternativesCache, fetchAlternativesForExercise]
+  );
+
+  const closeAlternativesModal = useCallback(() => {
+    setIsAlternativesModalOpen(false);
+    setAlternativesTargetExercise(null);
+    setSelectedAlternativeId(null);
+    setSelectedAlternative(null);
+    setAlternativesStatus({ state: "idle", message: "" });
+  }, []);
+
+  const handleSelectAlternative = useCallback((altId, alt) => {
+    setSelectedAlternativeId(altId);
+    setSelectedAlternative(alt);
+  }, []);
+
+  const performAlternativeReplacement = useCallback((exercise, alternative) => {
+    if (!exercise || !alternative) return;
+    console.info("Ejercicio a reemplazar", exercise);
+    console.info("Alternativa seleccionada", alternative);
+    // TODO: Integrar la llamada real al backend para confirmar el reemplazo.
+  }, []);
+
+  const handleConfirmAlternative = useCallback(() => {
+    if (!alternativesTargetExercise || !selectedAlternative) return;
+    performAlternativeReplacement(alternativesTargetExercise, selectedAlternative);
+    closeAlternativesModal();
+  }, [
+    alternativesTargetExercise,
+    selectedAlternative,
+    closeAlternativesModal,
+    performAlternativeReplacement,
+  ]);
 
   const openExerciseModal = useCallback(
     (exercise) => {
@@ -878,9 +1034,24 @@ export default function WorkoutDetailView() {
             }}
           >
             <div className="exercise-header">
-              <h3 className="exercise-name" title="View exercise details">
-                {exercise.name}
-              </h3>
+              <div className="exercise-header-main">
+                <h3 className="exercise-name" title="View exercise details">
+                  {exercise.name}
+                </h3>
+                <button
+                  type="button"
+                  className="exercise-swap-trigger"
+                  title="¿Máquina ocupada? Ver alternativas"
+                  aria-label={`Ver alternativas para ${exercise.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAlternativesModal(exercise);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  🔁
+                </button>
+              </div>
               <span
                 className={`exercise-status-badge ${
                   exercise.status === "done"
@@ -988,6 +1159,20 @@ export default function WorkoutDetailView() {
             ? () => fetchExerciseDetails(activeWorkoutId, true)
             : undefined
         }
+      />
+      <ExerciseAlternativesModal
+        open={isAlternativesModalOpen}
+        onClose={closeAlternativesModal}
+        onConfirm={handleConfirmAlternative}
+        onSelect={handleSelectAlternative}
+        selectedAlternativeId={selectedAlternativeId}
+        exerciseName={alternativesTargetExercise?.name}
+        alternatives={(() => {
+          const scheduleId =
+            alternativesTargetExercise?.scheduleId ?? alternativesTargetExercise?.id;
+          return scheduleId ? alternativesCache[scheduleId] : [];
+        })()}
+        status={alternativesStatus}
       />
     </div>
   );

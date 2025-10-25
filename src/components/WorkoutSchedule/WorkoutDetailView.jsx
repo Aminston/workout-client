@@ -5,6 +5,7 @@ import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestTimerBubble from "./RestTimerBubble";
 import ExerciseDetailModal from "./ExerciseDetailModal";
+import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -207,6 +208,70 @@ const fmtElapsed = (sec) => {
 
 const DEFAULT_REST_SECONDS = 60;
 
+const normalizeAlternativesResponse = (payload, identifiers = {}) => {
+  if (!payload) return [];
+
+  const { workoutId, scheduleId } = identifiers;
+  const keyCandidates = [];
+  if (workoutId != null) {
+    keyCandidates.push(String(workoutId));
+    keyCandidates.push(Number(workoutId));
+  }
+  if (scheduleId != null) {
+    keyCandidates.push(String(scheduleId));
+    keyCandidates.push(Number(scheduleId));
+  }
+
+  const tryExtract = (source) => {
+    if (!source) return null;
+    if (Array.isArray(source)) return source;
+    if (typeof source !== "object") return null;
+
+    for (const key of keyCandidates) {
+      if (key != null && Array.isArray(source[key])) return source[key];
+    }
+
+    const values = Object.values(source).filter(Array.isArray);
+    if (values.length > 0) return values[0];
+    return null;
+  };
+
+  return (
+    tryExtract(payload.alternatives) ||
+    tryExtract(payload.data?.alternatives) ||
+    tryExtract(payload.data) ||
+    tryExtract(payload) ||
+    []
+  );
+};
+
+const SwapArrowsIcon = ({ className }) => (
+  <svg
+    className={className}
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M7 7h11l-3.5-3.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M17 17H6l3.5 3.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
@@ -234,6 +299,15 @@ export default function WorkoutDetailView() {
     state: "idle",
     message: "",
   });
+  const [isAlternativesModalOpen, setIsAlternativesModalOpen] = useState(false);
+  const [alternativesTargetExercise, setAlternativesTargetExercise] = useState(null);
+  const [alternativesCache, setAlternativesCache] = useState({});
+  const [alternativesStatus, setAlternativesStatus] = useState({
+    state: "idle",
+    message: "",
+  });
+  const [selectedAlternativeId, setSelectedAlternativeId] = useState(null);
+  const [selectedAlternative, setSelectedAlternative] = useState(null);
 
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
@@ -246,6 +320,131 @@ export default function WorkoutDetailView() {
   }, []);
 
   const activeWorkoutId = activeExercise?.workout_id ?? null;
+
+  const fetchAlternativesForExercise = useCallback(
+    async (exercise) => {
+      const workoutId = exercise?.workout_id ?? exercise?.workoutId ?? null;
+      const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
+      if (!workoutId) {
+        setAlternativesStatus({
+          state: "error",
+          message: "No se pudo identificar el ejercicio para buscar alternativas.",
+        });
+        return;
+      }
+
+      setAlternativesStatus({ state: "loading", message: "" });
+
+      try {
+        const response = await fetch(
+          getApiUrl(
+            `/schedule/workouts/alternatives?ids=${encodeURIComponent(workoutId)}`
+          ),
+          {
+            headers: getAuthHeaders(),
+          }
+        );
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          throw new Error(
+            text || "No se pudieron cargar las alternativas del ejercicio."
+          );
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        const normalized = normalizeAlternativesResponse(payload, {
+          workoutId,
+          scheduleId,
+        });
+
+        setAlternativesCache((prev) => ({
+          ...prev,
+          [workoutId]: Array.isArray(normalized) ? normalized : [],
+        }));
+
+        setAlternativesStatus({
+          state: "success",
+          message: normalized?.length
+            ? ""
+            : "No encontramos alternativas para este ejercicio.",
+        });
+      } catch (err) {
+        setAlternativesStatus({
+          state: "error",
+          message:
+            err?.message || "No se pudieron cargar las alternativas del ejercicio.",
+        });
+      }
+    },
+    []
+  );
+
+  const openAlternativesModal = useCallback(
+    (exercise) => {
+      if (!exercise) return;
+      const workoutId = exercise.workout_id ?? exercise.workoutId ?? null;
+
+      setAlternativesTargetExercise(exercise);
+      setSelectedAlternativeId(null);
+      setSelectedAlternative(null);
+
+      if (workoutId && Array.isArray(alternativesCache[workoutId])) {
+        const cached = alternativesCache[workoutId];
+        setAlternativesStatus({
+          state: "success",
+          message: cached.length
+            ? ""
+            : "No encontramos alternativas para este ejercicio.",
+        });
+      } else if (workoutId) {
+        fetchAlternativesForExercise(exercise);
+      } else {
+        setAlternativesStatus({
+          state: "error",
+          message: "No se pudo identificar el ejercicio para buscar alternativas.",
+        });
+      }
+
+      setIsAlternativesModalOpen(true);
+    },
+    [alternativesCache, fetchAlternativesForExercise]
+  );
+
+  const closeAlternativesModal = useCallback(() => {
+    setIsAlternativesModalOpen(false);
+    setAlternativesTargetExercise(null);
+    setSelectedAlternativeId(null);
+    setSelectedAlternative(null);
+    setAlternativesStatus({ state: "idle", message: "" });
+  }, []);
+
+  const handleSelectAlternative = useCallback((altId, alt) => {
+    setSelectedAlternativeId(altId);
+    setSelectedAlternative(alt);
+  }, []);
+
+  const performAlternativeReplacement = useCallback((exercise, alternative) => {
+    if (!exercise || !alternative) return;
+    console.info("Ejercicio a reemplazar", exercise);
+    console.info("Alternativa seleccionada", alternative);
+    // TODO: Integrar la llamada real al backend para confirmar el reemplazo.
+  }, []);
+
+  const handleConfirmAlternative = useCallback(
+    (_alternativeId, alternativeFromModal) => {
+      const alternative = alternativeFromModal ?? selectedAlternative;
+      if (!alternativesTargetExercise || !alternative) return;
+      performAlternativeReplacement(alternativesTargetExercise, alternative);
+      closeAlternativesModal();
+    },
+    [
+      alternativesTargetExercise,
+      selectedAlternative,
+      closeAlternativesModal,
+      performAlternativeReplacement,
+    ]
+  );
 
   const openExerciseModal = useCallback(
     (exercise) => {
@@ -878,9 +1077,24 @@ export default function WorkoutDetailView() {
             }}
           >
             <div className="exercise-header">
-              <h3 className="exercise-name" title="View exercise details">
-                {exercise.name}
-              </h3>
+              <div className="exercise-header-main">
+                <h3 className="exercise-name" title="View exercise details">
+                  {exercise.name}
+                </h3>
+                <button
+                  type="button"
+                  className="exercise-swap-trigger"
+                  title="¿Máquina ocupada? Ver alternativas"
+                  aria-label={`Ver alternativas para ${exercise.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openAlternativesModal(exercise);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <SwapArrowsIcon className="exercise-swap-trigger__icon" />
+                </button>
+              </div>
               <span
                 className={`exercise-status-badge ${
                   exercise.status === "done"
@@ -988,6 +1202,22 @@ export default function WorkoutDetailView() {
             ? () => fetchExerciseDetails(activeWorkoutId, true)
             : undefined
         }
+      />
+      <ExerciseAlternativesModal
+        open={isAlternativesModalOpen}
+        onClose={closeAlternativesModal}
+        onConfirm={handleConfirmAlternative}
+        onSelect={handleSelectAlternative}
+        selectedAlternativeId={selectedAlternativeId}
+        exerciseName={alternativesTargetExercise?.name}
+        alternatives={(() => {
+          const workoutId =
+            alternativesTargetExercise?.workout_id ??
+            alternativesTargetExercise?.workoutId ??
+            null;
+          return workoutId ? alternativesCache[workoutId] : [];
+        })()}
+        status={alternativesStatus}
       />
     </div>
   );

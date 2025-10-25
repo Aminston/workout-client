@@ -460,11 +460,55 @@
    ====================== */
 .exercise-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; gap: 1rem; min-height: 2rem; }
 
+.exercise-header-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .exercise-name {
   font-size: 1.125rem; font-weight: 700; color: var(--md-sys-color-primary);
   margin: 0; text-decoration: none; line-height: 1.2; flex: 1;
 }
 .exercise-name:hover { text-decoration: underline; }
+
+.exercise-swap-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.exercise-swap-trigger:hover,
+.exercise-swap-trigger:focus-visible {
+  color: var(--md-sys-color-primary);
+  border-color: rgba(143, 185, 255, 0.65);
+  background: rgba(143, 185, 255, 0.08);
+  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.25);
+  transform: translateY(-1px);
+}
+
+.exercise-swap-trigger:focus-visible {
+  outline: 2px solid rgba(143, 185, 255, 0.45);
+  outline-offset: 2px;
+}
+
+.exercise-swap-trigger__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  pointer-events: none;
+}
 
 .exercise-status-badge { align-self:center; }
 
@@ -760,6 +804,18 @@
   max-width: 38ch;
 }
 
+.exercise-modal-title--static {
+  cursor: default;
+  color: var(--color-text-main);
+  padding: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+}
+
+.exercise-modal-title--static:hover,
+.exercise-modal-title--static:focus-visible {
+  color: var(--color-text-main);
+}
+
 .exercise-modal-description--inline {
   color: var(--color-text-main);
   font-size: 0.95rem;
@@ -902,6 +958,11 @@
   color: var(--color-text-secondary);
   font-style: italic;
 }
+
+.exercise-modal-section--alternatives {
+  gap: 1.25rem;
+}
+
 @keyframes exercise-detail-fade {
   from {
     opacity: 0;
@@ -943,6 +1004,10 @@
     width: 100%;
     justify-content: center;
   }
+
+  .exercise-modal-actions {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -964,6 +1029,30 @@
 
   .exercise-modal-info-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .exercise-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .modal-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .exercise-alternatives-modal .exercise-modal-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .exercise-alternatives-modal .modal-btn {
+    width: auto;
+    flex: 0 0 auto;
   }
 }
   

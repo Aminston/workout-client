@@ -15,9 +15,23 @@ const getAlternativeId = (alt, fallback) => {
 
 const formatLabel = (label) => {
   if (!label || typeof label !== "string") return label;
+
   const trimmed = label.trim();
   if (!trimmed) return trimmed;
-  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+
+  const cleaned = trimmed.replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+
+  return cleaned
+    .split(" ")
+    .map((word) => {
+      if (!word) return "";
+      const isAcronym = word.length <= 4 && word === word.toUpperCase();
+      if (isAcronym) return word;
+
+      const lower = word.toLowerCase();
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(" ");
 };
 
 const buildMetadata = (alternative) => {

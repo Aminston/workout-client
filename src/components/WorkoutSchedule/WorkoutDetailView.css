@@ -1218,21 +1218,39 @@
 
 .exercise-alternative-card__title {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.12rem;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--color-text-main);
+  letter-spacing: 0.01em;
+  color: var(--md-sys-color-primary);
 }
 
-.exercise-alternative-card__title-link,
-.exercise-alternative-card__title-text {
+.exercise-alternative-card__title-link {
   color: inherit;
   text-decoration: none;
-  transition: color var(--transition-fast), text-decoration var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    text-decoration var(--transition-fast),
+    transform var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.exercise-alternative-card__title-link::after {
+  content: "\2197";
+  font-size: 0.9em;
+  opacity: 0.85;
+  transition: transform var(--transition-fast), opacity var(--transition-fast);
 }
 
 .exercise-alternative-card__title-link:hover {
-  color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-primary-hover);
+}
+
+.exercise-alternative-card__title-link:hover::after {
+  transform: translate(1px, -1px);
+  opacity: 1;
 }
 
 .exercise-alternative-card__title-link:focus-visible {
@@ -1243,8 +1261,18 @@
   text-underline-offset: 4px;
 }
 
+.exercise-alternative-card__title-link:focus-visible::after {
+  transform: translate(1px, -1px);
+  opacity: 1;
+}
+
 .exercise-alternative-card__title-link:active {
   color: var(--md-sys-color-primary-hover);
+  transform: scale(0.98);
+}
+
+.exercise-alternative-card__title-text {
+  color: inherit;
 }
 
 .exercise-alternative-card__description {

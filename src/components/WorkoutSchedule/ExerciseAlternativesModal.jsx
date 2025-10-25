@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./WorkoutDetailView.css";
 
 const getAlternativeId = (alt, fallback) => {
@@ -63,6 +63,10 @@ export default function ExerciseAlternativesModal({
 }) {
   const closeButtonRef = useRef(null);
   const firstInteractiveRef = useRef(null);
+  const cardRefs = useRef([]);
+  const scrollContainerRef = useRef(null);
+  const [showTopFade, setShowTopFade] = useState(false);
+  const [showBottomFade, setShowBottomFade] = useState(false);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -87,6 +91,28 @@ export default function ExerciseAlternativesModal({
     return () => window.clearTimeout(timer);
   }, [open, alternatives]);
 
+  const updateScrollFades = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const maxScrollTop = scrollHeight - clientHeight;
+
+    setShowTopFade(scrollTop > 4);
+    setShowBottomFade(maxScrollTop > 0 && scrollTop < maxScrollTop - 4);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setShowTopFade(false);
+      setShowBottomFade(false);
+      return undefined;
+    }
+
+    const raf = window.requestAnimationFrame(updateScrollFades);
+    return () => window.cancelAnimationFrame(raf);
+  }, [open, alternatives, status?.state, updateScrollFades]);
+
   const selectionMap = useMemo(() => {
     if (!Array.isArray(alternatives)) return new Map();
     return new Map(
@@ -109,6 +135,9 @@ export default function ExerciseAlternativesModal({
   );
 
   const renderAlternatives = () => {
+    firstInteractiveRef.current = null;
+    cardRefs.current = [];
+
     if (status?.state === "loading") {
       return (
         <div className="exercise-modal-loading">
@@ -150,53 +179,127 @@ export default function ExerciseAlternativesModal({
             : undefined;
           const metadata = buildMetadata(alternative);
 
+          const handleCardSelect = () => onSelect?.(altId, alternative);
+
+          const totalCards = alternatives.length;
+
+          const handleKeyDown = (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              handleCardSelect();
+              return;
+            }
+
+            if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+              event.preventDefault();
+              const nextIndex = (index + 1) % totalCards;
+              const nextNode = cardRefs.current[nextIndex];
+              nextNode?.focus();
+              return;
+            }
+
+            if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+              event.preventDefault();
+              const prevIndex = (index - 1 + totalCards) % totalCards;
+              const prevNode = cardRefs.current[prevIndex];
+              prevNode?.focus();
+              return;
+            }
+
+            if (event.key === "Home") {
+              event.preventDefault();
+              cardRefs.current[0]?.focus();
+              return;
+            }
+
+            if (event.key === "End") {
+              event.preventDefault();
+              cardRefs.current[totalCards - 1]?.focus();
+            }
+          };
+
+          const cardClassName = `exercise-alternative-card${
+            isSelected ? " exercise-alternative-card--selected" : ""
+          }`;
+
+          const tabIndex =
+            selectedAlternativeId == null
+              ? index === 0
+                ? 0
+                : -1
+              : isSelected
+              ? 0
+              : -1;
+
+          const ariaLabel = alternative?.name
+            ? `Alternativa ${alternative.name}`
+            : "Alternativa de ejercicio";
+
+          const registerRef = (node) => {
+            cardRefs.current[index] = node || null;
+            if (index === 0) {
+              firstInteractiveRef.current = node || null;
+            }
+          };
+
           return (
-            <button
+            <div
               key={altId}
-              type="button"
-              ref={index === 0 ? firstInteractiveRef : null}
+              ref={registerRef}
               role="radio"
+              tabIndex={tabIndex}
               aria-checked={isSelected}
-              className={`exercise-alternative-card${
-                isSelected ? " exercise-alternative-card--selected" : ""
-              }`}
-              onClick={() => onSelect?.(altId, alternative)}
+              aria-label={ariaLabel}
+              className={cardClassName}
+              data-selected={isSelected ? "true" : undefined}
+              onClick={handleCardSelect}
+              onKeyDown={handleKeyDown}
             >
-              <div className="exercise-alternative-card__header">
-                <div className="exercise-alternative-card__heading">
-                  <h4 className="exercise-alternative-card__title">
-                    {alternative?.name || "Ejercicio alternativo"}
-                  </h4>
-                  {alternative?.description && (
-                    <p className="exercise-alternative-card__description">
-                      {alternative.description}
-                    </p>
+              <span
+                className="exercise-alternative-card__check"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+              <div className="exercise-alternative-card__content">
+                <h4 className="exercise-alternative-card__title">
+                  {targetUrl ? (
+                    <a
+                      href={targetUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="exercise-alternative-card__title-link"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {alternative?.name || "Ejercicio alternativo"}
+                    </a>
+                  ) : (
+                    <span className="exercise-alternative-card__title-text">
+                      {alternative?.name || "Ejercicio alternativo"}
+                    </span>
                   )}
-                </div>
-                {targetUrl && (
-                  <a
-                    href={targetUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="exercise-alternative-card__link"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    Ver en Google
-                  </a>
+                </h4>
+                {alternative?.description && (
+                  <p className="exercise-alternative-card__description">
+                    {alternative.description}
+                  </p>
+                )}
+
+                {metadata.length > 0 && (
+                  <dl className="exercise-alternative-card__meta">
+                    {metadata.map((item) => (
+                      <div
+                        key={item.label}
+                        className="exercise-alternative-card__meta-item"
+                      >
+                        <dt>{item.label}</dt>
+                        <dd>{item.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 )}
               </div>
-
-              {metadata.length > 0 && (
-                <dl className="exercise-alternative-card__meta">
-                  {metadata.map((item) => (
-                    <div key={item.label} className="exercise-alternative-card__meta-item">
-                      <dt>{item.label}</dt>
-                      <dd>{item.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -210,7 +313,7 @@ export default function ExerciseAlternativesModal({
   };
 
   const isConfirmDisabled =
-    !selectedAlternativeId || status?.state === "loading";
+    selectedAlternativeId == null || status?.state === "loading";
 
   return (
     <div className="exercise-detail-modal-overlay" onClick={handleOverlayClick}>
@@ -231,11 +334,14 @@ export default function ExerciseAlternativesModal({
         </button>
 
         <div className="exercise-modal-body">
-          <div className="exercise-modal-content">
+          <div className="exercise-modal-content exercise-alternatives-content">
             <header className="exercise-modal-header">
               <div className="exercise-modal-heading">
                 <span className="exercise-modal-header__eyebrow">Alternativas</span>
-                <h2 id="exercise-alternatives-title" className="exercise-modal-title exercise-modal-title--static">
+                <h2
+                  id="exercise-alternatives-title"
+                  className="exercise-modal-title exercise-modal-title--static"
+                >
                   {exerciseName ? `Reemplazar "${exerciseName}"` : "Elige una alternativa"}
                 </h2>
                 <p className="exercise-modal-subtitle">
@@ -244,9 +350,27 @@ export default function ExerciseAlternativesModal({
               </div>
             </header>
 
-            <section className="exercise-modal-section exercise-modal-section--alternatives">
-              {renderAlternatives()}
-            </section>
+            <div className="exercise-alternatives-scroll-wrapper">
+              <div
+                className={`exercise-alternatives-fade exercise-alternatives-fade--top${
+                  showTopFade ? " is-visible" : ""
+                }`}
+                aria-hidden="true"
+              />
+              <div
+                ref={scrollContainerRef}
+                className="exercise-alternatives-scroll"
+                onScroll={updateScrollFades}
+              >
+                {renderAlternatives()}
+              </div>
+              <div
+                className={`exercise-alternatives-fade exercise-alternatives-fade--bottom${
+                  showBottomFade ? " is-visible" : ""
+                }`}
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
 

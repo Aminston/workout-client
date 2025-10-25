@@ -208,18 +208,26 @@ const fmtElapsed = (sec) => {
 
 const DEFAULT_REST_SECONDS = 60;
 
-const normalizeAlternativesResponse = (payload, scheduleId) => {
+const normalizeAlternativesResponse = (payload, identifiers = {}) => {
   if (!payload) return [];
 
-  const scheduleKey =
-    scheduleId != null ? [String(scheduleId), Number(scheduleId)] : [];
+  const { workoutId, scheduleId } = identifiers;
+  const keyCandidates = [];
+  if (workoutId != null) {
+    keyCandidates.push(String(workoutId));
+    keyCandidates.push(Number(workoutId));
+  }
+  if (scheduleId != null) {
+    keyCandidates.push(String(scheduleId));
+    keyCandidates.push(Number(scheduleId));
+  }
 
   const tryExtract = (source) => {
     if (!source) return null;
     if (Array.isArray(source)) return source;
     if (typeof source !== "object") return null;
 
-    for (const key of scheduleKey) {
+    for (const key of keyCandidates) {
       if (key != null && Array.isArray(source[key])) return source[key];
     }
 
@@ -236,6 +244,33 @@ const normalizeAlternativesResponse = (payload, scheduleId) => {
     []
   );
 };
+
+const SwapArrowsIcon = ({ className }) => (
+  <svg
+    className={className}
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+  >
+    <path
+      d="M7 7h11l-3.5-3.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M17 17H6l3.5 3.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
@@ -288,8 +323,9 @@ export default function WorkoutDetailView() {
 
   const fetchAlternativesForExercise = useCallback(
     async (exercise) => {
+      const workoutId = exercise?.workout_id ?? exercise?.workoutId ?? null;
       const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
-      if (!scheduleId) {
+      if (!workoutId) {
         setAlternativesStatus({
           state: "error",
           message: "No se pudo identificar el ejercicio para buscar alternativas.",
@@ -302,7 +338,7 @@ export default function WorkoutDetailView() {
       try {
         const response = await fetch(
           getApiUrl(
-            `/schedule/workouts/alternatives?ids=${encodeURIComponent(scheduleId)}`
+            `/schedule/workouts/alternatives?ids=${encodeURIComponent(workoutId)}`
           ),
           {
             headers: getAuthHeaders(),
@@ -317,11 +353,14 @@ export default function WorkoutDetailView() {
         }
 
         const payload = await response.json().catch(() => ({}));
-        const normalized = normalizeAlternativesResponse(payload, scheduleId);
+        const normalized = normalizeAlternativesResponse(payload, {
+          workoutId,
+          scheduleId,
+        });
 
         setAlternativesCache((prev) => ({
           ...prev,
-          [scheduleId]: Array.isArray(normalized) ? normalized : [],
+          [workoutId]: Array.isArray(normalized) ? normalized : [],
         }));
 
         setAlternativesStatus({
@@ -344,21 +383,21 @@ export default function WorkoutDetailView() {
   const openAlternativesModal = useCallback(
     (exercise) => {
       if (!exercise) return;
-      const scheduleId = exercise.scheduleId ?? exercise.id ?? null;
+      const workoutId = exercise.workout_id ?? exercise.workoutId ?? null;
 
       setAlternativesTargetExercise(exercise);
       setSelectedAlternativeId(null);
       setSelectedAlternative(null);
 
-      if (scheduleId && Array.isArray(alternativesCache[scheduleId])) {
-        const cached = alternativesCache[scheduleId];
+      if (workoutId && Array.isArray(alternativesCache[workoutId])) {
+        const cached = alternativesCache[workoutId];
         setAlternativesStatus({
           state: "success",
           message: cached.length
             ? ""
             : "No encontramos alternativas para este ejercicio.",
         });
-      } else if (scheduleId) {
+      } else if (workoutId) {
         fetchAlternativesForExercise(exercise);
       } else {
         setAlternativesStatus({
@@ -392,16 +431,20 @@ export default function WorkoutDetailView() {
     // TODO: Integrar la llamada real al backend para confirmar el reemplazo.
   }, []);
 
-  const handleConfirmAlternative = useCallback(() => {
-    if (!alternativesTargetExercise || !selectedAlternative) return;
-    performAlternativeReplacement(alternativesTargetExercise, selectedAlternative);
-    closeAlternativesModal();
-  }, [
-    alternativesTargetExercise,
-    selectedAlternative,
-    closeAlternativesModal,
-    performAlternativeReplacement,
-  ]);
+  const handleConfirmAlternative = useCallback(
+    (_alternativeId, alternativeFromModal) => {
+      const alternative = alternativeFromModal ?? selectedAlternative;
+      if (!alternativesTargetExercise || !alternative) return;
+      performAlternativeReplacement(alternativesTargetExercise, alternative);
+      closeAlternativesModal();
+    },
+    [
+      alternativesTargetExercise,
+      selectedAlternative,
+      closeAlternativesModal,
+      performAlternativeReplacement,
+    ]
+  );
 
   const openExerciseModal = useCallback(
     (exercise) => {
@@ -1049,7 +1092,7 @@ export default function WorkoutDetailView() {
                   }}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
-                  🔁
+                  <SwapArrowsIcon className="exercise-swap-trigger__icon" />
                 </button>
               </div>
               <span
@@ -1168,9 +1211,11 @@ export default function WorkoutDetailView() {
         selectedAlternativeId={selectedAlternativeId}
         exerciseName={alternativesTargetExercise?.name}
         alternatives={(() => {
-          const scheduleId =
-            alternativesTargetExercise?.scheduleId ?? alternativesTargetExercise?.id;
-          return scheduleId ? alternativesCache[scheduleId] : [];
+          const workoutId =
+            alternativesTargetExercise?.workout_id ??
+            alternativesTargetExercise?.workoutId ??
+            null;
+          return workoutId ? alternativesCache[workoutId] : [];
         })()}
         status={alternativesStatus}
       />

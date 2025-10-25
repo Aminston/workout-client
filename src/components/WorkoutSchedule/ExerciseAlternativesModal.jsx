@@ -1,21 +1,55 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import "./WorkoutDetailView.css";
 
 const getAlternativeId = (alt, fallback) => {
   if (!alt || typeof alt !== "object") return fallback ?? null;
   return (
-    alt.schedule_id ??
-    alt.scheduleId ??
     alt.workout_id ??
     alt.workoutId ??
+    alt.schedule_id ??
+    alt.scheduleId ??
     alt.id ??
     fallback ?? null
   );
 };
 
-const formatLabel = (label) =>
-  label && typeof label === "string"
-    ? label.charAt(0).toUpperCase() + label.slice(1)
-    : label;
+const formatLabel = (label) => {
+  if (!label || typeof label !== "string") return label;
+  const trimmed = label.trim();
+  if (!trimmed) return trimmed;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
+const buildMetadata = (alternative) => {
+  if (!alternative || typeof alternative !== "object") return [];
+
+  const items = [
+    {
+      label: "Músculo principal",
+      value: alternative.primary_muscle ?? alternative.primaryMuscle ?? null,
+    },
+    {
+      label: "Patrón de movimiento",
+      value: alternative.movement_pattern ?? alternative.movementPattern ?? null,
+    },
+    {
+      label: "Dificultad",
+      value: alternative.difficulty ?? null,
+    },
+    {
+      label: "Equipo",
+      value:
+        alternative.equipment_needed ?? alternative.equipment ?? "Sin equipo",
+    },
+  ];
+
+  return items
+    .map((item) => ({
+      ...item,
+      value: typeof item.value === "string" ? formatLabel(item.value) : item.value,
+    }))
+    .filter((item) => item.value);
+};
 
 export default function ExerciseAlternativesModal({
   open,
@@ -27,6 +61,9 @@ export default function ExerciseAlternativesModal({
   status,
   exerciseName,
 }) {
+  const closeButtonRef = useRef(null);
+  const firstInteractiveRef = useRef(null);
+
   useEffect(() => {
     if (!open) return undefined;
 
@@ -41,63 +78,99 @@ export default function ExerciseAlternativesModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      const focusTarget = firstInteractiveRef.current || closeButtonRef.current;
+      focusTarget?.focus({ preventScroll: true });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open, alternatives]);
+
+  const selectionMap = useMemo(() => {
+    if (!Array.isArray(alternatives)) return new Map();
+    return new Map(
+      alternatives.map((alt, index) => [
+        getAlternativeId(alt, `${index}`),
+        alt,
+      ])
+    );
+  }, [alternatives]);
+
   if (!open) return null;
 
-  const renderBody = () => {
+  const renderStatusBlock = (message, variant = "neutral") => (
+    <div
+      className={`exercise-modal-status exercise-modal-status--${variant}`}
+      role={variant === "error" ? "alert" : undefined}
+    >
+      <p>{message}</p>
+    </div>
+  );
+
+  const renderAlternatives = () => {
     if (status?.state === "loading") {
       return (
-        <div className="flex items-center justify-center py-12 text-sm text-gray-400">
-          Cargando alternativas...
+        <div className="exercise-modal-loading">
+          <div className="spinner-border text-primary" role="status" />
+          <span>Cargando alternativas...</span>
         </div>
       );
     }
 
     if (status?.state === "error") {
-      return (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {status?.message || "No se pudieron cargar las alternativas."}
-        </div>
+      return renderStatusBlock(
+        status?.message || "No se pudieron cargar las alternativas.",
+        "error"
       );
     }
 
     if (!alternatives?.length) {
-      return (
-        <div className="rounded-xl border border-gray-700 bg-gray-800/60 px-4 py-3 text-sm text-gray-400">
-          {status?.message || "No encontramos alternativas para este ejercicio."}
-        </div>
+      return renderStatusBlock(
+        status?.message || "No encontramos alternativas para este ejercicio.",
+        "neutral"
       );
     }
 
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        {alternatives.map((alt, index) => {
-          const altId = getAlternativeId(alt, `${index}`);
+      <div
+        className="exercise-alternatives-grid"
+        role="radiogroup"
+        aria-label="Alternativas de ejercicio"
+      >
+        {alternatives.map((alternative, index) => {
+          const altId = getAlternativeId(alternative, `${index}`);
           const isSelected =
-            selectedAlternativeId != null && String(selectedAlternativeId) === String(altId);
-          const targetUrl = alt?.name
-            ? `https://www.google.com/search?q=${encodeURIComponent(alt.name)}`
+            selectedAlternativeId != null &&
+            String(selectedAlternativeId) === String(altId);
+          const targetUrl = alternative?.name
+            ? `https://www.google.com/search?q=${encodeURIComponent(
+                alternative.name
+              )}`
             : undefined;
+          const metadata = buildMetadata(alternative);
 
           return (
             <button
               key={altId}
               type="button"
-              onClick={() => onSelect?.(altId, alt)}
-              className={[
-                "group flex h-full flex-col rounded-2xl border bg-gray-800/70 p-5 text-left transition-all",
-                "hover:border-blue-400/70 hover:bg-gray-800",
-                isSelected
-                  ? "border-blue-500 ring-2 ring-blue-500/60"
-                  : "border-gray-700",
-              ].join(" ")}
+              ref={index === 0 ? firstInteractiveRef : null}
+              role="radio"
+              aria-checked={isSelected}
+              className={`exercise-alternative-card${
+                isSelected ? " exercise-alternative-card--selected" : ""
+              }`}
+              onClick={() => onSelect?.(altId, alternative)}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h4 className="text-lg font-semibold text-white">
-                    {alt?.name || "Ejercicio alternativo"}
+              <div className="exercise-alternative-card__header">
+                <div className="exercise-alternative-card__heading">
+                  <h4 className="exercise-alternative-card__title">
+                    {alternative?.name || "Ejercicio alternativo"}
                   </h4>
-                  {alt?.description && (
-                    <p className="mt-1 text-sm text-gray-400">{alt.description}</p>
+                  {alternative?.description && (
+                    <p className="exercise-alternative-card__description">
+                      {alternative.description}
+                    </p>
                   )}
                 </div>
                 {targetUrl && (
@@ -105,7 +178,7 @@ export default function ExerciseAlternativesModal({
                     href={targetUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full border border-transparent bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-300 transition hover:border-blue-400/60 hover:bg-blue-500/20"
+                    className="exercise-alternative-card__link"
                     onClick={(event) => event.stopPropagation()}
                   >
                     Ver en Google
@@ -113,38 +186,16 @@ export default function ExerciseAlternativesModal({
                 )}
               </div>
 
-              <dl className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-300">
-                {alt?.primary_muscle || alt?.primaryMuscle ? (
-                  <div className="rounded-lg bg-gray-900/40 p-3">
-                    <dt className="text-xs uppercase tracking-wide text-gray-500">Músculo principal</dt>
-                    <dd className="mt-1 font-medium text-gray-200">
-                      {formatLabel(alt?.primary_muscle ?? alt?.primaryMuscle)}
-                    </dd>
-                  </div>
-                ) : null}
-                {alt?.movement_pattern || alt?.movementPattern ? (
-                  <div className="rounded-lg bg-gray-900/40 p-3">
-                    <dt className="text-xs uppercase tracking-wide text-gray-500">Patrón de movimiento</dt>
-                    <dd className="mt-1 font-medium text-gray-200">
-                      {formatLabel(alt?.movement_pattern ?? alt?.movementPattern)}
-                    </dd>
-                  </div>
-                ) : null}
-                {alt?.difficulty ? (
-                  <div className="rounded-lg bg-gray-900/40 p-3">
-                    <dt className="text-xs uppercase tracking-wide text-gray-500">Dificultad</dt>
-                    <dd className="mt-1 font-medium text-gray-200">{formatLabel(alt.difficulty)}</dd>
-                  </div>
-                ) : null}
-                {alt?.equipment_needed || alt?.equipment ? (
-                  <div className="rounded-lg bg-gray-900/40 p-3">
-                    <dt className="text-xs uppercase tracking-wide text-gray-500">Equipo</dt>
-                    <dd className="mt-1 font-medium text-gray-200">
-                      {formatLabel(alt?.equipment_needed ?? alt?.equipment ?? "Sin equipo")}
-                    </dd>
-                  </div>
-                ) : null}
-              </dl>
+              {metadata.length > 0 && (
+                <dl className="exercise-alternative-card__meta">
+                  {metadata.map((item) => (
+                    <div key={item.label} className="exercise-alternative-card__meta-item">
+                      <dt>{item.label}</dt>
+                      <dd>{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
             </button>
           );
         })}
@@ -152,72 +203,72 @@ export default function ExerciseAlternativesModal({
     );
   };
 
+  const handleOverlayClick = (event) => {
+    if (event.target === event.currentTarget) {
+      onClose?.();
+    }
+  };
+
+  const isConfirmDisabled =
+    !selectedAlternativeId || status?.state === "loading";
+
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose?.();
-        }
-      }}
-    >
+    <div className="exercise-detail-modal-overlay" onClick={handleOverlayClick}>
       <div
-        className="flex w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-gray-700 bg-gray-900 shadow-2xl"
+        className="exercise-detail-modal exercise-alternatives-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="exercise-alternatives-title"
       >
-        <div className="border-b border-gray-800 px-6 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Alternativas</p>
-              <h2 id="exercise-alternatives-title" className="mt-2 text-2xl font-bold text-white">
-                {exerciseName ? `Reemplazar "${exerciseName}"` : "Elige una alternativa"}
-              </h2>
-              <p className="mt-2 text-sm text-gray-400">
-                Selecciona una alternativa y confirma para reemplazar tu ejercicio.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-gray-800/60 text-gray-300 transition hover:border-gray-500 hover:text-white"
-              aria-label="Cerrar"
-            >
-              ×
-            </button>
+        <button
+          type="button"
+          className="exercise-detail-modal__close"
+          onClick={onClose}
+          aria-label="Cerrar"
+          ref={closeButtonRef}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+
+        <div className="exercise-modal-body">
+          <div className="exercise-modal-content">
+            <header className="exercise-modal-header">
+              <div className="exercise-modal-heading">
+                <span className="exercise-modal-header__eyebrow">Alternativas</span>
+                <h2 id="exercise-alternatives-title" className="exercise-modal-title exercise-modal-title--static">
+                  {exerciseName ? `Reemplazar "${exerciseName}"` : "Elige una alternativa"}
+                </h2>
+                <p className="exercise-modal-subtitle">
+                  Selecciona una opción compatible para reemplazar tu ejercicio.
+                </p>
+              </div>
+            </header>
+
+            <section className="exercise-modal-section exercise-modal-section--alternatives">
+              {renderAlternatives()}
+            </section>
           </div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-6">
-          {renderBody()}
-        </div>
-
-        <div className="border-t border-gray-800 bg-gray-900/80 px-6 py-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <footer className="exercise-modal-footer">
+          <div className="exercise-modal-actions">
             <button
               type="button"
+              className="modal-btn modal-btn--ghost"
               onClick={onClose}
-              className="inline-flex w-full items-center justify-center rounded-full border border-gray-700 px-5 py-2.5 text-sm font-medium text-gray-300 transition hover:border-gray-500 hover:text-white sm:w-auto"
             >
               Cancelar
             </button>
             <button
               type="button"
-              onClick={() => onConfirm?.(selectedAlternativeId)}
-              disabled={!selectedAlternativeId || status?.state === "loading"}
-              className={[
-                "inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold transition sm:w-auto",
-                selectedAlternativeId && status?.state !== "loading"
-                  ? "bg-blue-500 text-white shadow-lg shadow-blue-500/30 hover:bg-blue-400"
-                  : "cursor-not-allowed bg-gray-700 text-gray-400",
-              ].join(" ")}
+              className="modal-btn modal-btn--primary"
+              onClick={() => onConfirm?.(selectedAlternativeId, selectionMap.get(selectedAlternativeId))}
+              disabled={isConfirmDisabled}
             >
               Confirmar reemplazo
             </button>
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );

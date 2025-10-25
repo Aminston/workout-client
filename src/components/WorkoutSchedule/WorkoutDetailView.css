@@ -504,6 +504,12 @@
   outline-offset: 2px;
 }
 
+.exercise-swap-trigger__icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  pointer-events: none;
+}
+
 .exercise-status-badge { align-self:center; }
 
 /* ======================
@@ -798,6 +804,18 @@
   max-width: 38ch;
 }
 
+.exercise-modal-title--static {
+  cursor: default;
+  color: var(--color-text-main);
+  padding: 0;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+}
+
+.exercise-modal-title--static:hover,
+.exercise-modal-title--static:focus-visible {
+  color: var(--color-text-main);
+}
+
 .exercise-modal-description--inline {
   color: var(--color-text-main);
   font-size: 0.95rem;
@@ -940,6 +958,215 @@
   color: var(--color-text-secondary);
   font-style: italic;
 }
+
+.exercise-modal-section--alternatives {
+  gap: 1.25rem;
+}
+
+.exercise-modal-status {
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary);
+}
+
+.exercise-modal-status--error {
+  border-color: rgba(255, 91, 91, 0.35);
+  background: rgba(255, 91, 91, 0.12);
+  color: rgba(255, 200, 200, 0.92);
+}
+
+.exercise-alternatives-modal {
+  width: min(760px, 100%);
+}
+
+.exercise-modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 1.25rem;
+  margin-top: 1rem;
+}
+
+.exercise-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  min-width: var(--btn-min-width-md);
+  padding: 0.65rem 1.4rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.modal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.modal-btn--ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--color-text-main);
+}
+
+.modal-btn--ghost:hover,
+.modal-btn--ghost:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--color-text-main);
+}
+
+.modal-btn--primary {
+  background: var(--md-sys-color-primary);
+  color: #0b1220;
+  box-shadow: 0 12px 32px rgba(143, 185, 255, 0.25);
+}
+
+.modal-btn--primary:hover,
+.modal-btn--primary:focus-visible {
+  background: var(--md-sys-color-primary-hover);
+  box-shadow: 0 14px 36px rgba(143, 185, 255, 0.32);
+}
+
+.modal-btn--primary:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+
+.exercise-alternatives-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+.exercise-alternative-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.1rem;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(16, 20, 28, 0.7);
+  padding: 1.1rem 1.2rem;
+  color: var(--color-text-main);
+  text-align: left;
+  transition: transform var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    background var(--transition-fast);
+}
+
+.exercise-alternative-card:hover,
+.exercise-alternative-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(143, 185, 255, 0.6);
+  box-shadow: 0 14px 34px rgba(11, 18, 32, 0.35);
+  background: rgba(18, 24, 34, 0.9);
+  outline: none;
+}
+
+.exercise-alternative-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(143, 185, 255, 0.25);
+}
+
+.exercise-alternative-card--selected {
+  border-color: rgba(143, 185, 255, 0.9);
+  box-shadow: 0 16px 38px rgba(143, 185, 255, 0.25);
+  background: rgba(20, 28, 40, 0.95);
+}
+
+.exercise-alternative-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.exercise-alternative-card__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.exercise-alternative-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.exercise-alternative-card__description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.exercise-alternative-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(143, 185, 255, 0.12);
+  border: 1px solid rgba(143, 185, 255, 0.3);
+  color: var(--md-sys-color-primary);
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.exercise-alternative-card__link:hover,
+.exercise-alternative-card__link:focus-visible {
+  background: rgba(143, 185, 255, 0.2);
+  border-color: rgba(143, 185, 255, 0.45);
+  color: var(--md-sys-color-primary-hover);
+}
+
+.exercise-alternative-card__meta {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.exercise-alternative-card__meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.exercise-alternative-card__meta-item dt {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-secondary);
+}
+
+.exercise-alternative-card__meta-item dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
 @keyframes exercise-detail-fade {
   from {
     opacity: 0;
@@ -981,6 +1208,10 @@
     width: 100%;
     justify-content: center;
   }
+
+  .exercise-modal-actions {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1002,6 +1233,16 @@
 
   .exercise-modal-info-grid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .exercise-modal-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .modal-btn {
+    width: 100%;
   }
 }
   

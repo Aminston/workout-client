@@ -581,12 +581,12 @@ export default function WorkoutDetailView() {
           });
         }
 
-        showReplacementOverlay(
-          "success",
-          alternative?.name
-            ? `Ejercicio reemplazado por "${alternative.name}".`
-            : "Ejercicio reemplazado correctamente."
-        );
+        const successMessage = alternative?.name
+          ? `Ejercicio reemplazado por "${alternative.name}".`
+          : "Ejercicio reemplazado correctamente.";
+
+        toast.show("success", `✅ ${successMessage}`);
+        showReplacementOverlay("success", successMessage);
       } catch (error) {
         console.error("Failed to replace exercise", error);
         const message =

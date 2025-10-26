@@ -55,6 +55,141 @@ function normalizeSessions(raw) {
 }
 
 /**
+ * Normalize a single workout into the exercise shape expected by the UI.
+ */
+function buildExerciseFromWorkout(workout) {
+  if (!workout) {
+    throw new Error("Invalid workout data: missing workout object.");
+  }
+
+  const source = workout.workout ?? workout;
+  const pick = (...values) => values.find((v) => v != null);
+
+  const scheduleId = pick(
+    workout.scheduleId,
+    workout.schedule_id,
+    workout.id,
+    workout.workout_schedule_id,
+    source.scheduleId,
+    source.schedule_id
+  );
+
+  if (!scheduleId) {
+    throw new Error("Invalid workout data: missing scheduleId.");
+  }
+
+  const workoutId = pick(
+    workout.workout_id,
+    workout.workoutId,
+    source.workout_id,
+    source.workoutId,
+    source.id !== scheduleId ? source.id : null
+  );
+
+  const name = pick(workout.name, source.name, "");
+  const category = pick(workout.category, source.category, "");
+  const type = pick(workout.type, source.type, "");
+  const baseSets = pick(workout.sets, source.sets, workout.total_sets, source.total_sets);
+  const rawSessions = pick(workout.sessions, source.sessions, []);
+
+  const sessions = normalizeSessions(rawSessions);
+
+  // Determine total sets
+  const maxSessionSet = sessions.reduce(
+    (m, s) => Math.max(m, Number(s.set_number || 0)),
+    0
+  );
+  const totalSets =
+    Number.isInteger(baseSets) && baseSets > 0 ? baseSets : maxSessionSet;
+
+  // Pick latest completed per set_number (created_at desc, then session_id)
+  const latestBySet = {};
+  for (const s of sessions) {
+    const sn = s.set_number;
+    const existing = latestBySet[sn];
+    if (!existing) {
+      latestBySet[sn] = s;
+      continue;
+    }
+    const a = new Date(toIso(getCreatedAt(existing))).getTime() || 0;
+    const b = new Date(toIso(getCreatedAt(s))).getTime() || 0;
+    if (b > a) latestBySet[sn] = s;
+    else if (b === a) {
+      const ea = Number(existing.session_id ?? existing.sessionId ?? 0);
+      const eb = Number(s.session_id ?? s.sessionId ?? 0);
+      if (eb > ea) latestBySet[sn] = s;
+    }
+  }
+
+  const defaultWeightSource = pick(workout.weight, source.weight, {});
+  const defaultWeightValue = pick(
+    defaultWeightSource?.value,
+    workout.weight_value,
+    source.weight_value,
+    defaultWeightSource
+  );
+  const defaultWeightUnit = pick(
+    defaultWeightSource?.unit,
+    workout.weight_unit,
+    source.weight_unit,
+    "kg"
+  );
+  const defaultReps = pick(workout.reps, source.reps, 0);
+
+  const sets = [];
+  for (let i = 1; i <= totalSets; i++) {
+    const s = latestBySet[i];
+    if (s && isCompleted(s)) {
+      const weightKg = weightConverter.normalize(s.weight);
+      sets.push({
+        id: i,
+        reps: numOr(s.reps, 0),
+        weight: numOr(weightKg, 0),
+        weightUnit: s.weight?.unit || "kg",
+        duration: s.elapsed_time != null ? Number(s.elapsed_time) : (s.time?.value ?? null),
+        status: "done",
+        completedAt: getCreatedAt(s),
+        isFromSession: true,
+        isSynced: true,
+      });
+    } else {
+      // Pending - use program defaults (base reps & weight)
+      sets.push({
+        id: i,
+        reps: numOr(defaultReps, 0),
+        weight: numOr(defaultWeightValue, 0),
+        weightUnit: defaultWeightUnit,
+        duration: null,
+        status: "pending",
+        completedAt: null,
+        isFromSession: false,
+        isSynced: false,
+      });
+    }
+  }
+
+  const done = sets.filter((x) => x.status === "done").length;
+  const status =
+    done === sets.length && sets.length > 0
+      ? "done"
+      : done > 0
+      ? "in-progress"
+      : "pending";
+
+  return {
+    id: scheduleId,
+    scheduleId,
+    workout_id: workoutId,
+    workoutId,
+    name,
+    category,
+    type,
+    sets,
+    status,
+  };
+}
+
+/**
  * Build exercises WITHOUT fabricating base reps/weight:
  * - total sets = provided base `sets` OR max set_number in sessions OR 0
  * - completed sets come from sessions only
@@ -65,104 +200,7 @@ function buildExercisesFromDay(dayData) {
     throw new Error("Invalid workout data: missing workouts array.");
   }
 
-  return dayData.workouts.map((w) => {
-    const {
-      scheduleId,
-      workout_id,
-      name,
-      category,
-      type,
-      sets: baseSets, // may be null
-      sessions: rawSessions,
-    } = w;
-
-    const sessions = normalizeSessions(rawSessions);
-
-    // Determine total sets
-    const maxSessionSet = sessions.reduce(
-      (m, s) => Math.max(m, Number(s.set_number || 0)),
-      0
-    );
-    const totalSets =
-      Number.isInteger(baseSets) && baseSets > 0 ? baseSets : maxSessionSet;
-
-    // Pick latest completed per set_number (created_at desc, then session_id)
-    const latestBySet = {};
-    for (const s of sessions) {
-      const sn = s.set_number;
-      const existing = latestBySet[sn];
-      if (!existing) {
-        latestBySet[sn] = s;
-        continue;
-      }
-      const a = new Date(toIso(getCreatedAt(existing))).getTime() || 0;
-      const b = new Date(toIso(getCreatedAt(s))).getTime() || 0;
-      if (b > a) latestBySet[sn] = s;
-      else if (b === a) {
-        const ea = Number(existing.session_id ?? existing.sessionId ?? 0);
-        const eb = Number(s.session_id ?? s.sessionId ?? 0);
-        if (eb > ea) latestBySet[sn] = s;
-      }
-    }
-
-    const sets = [];
-    for (let i = 1; i <= totalSets; i++) {
-      const s = latestBySet[i];
-      if (s && isCompleted(s)) {
-        const weightKg = weightConverter.normalize(s.weight);
-        sets.push({
-          id: i,
-          reps: numOr(s.reps, 0),
-          weight: numOr(weightKg, 0),
-          weightUnit: s.weight?.unit || "kg",
-          duration: s.elapsed_time != null ? Number(s.elapsed_time) : (s.time?.value ?? null),
-          status: "done",
-          completedAt: getCreatedAt(s),
-          isFromSession: true,
-          isSynced: true,
-        });
-      } else {
-        // Pending - use program defaults (base reps & weight)
-        const defaultWeight =
-          w.weight?.value != null
-            ? w.weight.value
-            : w.weight_value != null
-            ? w.weight_value
-            : w.weight ?? 0;
-
-        sets.push({
-          id: i,
-          reps: numOr(w.reps, 0),
-          weight: numOr(defaultWeight, 0),
-          weightUnit: w.weight?.unit || w.weight_unit || "kg",
-          duration: null,
-          status: "pending",
-          completedAt: null,
-          isFromSession: false,
-          isSynced: false,
-        });
-      }
-    }
-
-    const done = sets.filter((x) => x.status === "done").length;
-    const status =
-      done === sets.length && sets.length > 0
-        ? "done"
-        : done > 0
-        ? "in-progress"
-        : "pending";
-
-    return {
-      id: scheduleId,
-      scheduleId,
-      workout_id,
-      name,
-      category,
-      type,
-      sets,
-      status,
-    };
-  });
+  return dayData.workouts.map((w) => buildExerciseFromWorkout(w));
 }
 
 /* ================== API helpers ================== */
@@ -521,28 +559,21 @@ export default function WorkoutDetailView() {
         payload?.workoutId ??
         newWorkoutId;
 
-      const updatedName =
-        payloadWorkout?.name ?? payload?.name ?? alternative?.name ?? exercise.name;
+      const workoutForBuild = {
+        ...alternative,
+        ...payload,
+        ...payloadWorkout,
+        scheduleId,
+        schedule_id: scheduleId,
+        workout_id: updatedWorkoutId,
+        workoutId: updatedWorkoutId,
+      };
 
-      const updatedCategory =
-        payloadWorkout?.category ?? alternative?.category ?? exercise.category;
-
-      const updatedType =
-        payloadWorkout?.type ?? alternative?.type ?? exercise.type;
+      const rebuilt = buildExerciseFromWorkout(workoutForBuild);
+      const normalized = { ...rebuilt, id: scheduleId, scheduleId };
 
       setExercises((prev) =>
-        prev.map((ex) =>
-          ex.id !== scheduleId
-            ? ex
-            : {
-                ...ex,
-                name: updatedName,
-                category: updatedCategory,
-                type: updatedType,
-                workout_id: updatedWorkoutId,
-                workoutId: updatedWorkoutId,
-              }
-        )
+        prev.map((ex) => (ex.id !== scheduleId ? ex : normalized))
       );
     },
     [setExercises]

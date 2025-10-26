@@ -417,6 +417,33 @@
 /* ======================
    EXERCISE CARDS
    ====================== */
+.exercise-replacement-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-main);
+  transition: opacity var(--transition-fast);
+}
+
+.exercise-replacement-feedback--success {
+  border-color: rgba(70, 230, 138, var(--alpha-04));
+  background: rgba(70, 230, 138, 0.14);
+  color: #c2ffdd;
+}
+
+.exercise-replacement-feedback--error {
+  border-color: rgba(255, 91, 91, var(--alpha-04));
+  background: rgba(255, 91, 91, 0.18);
+  color: #ffd4d4;
+}
+
 .exercises-container { display:flex; flex-direction:column; gap: 1.25rem; }
 
 .exercise-detail-card {

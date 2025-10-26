@@ -75,6 +75,8 @@ export default function ExerciseAlternativesModal({
   alternatives,
   status,
   exerciseName,
+  isConfirming = false,
+  confirmationStatus,
 }) {
   const closeButtonRef = useRef(null);
   const firstInteractiveRef = useRef(null);
@@ -328,7 +330,9 @@ export default function ExerciseAlternativesModal({
   };
 
   const isConfirmDisabled =
-    selectedAlternativeId == null || status?.state === "loading";
+    selectedAlternativeId == null ||
+    status?.state === "loading" ||
+    isConfirming;
 
   return (
     <div className="exercise-detail-modal-overlay" onClick={handleOverlayClick}>
@@ -375,6 +379,19 @@ export default function ExerciseAlternativesModal({
             className="exercise-alternatives-scroll"
             onScroll={updateScrollFades}
           >
+            {confirmationStatus?.state === "error" && (
+              <div className="exercise-modal-inline-status">
+                <div
+                  className="exercise-modal-status exercise-modal-status--error"
+                  role="alert"
+                >
+                  <p>
+                    {confirmationStatus?.message ||
+                      "No se pudo reemplazar el ejercicio."}
+                  </p>
+                </div>
+              </div>
+            )}
             {renderAlternatives()}
           </div>
           <div
@@ -397,10 +414,16 @@ export default function ExerciseAlternativesModal({
             <button
               type="button"
               className="modal-btn modal-btn--primary"
-              onClick={() => onConfirm?.(selectedAlternativeId, selectionMap.get(selectedAlternativeId))}
+              onClick={() =>
+                onConfirm?.(
+                  selectedAlternativeId,
+                  selectionMap.get(selectedAlternativeId)
+                )
+              }
               disabled={isConfirmDisabled}
+              aria-busy={isConfirming ? "true" : undefined}
             >
-              Confirmar reemplazo
+              {isConfirming ? "Reemplazando..." : "Confirmar reemplazo"}
             </button>
           </div>
         </footer>

@@ -34,6 +34,14 @@
   margin-top: 1rem;
 }
 
+.exercise-modal-inline-status {
+  margin-bottom: 1rem;
+}
+
+.exercise-modal-inline-status .exercise-modal-status {
+  margin: 0;
+}
+
 .exercise-modal-actions {
   display: flex;
   flex-wrap: wrap;

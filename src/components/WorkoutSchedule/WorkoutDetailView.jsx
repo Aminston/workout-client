@@ -308,9 +308,38 @@ export default function WorkoutDetailView() {
   });
   const [selectedAlternativeId, setSelectedAlternativeId] = useState(null);
   const [selectedAlternative, setSelectedAlternative] = useState(null);
+  const [replacementRequest, setReplacementRequest] = useState({
+    state: "idle",
+    message: "",
+  });
+  const [replacementFeedback, setReplacementFeedback] = useState(null);
 
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+  const feedbackTimeoutRef = useRef(null);
+
+  const clearReplacementFeedback = useCallback(() => {
+    if (feedbackTimeoutRef.current) {
+      clearTimeout(feedbackTimeoutRef.current);
+      feedbackTimeoutRef.current = null;
+    }
+  }, []);
+
+  const showReplacementFeedback = useCallback(
+    (type, message, duration = 3000) => {
+      clearReplacementFeedback();
+      setReplacementFeedback({ type, message });
+      if (duration != null) {
+        feedbackTimeoutRef.current = setTimeout(() => {
+          setReplacementFeedback(null);
+          feedbackTimeoutRef.current = null;
+        }, duration);
+      }
+    },
+    [clearReplacementFeedback]
+  );
+
+  useEffect(() => () => clearReplacementFeedback(), [clearReplacementFeedback]);
 
   const clearRestInterval = useCallback(() => {
     if (restIntervalRef.current) {
@@ -388,6 +417,7 @@ export default function WorkoutDetailView() {
       setAlternativesTargetExercise(exercise);
       setSelectedAlternativeId(null);
       setSelectedAlternative(null);
+      setReplacementRequest({ state: "idle", message: "" });
 
       if (workoutId && Array.isArray(alternativesCache[workoutId])) {
         const cached = alternativesCache[workoutId];
@@ -416,6 +446,7 @@ export default function WorkoutDetailView() {
     setAlternativesTargetExercise(null);
     setSelectedAlternativeId(null);
     setSelectedAlternative(null);
+    setReplacementRequest({ state: "idle", message: "" });
     setAlternativesStatus({ state: "idle", message: "" });
   }, []);
 
@@ -424,25 +455,124 @@ export default function WorkoutDetailView() {
     setSelectedAlternative(alt);
   }, []);
 
-  const performAlternativeReplacement = useCallback((exercise, alternative) => {
-    if (!exercise || !alternative) return;
-    console.info("Ejercicio a reemplazar", exercise);
-    console.info("Alternativa seleccionada", alternative);
-    // TODO: Integrar la llamada real al backend para confirmar el reemplazo.
-  }, []);
+  const performAlternativeReplacement = useCallback(
+    async (exercise, alternative) => {
+      if (!exercise || !alternative) {
+        throw new Error("Selecciona un ejercicio y una alternativa válidos.");
+      }
+
+      const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
+      const newWorkoutId =
+        alternative?.workout_id ??
+        alternative?.workoutId ??
+        alternative?.schedule_id ??
+        alternative?.scheduleId ??
+        alternative?.id ??
+        null;
+
+      if (!scheduleId) {
+        throw new Error("No se pudo identificar el ejercicio a reemplazar.");
+      }
+
+      if (!newWorkoutId) {
+        throw new Error("No se pudo identificar la alternativa seleccionada.");
+      }
+
+      const response = await fetch(
+        getApiUrl(`/schedule/workout/replace/${encodeURIComponent(scheduleId)}`),
+        {
+          method: "PATCH",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ workout_id: newWorkoutId }),
+        }
+      );
+
+      if (!response.ok) {
+        const raw = await response.text().catch(() => "");
+        let message = raw?.trim() || "No se pudo reemplazar el ejercicio.";
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            message =
+              parsed?.message ||
+              parsed?.error ||
+              parsed?.details ||
+              message;
+          } catch (err) {
+            // ignore json parse error
+          }
+        }
+
+        if (!raw && response.status === 409) {
+          message = "Ya iniciaste este ejercicio. No puede ser reemplazado.";
+        }
+
+        throw new Error(message);
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      const payloadWorkout =
+        payload?.workout ?? payload?.data?.workout ?? payload?.data ?? null;
+
+      const updatedWorkoutId =
+        payloadWorkout?.workout_id ??
+        payloadWorkout?.id ??
+        payload?.workout_id ??
+        payload?.workoutId ??
+        newWorkoutId;
+
+      const updatedName =
+        payloadWorkout?.name ?? payload?.name ?? alternative?.name ?? exercise.name;
+
+      const updatedCategory =
+        payloadWorkout?.category ?? alternative?.category ?? exercise.category;
+
+      const updatedType =
+        payloadWorkout?.type ?? alternative?.type ?? exercise.type;
+
+      setExercises((prev) =>
+        prev.map((ex) =>
+          ex.id !== scheduleId
+            ? ex
+            : {
+                ...ex,
+                name: updatedName,
+                category: updatedCategory,
+                type: updatedType,
+                workout_id: updatedWorkoutId,
+                workoutId: updatedWorkoutId,
+              }
+        )
+      );
+    },
+    [setExercises]
+  );
 
   const handleConfirmAlternative = useCallback(
-    (_alternativeId, alternativeFromModal) => {
+    async (_alternativeId, alternativeFromModal) => {
       const alternative = alternativeFromModal ?? selectedAlternative;
       if (!alternativesTargetExercise || !alternative) return;
-      performAlternativeReplacement(alternativesTargetExercise, alternative);
-      closeAlternativesModal();
+      setReplacementRequest({ state: "loading", message: "" });
+
+      try {
+        await performAlternativeReplacement(
+          alternativesTargetExercise,
+          alternative
+        );
+        setReplacementRequest({ state: "success", message: "" });
+        closeAlternativesModal();
+        showReplacementFeedback("success", "Ejercicio actualizado");
+      } catch (error) {
+        const message = error?.message || "No se pudo reemplazar el ejercicio.";
+        setReplacementRequest({ state: "error", message });
+      }
     },
     [
       alternativesTargetExercise,
       selectedAlternative,
       closeAlternativesModal,
       performAlternativeReplacement,
+      showReplacementFeedback,
     ]
   );
 
@@ -1059,6 +1189,15 @@ export default function WorkoutDetailView() {
       </div>
 
       {/* Exercises */}
+      {replacementFeedback && (
+        <div
+          className={`exercise-replacement-feedback exercise-replacement-feedback--${replacementFeedback.type}`}
+          role={replacementFeedback.type === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          {replacementFeedback.message}
+        </div>
+      )}
       <div className="exercises-container">
         {exercises.map((exercise) => (
           <div
@@ -1218,6 +1357,8 @@ export default function WorkoutDetailView() {
           return workoutId ? alternativesCache[workoutId] : [];
         })()}
         status={alternativesStatus}
+        isConfirming={replacementRequest.state === "loading"}
+        confirmationStatus={replacementRequest}
       />
     </div>
   );

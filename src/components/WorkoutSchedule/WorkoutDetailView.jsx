@@ -587,7 +587,6 @@ export default function WorkoutDetailView() {
             ? `Ejercicio reemplazado por "${alternative.name}".`
             : "Ejercicio reemplazado correctamente."
         );
-        toast.show("success", "✅ Ejercicio reemplazado correctamente.");
       } catch (error) {
         console.error("Failed to replace exercise", error);
         const message =

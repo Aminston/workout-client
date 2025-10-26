@@ -309,47 +309,8 @@ export default function WorkoutDetailView() {
   });
   const [selectedAlternativeId, setSelectedAlternativeId] = useState(null);
   const [selectedAlternative, setSelectedAlternative] = useState(null);
-  const [replacementFeedback, setReplacementFeedback] = useState({
-    visible: false,
-    type: "success",
-    message: "",
-  });
-
-  const replacementOverlayTimeoutRef = useRef(null);
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
-
-  const hideReplacementOverlay = useCallback(() => {
-    if (replacementOverlayTimeoutRef.current) {
-      clearTimeout(replacementOverlayTimeoutRef.current);
-      replacementOverlayTimeoutRef.current = null;
-    }
-    setReplacementFeedback((prev) =>
-      prev.visible ? { ...prev, visible: false } : prev
-    );
-  }, []);
-
-  const showReplacementOverlay = useCallback((type, message, duration = 2500) => {
-    if (replacementOverlayTimeoutRef.current) {
-      clearTimeout(replacementOverlayTimeoutRef.current);
-      replacementOverlayTimeoutRef.current = null;
-    }
-
-    setReplacementFeedback({
-      visible: true,
-      type: type || "neutral",
-      message: message || "",
-    });
-
-    if (duration > 0) {
-      replacementOverlayTimeoutRef.current = setTimeout(() => {
-        replacementOverlayTimeoutRef.current = null;
-        setReplacementFeedback((prev) =>
-          prev.visible ? { ...prev, visible: false } : prev
-        );
-      }, duration);
-    }
-  }, []);
 
   const clearRestInterval = useCallback(() => {
     if (restIntervalRef.current) {
@@ -470,7 +431,6 @@ export default function WorkoutDetailView() {
           "danger",
           "❌ No se pudo completar el reemplazo del ejercicio seleccionado."
         );
-        hideReplacementOverlay();
         return;
       }
 
@@ -487,7 +447,6 @@ export default function WorkoutDetailView() {
           "danger",
           "❌ No se pudo identificar el ejercicio que deseas reemplazar."
         );
-        hideReplacementOverlay();
         return;
       }
 
@@ -496,7 +455,6 @@ export default function WorkoutDetailView() {
           "danger",
           "❌ No se pudo identificar la alternativa seleccionada."
         );
-        hideReplacementOverlay();
         return;
       }
 
@@ -528,7 +486,6 @@ export default function WorkoutDetailView() {
             rawBody ||
             "No se pudo reemplazar el ejercicio.";
           toast.show("danger", `❌ ${message}`);
-          hideReplacementOverlay();
           return;
         }
 
@@ -586,16 +543,14 @@ export default function WorkoutDetailView() {
           : "Ejercicio reemplazado correctamente.";
 
         toast.show("success", `✅ ${successMessage}`);
-        showReplacementOverlay("success", successMessage);
       } catch (error) {
         console.error("Failed to replace exercise", error);
         const message =
           error?.message || "No se pudo reemplazar el ejercicio. Intenta nuevamente.";
         toast.show("danger", `❌ ${message}`);
-        hideReplacementOverlay();
       }
     },
-    [hideReplacementOverlay, showReplacementOverlay, setAlternativesCache]
+    [setAlternativesCache]
   );
 
   const handleConfirmAlternative = useCallback(
@@ -747,15 +702,6 @@ export default function WorkoutDetailView() {
       clearRestInterval();
     };
   }, [clearRestInterval]);
-
-  useEffect(() => {
-    return () => {
-      if (replacementOverlayTimeoutRef.current) {
-        clearTimeout(replacementOverlayTimeoutRef.current);
-        replacementOverlayTimeoutRef.current = null;
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!isExerciseModalOpen || !activeWorkoutId) return;
@@ -1395,34 +1341,6 @@ export default function WorkoutDetailView() {
         })()}
         status={alternativesStatus}
       />
-      {replacementFeedback.visible && (
-        <div
-          className={`replacement-overlay replacement-overlay--${
-            replacementFeedback.type || "neutral"
-          }`}
-        >
-          <div className="replacement-overlay__backdrop" />
-          <div
-            className="replacement-overlay__content"
-            role={
-              replacementFeedback.type === "error" ? "alert" : "status"
-            }
-            aria-live="assertive"
-          >
-            <p>
-              {replacementFeedback.message ||
-                "Ejercicio reemplazado correctamente."}
-            </p>
-            <button
-              type="button"
-              className="replacement-overlay__close"
-              onClick={hideReplacementOverlay}
-            >
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

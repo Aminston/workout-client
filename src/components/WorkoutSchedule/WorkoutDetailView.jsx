@@ -1,6 +1,7 @@
 // src/components/WorkoutSchedule/WorkoutDetailView.jsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestTimerBubble from "./RestTimerBubble";
@@ -308,9 +309,47 @@ export default function WorkoutDetailView() {
   });
   const [selectedAlternativeId, setSelectedAlternativeId] = useState(null);
   const [selectedAlternative, setSelectedAlternative] = useState(null);
+  const [replacementFeedback, setReplacementFeedback] = useState({
+    visible: false,
+    type: "success",
+    message: "",
+  });
 
+  const replacementOverlayTimeoutRef = useRef(null);
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+
+  const hideReplacementOverlay = useCallback(() => {
+    if (replacementOverlayTimeoutRef.current) {
+      clearTimeout(replacementOverlayTimeoutRef.current);
+      replacementOverlayTimeoutRef.current = null;
+    }
+    setReplacementFeedback((prev) =>
+      prev.visible ? { ...prev, visible: false } : prev
+    );
+  }, []);
+
+  const showReplacementOverlay = useCallback((type, message, duration = 2500) => {
+    if (replacementOverlayTimeoutRef.current) {
+      clearTimeout(replacementOverlayTimeoutRef.current);
+      replacementOverlayTimeoutRef.current = null;
+    }
+
+    setReplacementFeedback({
+      visible: true,
+      type: type || "neutral",
+      message: message || "",
+    });
+
+    if (duration > 0) {
+      replacementOverlayTimeoutRef.current = setTimeout(() => {
+        replacementOverlayTimeoutRef.current = null;
+        setReplacementFeedback((prev) =>
+          prev.visible ? { ...prev, visible: false } : prev
+        );
+      }, duration);
+    }
+  }, []);
 
   const clearRestInterval = useCallback(() => {
     if (restIntervalRef.current) {
@@ -424,12 +463,141 @@ export default function WorkoutDetailView() {
     setSelectedAlternative(alt);
   }, []);
 
-  const performAlternativeReplacement = useCallback((exercise, alternative) => {
-    if (!exercise || !alternative) return;
-    console.info("Ejercicio a reemplazar", exercise);
-    console.info("Alternativa seleccionada", alternative);
-    // TODO: Integrar la llamada real al backend para confirmar el reemplazo.
-  }, []);
+  const performAlternativeReplacement = useCallback(
+    async (exercise, alternative) => {
+      if (!exercise || !alternative) {
+        toast.show(
+          "danger",
+          "❌ No se pudo completar el reemplazo del ejercicio seleccionado."
+        );
+        hideReplacementOverlay();
+        return;
+      }
+
+      const scheduleId =
+        exercise?.scheduleId ?? exercise?.schedule_id ?? exercise?.id ?? null;
+      const replacementWorkoutId =
+        alternative?.workout_id ??
+        alternative?.workoutId ??
+        alternative?.id ??
+        null;
+
+      if (scheduleId == null) {
+        toast.show(
+          "danger",
+          "❌ No se pudo identificar el ejercicio que deseas reemplazar."
+        );
+        hideReplacementOverlay();
+        return;
+      }
+
+      if (replacementWorkoutId == null) {
+        toast.show(
+          "danger",
+          "❌ No se pudo identificar la alternativa seleccionada."
+        );
+        hideReplacementOverlay();
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          getApiUrl(`/schedule/workout/replace/${encodeURIComponent(scheduleId)}`),
+          {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ workout_id: replacementWorkoutId }),
+          }
+        );
+
+        const rawBody = await response.text().catch(() => "");
+        let payload = null;
+        if (rawBody) {
+          try {
+            payload = JSON.parse(rawBody);
+          } catch {
+            payload = null;
+          }
+        }
+
+        if (!response.ok) {
+          const message =
+            payload?.error ||
+            payload?.message ||
+            (typeof payload === "string" ? payload : null) ||
+            rawBody ||
+            "No se pudo reemplazar el ejercicio.";
+          toast.show("danger", `❌ ${message}`);
+          hideReplacementOverlay();
+          return;
+        }
+
+        const updatedFromPayload =
+          payload?.data?.workout || payload?.data || payload?.workout || {};
+
+        const nextWorkoutId =
+          updatedFromPayload?.workout_id ??
+          updatedFromPayload?.workoutId ??
+          updatedFromPayload?.id ??
+          replacementWorkoutId;
+
+        const previousWorkoutId =
+          exercise?.workout_id ?? exercise?.workoutId ?? null;
+
+        setExercises((prev) =>
+          prev.map((ex) => {
+            const currentId = ex?.scheduleId ?? ex?.id ?? null;
+            if (String(currentId) !== String(scheduleId)) return ex;
+
+            const normalizedWorkoutId =
+              nextWorkoutId ?? ex.workout_id ?? ex.workoutId ?? null;
+            const nextName =
+              updatedFromPayload?.name ??
+              payload?.data?.name ??
+              alternative?.name ??
+              ex.name;
+            const nextCategory =
+              updatedFromPayload?.category ?? alternative?.category ?? ex.category;
+            const nextType =
+              updatedFromPayload?.type ?? alternative?.type ?? ex.type;
+
+            return {
+              ...ex,
+              name: nextName || ex.name,
+              category: nextCategory ?? ex.category,
+              type: nextType ?? ex.type,
+              workout_id: normalizedWorkoutId,
+              workoutId: normalizedWorkoutId,
+            };
+          })
+        );
+
+        if (previousWorkoutId != null) {
+          setAlternativesCache((prev) => {
+            if (!(previousWorkoutId in prev)) return prev;
+            const next = { ...prev };
+            delete next[previousWorkoutId];
+            return next;
+          });
+        }
+
+        showReplacementOverlay(
+          "success",
+          alternative?.name
+            ? `Ejercicio reemplazado por "${alternative.name}".`
+            : "Ejercicio reemplazado correctamente."
+        );
+        toast.show("success", "✅ Ejercicio reemplazado correctamente.");
+      } catch (error) {
+        console.error("Failed to replace exercise", error);
+        const message =
+          error?.message || "No se pudo reemplazar el ejercicio. Intenta nuevamente.";
+        toast.show("danger", `❌ ${message}`);
+        hideReplacementOverlay();
+      }
+    },
+    [hideReplacementOverlay, showReplacementOverlay, setAlternativesCache]
+  );
 
   const handleConfirmAlternative = useCallback(
     (_alternativeId, alternativeFromModal) => {
@@ -580,6 +748,15 @@ export default function WorkoutDetailView() {
       clearRestInterval();
     };
   }, [clearRestInterval]);
+
+  useEffect(() => {
+    return () => {
+      if (replacementOverlayTimeoutRef.current) {
+        clearTimeout(replacementOverlayTimeoutRef.current);
+        replacementOverlayTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!isExerciseModalOpen || !activeWorkoutId) return;
@@ -1219,6 +1396,34 @@ export default function WorkoutDetailView() {
         })()}
         status={alternativesStatus}
       />
+      {replacementFeedback.visible && (
+        <div
+          className={`replacement-overlay replacement-overlay--${
+            replacementFeedback.type || "neutral"
+          }`}
+        >
+          <div className="replacement-overlay__backdrop" />
+          <div
+            className="replacement-overlay__content"
+            role={
+              replacementFeedback.type === "error" ? "alert" : "status"
+            }
+            aria-live="assertive"
+          >
+            <p>
+              {replacementFeedback.message ||
+                "Ejercicio reemplazado correctamente."}
+            </p>
+            <button
+              type="button"
+              className="replacement-overlay__close"
+              onClick={hideReplacementOverlay}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -287,6 +287,11 @@
   border-color: rgba(70,230,138,var(--alpha-04));
   background: rgba(70,230,138,var(--alpha-01));
 }
+.status-error {
+  color: var(--md-sys-color-error);
+  border-color: rgba(255,91,91,var(--alpha-04));
+  background: rgba(255,91,91,var(--alpha-01));
+}
 .session-cancelled,
 .status-final {
   color: var(--md-sys-color-neutral);

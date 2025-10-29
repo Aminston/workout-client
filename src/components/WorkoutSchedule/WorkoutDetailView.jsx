@@ -296,7 +296,7 @@ export default function WorkoutDetailView() {
   const [exercises, setExercises] = useState([]);
   const [workoutMeta, setWorkoutMeta] = useState(null);
   const [useMetric, setUseMetric] = useState(true);
-  const [editing, setEditing] = useState(null); // {exerciseId,setId,field}
+  const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
   const updateExercises = useCallback((updater) => {
@@ -802,6 +802,20 @@ export default function WorkoutDetailView() {
     [exercises]
   );
 
+  const getInputDefaultValue = useCallback(
+    (set, field) => {
+      if (!set) return "";
+      if (field === "weight") {
+        return useMetric
+          ? numOr(set.weight, 0)
+          : Math.round(weightConverter.kgToLbs(numOr(set.weight, 0)));
+      }
+
+      return numOr(set[field], 0);
+    },
+    [useMetric]
+  );
+
   /* ---------- actions ---------- */
   const handleStart = (exerciseId, setId) => {
     updateExercises((prev) =>
@@ -876,7 +890,12 @@ export default function WorkoutDetailView() {
       )
     );
 
-    setEditing({ exerciseId, setId, field: "weight" });
+    setEditing({
+      exerciseId,
+      setId,
+      field: "weight",
+      initialValue: String(getInputDefaultValue(nextSet, "weight")),
+    });
     queueSetAutoSave(exerciseId, setId, 0);
     inFlight.current.delete(key);
   };
@@ -1047,10 +1066,35 @@ export default function WorkoutDetailView() {
   };
 
   /* ---------- inline editing ---------- */
-  const onCellClick = (exerciseId, setId, field) =>
-    setEditing({ exerciseId, setId, field });
-
   const onCellEdit = (exerciseId, setId, field, raw) => {
+    const editingContext =
+      editing &&
+      editing.exerciseId === exerciseId &&
+      editing.setId === setId &&
+      editing.field === field
+        ? editing
+        : null;
+
+    const normalizedRaw = raw == null ? "" : String(raw).trim();
+    const initialValue = editingContext?.initialValue != null
+      ? String(editingContext.initialValue).trim()
+      : null;
+
+    const sameAsInitial =
+      initialValue != null &&
+      (normalizedRaw === initialValue ||
+        (!Number.isNaN(Number(normalizedRaw)) &&
+          !Number.isNaN(Number(initialValue)) &&
+          Number(normalizedRaw) === Number(initialValue)));
+
+    const exercise = exercisesRef.current.find((ex) => ex.id === exerciseId);
+    const prevSet = exercise?.sets.find((s) => s.id === setId);
+
+    if (sameAsInitial || !exercise || !prevSet) {
+      setEditing(null);
+      return;
+    }
+
     let val = raw;
     if (field === "weight") {
       val = useMetric
@@ -1058,6 +1102,20 @@ export default function WorkoutDetailView() {
         : weightConverter.lbsToKg(Math.max(0, parseInt(raw) || 0));
     } else if (field === "reps") {
       val = Math.max(0, parseInt(raw) || 0);
+    }
+
+    const prevValue =
+      field === "weight"
+        ? numOr(prevSet.weight, 0)
+        : numOr(prevSet[field], 0);
+
+    if (Number.isFinite(prevValue) && Number.isFinite(Number(val))) {
+      const normalizedVal = Number(val);
+      const tolerance = field === "weight" ? 0.005 : 0;
+      if (Math.abs(normalizedVal - prevValue) <= tolerance) {
+        setEditing(null);
+        return;
+      }
     }
 
     updateExercises((prev) =>
@@ -1085,6 +1143,9 @@ export default function WorkoutDetailView() {
     queueSetAutoSave(exerciseId, setId, 0);
   };
 
+  const onCellClick = (exerciseId, setId, field, initialValue) =>
+    setEditing({ exerciseId, setId, field, initialValue });
+
   const renderEditableCell = (exercise, set, field) => {
     if (set.status !== "done") {
       const lockedValue =
@@ -1100,18 +1161,13 @@ export default function WorkoutDetailView() {
       editing?.field === field;
 
     if (isEditing) {
-      const display =
-        field === "weight"
-          ? useMetric
-            ? numOr(set.weight, 0)
-            : Math.round(weightConverter.kgToLbs(set.weight || 0))
-          : set[field] ?? 0;
+      const inputDefaultValue = getInputDefaultValue(set, field);
 
       return (
         <input
           type="number"
           className="table-cell-input"
-          defaultValue={display}
+          defaultValue={inputDefaultValue}
           autoFocus
           onFocus={(e) => e.target.select()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
@@ -1138,7 +1194,8 @@ export default function WorkoutDetailView() {
         className="editable-cell"
         onClick={(e) => {
           e.stopPropagation();
-          onCellClick(exercise.id, set.id, field);
+          const initialValue = String(getInputDefaultValue(set, field));
+          onCellClick(exercise.id, set.id, field, initialValue);
         }}
         title={`Click to edit ${field}`}
       >

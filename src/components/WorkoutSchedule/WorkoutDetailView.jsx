@@ -186,13 +186,27 @@ function toApiSession(exercise, sets) {
     scheduleId: exercise.scheduleId,
     status: "completed",
     performedSets: sets.map((s) => {
+      const setNumber = Number(s.setNumber ?? s.id);
+      const weight = Number(s.weight);
+      const reps = Number(s.reps);
+      if (!Number.isInteger(setNumber)) {
+        throw new Error("Invalid set data: set number is required.");
+      }
+      if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
+        throw new Error("Invalid set data: weight and reps are required.");
+      }
+
       const out = {
-        setNumber: s.id,
+        setNumber,
+        weight,
+        reps,
         weightUnit: s.weightUnit || "kg",
       };
-      if (Number.isFinite(Number(s.reps))) out.reps = Number(s.reps);
-      if (Number.isFinite(Number(s.weight))) out.weight = Number(s.weight);
-      if (Number.isFinite(Number(s.duration))) out.elapsedTime = Number(s.duration);
+
+      const duration = Number.isFinite(Number(s.duration ?? s.elapsedTime))
+        ? Number(s.duration ?? s.elapsedTime)
+        : null;
+      if (duration != null) out.elapsedTime = duration;
       return out;
     }),
   };
@@ -282,10 +296,16 @@ export default function WorkoutDetailView() {
   const [exercises, setExercises] = useState([]);
   const [workoutMeta, setWorkoutMeta] = useState(null);
   const [useMetric, setUseMetric] = useState(true);
-  const [editing, setEditing] = useState(null); // {exerciseId,setId,field}
-  const [hasUnsaved, setHasUnsaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
+  const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
+  const autoSaveTimers = useRef(new Map());
+  const exercisesRef = useRef([]);
+  const updateExercises = useCallback((updater) => {
+    setExercises((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      exercisesRef.current = next;
+      return next;
+    });
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [restTimer, setRestTimer] = useState({
@@ -501,7 +521,7 @@ export default function WorkoutDetailView() {
         const previousWorkoutId =
           exercise?.workout_id ?? exercise?.workoutId ?? null;
 
-        setExercises((prev) =>
+        updateExercises((prev) =>
           prev.map((ex) => {
             const currentId = ex?.scheduleId ?? ex?.id ?? null;
             if (String(currentId) !== String(scheduleId)) return ex;
@@ -730,9 +750,9 @@ export default function WorkoutDetailView() {
       try {
         setLoading(true);
         setError(null);
-        setExercises([]);
-        setHasUnsaved(false);
-        setSaveStatus(null);
+        updateExercises([]);
+        autoSaveTimers.current.forEach((t) => clearTimeout(t));
+        autoSaveTimers.current.clear();
 
         const originalApiData = location.state?.originalApiData;
         const passedWorkoutData = location.state?.workoutData;
@@ -747,7 +767,7 @@ export default function WorkoutDetailView() {
         const built = buildExercisesFromDay(dayData);
         if (!mounted) return;
 
-        setExercises(built);
+        updateExercises(built);
         setWorkoutMeta({
           day: dayData.day_name || `Day ${dayData.day_number}`,
         });
@@ -763,9 +783,42 @@ export default function WorkoutDetailView() {
     };
   }, [location.key, JSON.stringify(location.state)]);
 
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
+
+  useEffect(() => () => {
+    autoSaveTimers.current.forEach((t) => clearTimeout(t));
+    autoSaveTimers.current.clear();
+  }, []);
+
+  const hasUnsaved = useMemo(
+    () =>
+      exercises.some((ex) =>
+        ex.sets.some(
+          (set) => set.status === "done" && (!set.isSynced || set.saveError)
+        )
+      ),
+    [exercises]
+  );
+
+  const getInputDefaultValue = useCallback(
+    (set, field) => {
+      if (!set) return "";
+      if (field === "weight") {
+        return useMetric
+          ? numOr(set.weight, 0)
+          : Math.round(weightConverter.kgToLbs(numOr(set.weight, 0)));
+      }
+
+      return numOr(set[field], 0);
+    },
+    [useMetric]
+  );
+
   /* ---------- actions ---------- */
   const handleStart = (exerciseId, setId) => {
-    setExercises((prev) =>
+    updateExercises((prev) =>
       prev.map((ex) =>
         ex.id !== exerciseId
           ? ex
@@ -786,13 +839,12 @@ export default function WorkoutDetailView() {
     if (inFlight.current.has(key)) return;
     inFlight.current.add(key);
 
-    // 1) Read current snapshot to build the next set FIRST
-    const ex = exercises.find(e => e.id === exerciseId);
-    if (!ex) {
+    const exercise = exercisesRef.current.find((e) => e.id === exerciseId);
+    if (!exercise) {
       inFlight.current.delete(key);
       return;
     }
-    const prevSet = ex.sets.find(s => s.id === setId);
+    const prevSet = exercise.sets.find((s) => s.id === setId);
     if (!prevSet) {
       inFlight.current.delete(key);
       return;
@@ -803,8 +855,10 @@ export default function WorkoutDetailView() {
     const completedAt = new Date().toISOString();
     const duration = prevSet.startedAt
       ? Math.max(0, (new Date(completedAt) - new Date(prevSet.startedAt)) / 1000)
-      : (Number.isFinite(Number(prevSet.duration)) ? Number(prevSet.duration) : null);
-  
+      : Number.isFinite(Number(prevSet.duration))
+      ? Number(prevSet.duration)
+      : null;
+
     const nextSet = {
       ...prevSet,
       status: "done",
@@ -814,18 +868,19 @@ export default function WorkoutDetailView() {
       isSynced: false,
       saveError: false,
     };
-  
-    // 2) Optimistic UI update
-    setExercises(prev =>
-      prev.map(e =>
-        e.id !== exerciseId
-          ? e
+
+    updateExercises((prev) =>
+      prev.map((ex) =>
+        ex.id !== exerciseId
+          ? ex
           : {
-              ...e,
-              sets: e.sets.map(s => (s.id === setId ? nextSet : s)),
+              ...ex,
+              sets: ex.sets.map((s) => (s.id === setId ? nextSet : s)),
               status: (() => {
-                const done = e.sets.map(s => (s.id === setId ? nextSet : s)).filter(s => s.status === "done").length;
-                return done === e.sets.length && e.sets.length > 0
+                const done = ex.sets
+                  .map((s) => (s.id === setId ? nextSet : s))
+                  .filter((s) => s.status === "done").length;
+                return done === ex.sets.length && ex.sets.length > 0
                   ? "done"
                   : done > 0
                   ? "in-progress"
@@ -834,148 +889,212 @@ export default function WorkoutDetailView() {
             }
       )
     );
-  
-    // 3) Fire the request (always), then mark synced or error
-    (async () => {
+
+    setEditing({
+      exerciseId,
+      setId,
+      field: "weight",
+      initialValue: String(getInputDefaultValue(nextSet, "weight")),
+    });
+    queueSetAutoSave(exerciseId, setId, 0);
+    inFlight.current.delete(key);
+  };
+  const saveSingleSet = useCallback(async (exercise, setData) => {
+    const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
+    const preferredMethod = setData.isFromSession ? "PATCH" : "POST";
+
+    const attemptSave = async (method) => {
+      const res = await fetch(getApiUrl("/sessions/save"), {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        const error = new Error(`Save failed: ${res.status} ${t}`);
+        error.status = res.status;
+        error.body = t;
+        throw error;
+      }
       try {
-        await saveSingleSet(ex, nextSet); // POST /sessions/save
-        setExercises(curr =>
-          curr.map(e =>
-            e.id !== exerciseId
-              ? e
+        return await res.json();
+      } catch (err) {
+        return null;
+      }
+    };
+
+    try {
+      return await attemptSave(preferredMethod);
+    } catch (err) {
+      if (
+        preferredMethod === "PATCH" &&
+        (err?.status === 404 || /not found/i.test(err?.body || ""))
+      ) {
+        return attemptSave("POST");
+      }
+      throw err;
+    }
+  }, []);
+
+  const saveSetNow = useCallback(
+    async (exerciseId, setId) => {
+      const key = `${exerciseId}-${setId}`;
+      if (inFlight.current.has(key)) return;
+
+      const exercise = exercisesRef.current.find((ex) => ex.id === exerciseId);
+      if (!exercise) return;
+      const set = exercise.sets.find((s) => s.id === setId);
+      if (!set || set.status !== "done") return;
+
+      const weight = Number(set.weight);
+      const reps = Number(set.reps);
+      if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
+        toast.show("danger", "Please enter valid numbers for weight and reps before saving.");
+        updateExercises((prev) =>
+          prev.map((ex) =>
+            ex.id !== exerciseId
+              ? ex
               : {
-                  ...e,
-                  sets: e.sets.map(s =>
+                  ...ex,
+                  sets: ex.sets.map((s) =>
                     s.id !== setId
                       ? s
-                      : { ...s, isSynced: true, isFromSession: true, lastSaved: new Date().toISOString(), saveError: false }
+                      : { ...s, saveError: true, isSynced: false }
+                  ),
+                }
+          )
+        );
+        return;
+      }
+
+      inFlight.current.add(key);
+      updateExercises((prev) =>
+        prev.map((ex) =>
+          ex.id !== exerciseId
+            ? ex
+            : {
+                ...ex,
+                sets: ex.sets.map((s) =>
+                  s.id !== setId
+                    ? s
+                    : {
+                        ...s,
+                        isSynced: false,
+                        saveError: false,
+                      }
+                ),
+              }
+        )
+      );
+
+      try {
+        await saveSingleSet(exercise, {
+          ...set,
+          id: set.id,
+          weight,
+          reps,
+          weightUnit: set.weightUnit || "kg",
+          duration: Number.isFinite(Number(set.duration))
+            ? Number(set.duration)
+            : undefined,
+        });
+
+        updateExercises((prev) =>
+          prev.map((ex) =>
+            ex.id !== exerciseId
+              ? ex
+              : {
+                  ...ex,
+                  sets: ex.sets.map((s) =>
+                    s.id !== setId
+                      ? s
+                      : {
+                          ...s,
+                          isSynced: true,
+                          isFromSession: true,
+                          isModified: false,
+                          saveError: false,
+                          lastSaved: new Date().toISOString(),
+                        }
                   ),
                 }
           )
         );
       } catch (err) {
-        // Show retryable state
-        setExercises(curr =>
-          curr.map(e =>
-            e.id !== exerciseId
-              ? e
+        console.warn("Auto-save failed:", err);
+        toast.show("danger", "Failed to save set. Please check your connection and try again.");
+        updateExercises((prev) =>
+          prev.map((ex) =>
+            ex.id !== exerciseId
+              ? ex
               : {
-                  ...e,
-                  sets: e.sets.map(s =>
-                    s.id !== setId ? s : { ...s, isSynced: false, saveError: true }
+                  ...ex,
+                  sets: ex.sets.map((s) =>
+                    s.id !== setId
+                      ? s
+                      : { ...s, isSynced: false, saveError: true }
                   ),
                 }
           )
         );
-        setHasUnsaved(true);
-        console.warn("Save failed:", err);
       } finally {
         inFlight.current.delete(key);
       }
-    })();
-  };
-  
+    },
+    [saveSingleSet]
+  );
 
-  async function saveSingleSet(exercise, setData) {
-    const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
-    const res = await fetch(getApiUrl("/sessions/save"), {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(`Save failed: ${res.status} ${t}`);
-    }
-    return res.json();
-  }
+  const queueSetAutoSave = useCallback(
+    (exerciseId, setId, delay = 600) => {
+      const key = `${exerciseId}-${setId}`;
+      const existing = autoSaveTimers.current.get(key);
+      if (existing) clearTimeout(existing);
 
-  const handleManualSave = async () => {
-    if (!hasUnsaved || isSaving) return;
-    setIsSaving(true);
-    setSaveStatus("saving");
-
-    try {
-      const toSave = exercises
-        .map((ex) => ({
-          ex,
-          sets: ex.sets.filter(
-            (s) =>
-              (s.status === "done" && !s.isFromSession && !s.isSynced) ||
-              (s.isModified && !s.isSynced)
-          ),
-        }))
-        .filter((x) => x.sets.length > 0);
-
-      if (toSave.length === 0) {
-        setHasUnsaved(false);
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus(null), 1200);
-        return;
-      }
-
-      const workoutSessions = toSave.map(({ ex, sets }) =>
-        toApiSession(
-          ex,
-          sets.map((s) => ({
-            ...s,
-            duration:
-              Number.isFinite(Number(s.duration))
-                ? Number(s.duration)
-                : s.completedAt && s.startedAt
-                ? Math.max(0, (new Date(s.completedAt) - new Date(s.startedAt)) / 1000)
-                : undefined,
-          }))
-        )
+      autoSaveTimers.current.set(
+        key,
+        setTimeout(() => {
+          autoSaveTimers.current.delete(key);
+          saveSetNow(exerciseId, setId);
+        }, Math.max(0, delay))
       );
+    },
+    [saveSetNow]
+  );
 
-      const res = await fetch(getApiUrl("/sessions/save"), {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ workoutSessions }),
-      });
-      if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        throw new Error(`Save failed: ${res.status} ${t}`);
-      }
-
-      const included = new Set(
-        toSave.flatMap(({ ex, sets }) => sets.map((s) => `${ex.id}#${s.id}`))
-      );
-      setExercises((prev) =>
-        prev.map((ex) => ({
-          ...ex,
-          sets: ex.sets.map((s) =>
-            included.has(`${ex.id}#${s.id}`)
-              ? {
-                  ...s,
-                  isSynced: true,
-                  isFromSession: s.status === "done" ? true : s.isFromSession,
-                  isModified: false,
-                  lastSaved: new Date().toISOString(),
-                }
-              : s
-          ),
-        }))
-      );
-
-      setHasUnsaved(false);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus(null), 1200);
-    } catch (e) {
-      setSaveStatus("error");
-      alert(e.message || "Failed to save workout");
-      setTimeout(() => setSaveStatus(null), 1800);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleRetrySetSave = (exerciseId, setId) => {
+    queueSetAutoSave(exerciseId, setId, 0);
   };
 
   /* ---------- inline editing ---------- */
-  const onCellClick = (exerciseId, setId, field) =>
-    setEditing({ exerciseId, setId, field });
-
   const onCellEdit = (exerciseId, setId, field, raw) => {
+    const editingContext =
+      editing &&
+      editing.exerciseId === exerciseId &&
+      editing.setId === setId &&
+      editing.field === field
+        ? editing
+        : null;
+
+    const normalizedRaw = raw == null ? "" : String(raw).trim();
+    const initialValue = editingContext?.initialValue != null
+      ? String(editingContext.initialValue).trim()
+      : null;
+
+    const sameAsInitial =
+      initialValue != null &&
+      (normalizedRaw === initialValue ||
+        (!Number.isNaN(Number(normalizedRaw)) &&
+          !Number.isNaN(Number(initialValue)) &&
+          Number(normalizedRaw) === Number(initialValue)));
+
+    const exercise = exercisesRef.current.find((ex) => ex.id === exerciseId);
+    const prevSet = exercise?.sets.find((s) => s.id === setId);
+
+    if (sameAsInitial || !exercise || !prevSet) {
+      setEditing(null);
+      return;
+    }
+
     let val = raw;
     if (field === "weight") {
       val = useMetric
@@ -985,7 +1104,21 @@ export default function WorkoutDetailView() {
       val = Math.max(0, parseInt(raw) || 0);
     }
 
-    setExercises((prev) =>
+    const prevValue =
+      field === "weight"
+        ? numOr(prevSet.weight, 0)
+        : numOr(prevSet[field], 0);
+
+    if (Number.isFinite(prevValue) && Number.isFinite(Number(val))) {
+      const normalizedVal = Number(val);
+      const tolerance = field === "weight" ? 0.005 : 0;
+      if (Math.abs(normalizedVal - prevValue) <= tolerance) {
+        setEditing(null);
+        return;
+      }
+    }
+
+    updateExercises((prev) =>
       prev.map((ex) =>
         ex.id !== exerciseId
           ? ex
@@ -998,6 +1131,7 @@ export default function WorkoutDetailView() {
                       ...s,
                       isModified: true,
                       isSynced: false,
+                      saveError: false,
                       ...(field === "weight" ? { weight: val } : {}),
                       ...(field === "reps" ? { reps: val } : {}),
                     }
@@ -1006,28 +1140,34 @@ export default function WorkoutDetailView() {
       )
     );
     setEditing(null);
-    setHasUnsaved(true);
+    queueSetAutoSave(exerciseId, setId, 0);
   };
 
+  const onCellClick = (exerciseId, setId, field, initialValue) =>
+    setEditing({ exerciseId, setId, field, initialValue });
+
   const renderEditableCell = (exercise, set, field) => {
+    if (set.status !== "done") {
+      const lockedValue =
+        field === "weight"
+          ? weightConverter.display(set.weight, useMetric)
+          : set[field] ?? "-";
+      return <span className="editable-cell cell-readonly">{lockedValue}</span>;
+    }
+
     const isEditing =
       editing?.exerciseId === exercise.id &&
       editing?.setId === set.id &&
       editing?.field === field;
 
     if (isEditing) {
-      const display =
-        field === "weight"
-          ? useMetric
-            ? numOr(set.weight, 0)
-            : Math.round(weightConverter.kgToLbs(set.weight || 0))
-          : set[field] ?? 0;
+      const inputDefaultValue = getInputDefaultValue(set, field);
 
       return (
         <input
           type="number"
           className="table-cell-input"
-          defaultValue={display}
+          defaultValue={inputDefaultValue}
           autoFocus
           onFocus={(e) => e.target.select()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
@@ -1054,7 +1194,8 @@ export default function WorkoutDetailView() {
         className="editable-cell"
         onClick={(e) => {
           e.stopPropagation();
-          onCellClick(exercise.id, set.id, field);
+          const initialValue = String(getInputDefaultValue(set, field));
+          onCellClick(exercise.id, set.id, field, initialValue);
         }}
         title={`Click to edit ${field}`}
       >
@@ -1069,7 +1210,8 @@ export default function WorkoutDetailView() {
     const onBeforeUnload = (e) => {
       if (!hasUnsaved) return;
       e.preventDefault();
-      e.returnValue = "You have unsaved workout data. Save before leaving!";
+      e.returnValue =
+        "Your latest workout updates are still syncing. Leaving now may discard them.";
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
@@ -1127,7 +1269,13 @@ export default function WorkoutDetailView() {
         <button
           className="back-button"
           onClick={() => {
-            if (hasUnsaved && !window.confirm("You have unsaved changes. Leave without saving?")) return;
+            if (
+              hasUnsaved &&
+              !window.confirm(
+                "Some workout updates are still syncing. Leave this page anyway?"
+              )
+            )
+              return;
             navigate("/schedule");
           }}
         >
@@ -1149,23 +1297,8 @@ export default function WorkoutDetailView() {
         </p>
 
         {hasUnsaved && (
-          <>
-            <div className="unsaved-indicator">
-              You have unsaved changes. Completed sets auto-save, or click "Save Workout" to save all.
-            </div>
-            <div className="save-controls">
-              <button className="save-button" onClick={handleManualSave} disabled={isSaving}>
-                {isSaving ? "Saving..." : "Save Workout"}
-              </button>
-            </div>
-          </>
-        )}
-
-        {saveStatus && (
-          <div className={`save-status ${saveStatus}`}>
-            {saveStatus === "saving" && "Saving workout..."}
-            {saveStatus === "saved" && "Workout saved successfully!"}
-            {saveStatus === "error" && "Failed to save workout"}
+          <div className="unsaved-indicator">
+            Some sets haven&apos;t synced yet. We&apos;ll keep trying automatically—retry any set with a warning badge.
           </div>
         )}
       </div>
@@ -1275,13 +1408,28 @@ export default function WorkoutDetailView() {
 
                     <div className="set-action">
                       {set.status === "done" ? (
-                        <span
-                          className={`status-badge status-done ${
-                            set.isSynced ? "synced" : "status-saving"
-                          }`}
-                        >
-                          {set.isSynced ? "Done ✓" : "Saving..."}
-                        </span>
+                        set.saveError ? (
+                          <button
+                            type="button"
+                            className="status-badge status-error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRetrySetSave(exercise.id, set.id);
+                            }}
+                          >
+                            Retry Save
+                          </button>
+                        ) : (
+                          <span
+                            className={`status-badge status-done ${
+                              set.isSynced ? "synced" : "status-saving"
+                            }`}
+                            role="status"
+                            aria-live="polite"
+                          >
+                            {set.isSynced ? "Saved ✓" : "Saving..."}
+                          </span>
+                        )
                       ) : set.status === "in-progress" ? (
                         <button
                           className="btn btn-warning btn-sm"

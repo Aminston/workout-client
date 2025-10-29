@@ -882,19 +882,38 @@ export default function WorkoutDetailView() {
   };
   const saveSingleSet = useCallback(async (exercise, setData) => {
     const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
-    const res = await fetch(getApiUrl("/sessions/save"), {
-      method: "PATCH",
-      headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      throw new Error(`Save failed: ${res.status} ${t}`);
-    }
+    const preferredMethod = setData.isFromSession ? "PATCH" : "POST";
+
+    const attemptSave = async (method) => {
+      const res = await fetch(getApiUrl("/sessions/save"), {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        const error = new Error(`Save failed: ${res.status} ${t}`);
+        error.status = res.status;
+        error.body = t;
+        throw error;
+      }
+      try {
+        return await res.json();
+      } catch (err) {
+        return null;
+      }
+    };
+
     try {
-      return await res.json();
+      return await attemptSave(preferredMethod);
     } catch (err) {
-      return null;
+      if (
+        preferredMethod === "PATCH" &&
+        (err?.status === 404 || /not found/i.test(err?.body || ""))
+      ) {
+        return attemptSave("POST");
+      }
+      throw err;
     }
   }, []);
 

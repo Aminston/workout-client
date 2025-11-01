@@ -297,7 +297,6 @@ export default function WorkoutDetailView() {
   const [workoutMeta, setWorkoutMeta] = useState(null);
   const [useMetric, setUseMetric] = useState(true);
   const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
-  const [pendingEditing, setPendingEditing] = useState(null);
   const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
@@ -856,13 +855,6 @@ export default function WorkoutDetailView() {
     }
   }, [shouldAutoFocusEditing, editing, setShouldAutoFocusEditing]);
 
-  useEffect(() => {
-    if (!restTimer.isVisible && pendingEditing) {
-      setEditingWithFocus(pendingEditing, false);
-      setPendingEditing(null);
-    }
-  }, [restTimer.isVisible, pendingEditing, setEditingWithFocus, setPendingEditing]);
-
   const handleComplete = (exerciseId, setId) => {
     const key = `${exerciseId}-${setId}`;
     if (inFlight.current.has(key)) return;
@@ -879,7 +871,7 @@ export default function WorkoutDetailView() {
       return;
     }
 
-    const restTimerVisible = startRestTimer();
+    startRestTimer();
 
     const completedAt = new Date().toISOString();
     const duration = prevSet.startedAt
@@ -919,20 +911,7 @@ export default function WorkoutDetailView() {
       )
     );
 
-    const nextEditing = {
-      exerciseId,
-      setId,
-      field: "weight",
-      initialValue: String(getInputDefaultValue(nextSet, "weight")),
-    };
-
-    if (restTimerVisible) {
-      setEditingWithFocus(null);
-      setPendingEditing(nextEditing);
-    } else {
-      setPendingEditing(null);
-      setEditingWithFocus(nextEditing, false);
-    }
+    setEditingWithFocus(null);
     queueSetAutoSave(exerciseId, setId, 0);
     inFlight.current.delete(key);
   };
@@ -1181,7 +1160,6 @@ export default function WorkoutDetailView() {
   };
 
   const onCellClick = (exerciseId, setId, field, initialValue) => {
-    setPendingEditing(null);
     setEditingWithFocus({ exerciseId, setId, field, initialValue }, true);
   };
 

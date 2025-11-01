@@ -297,8 +297,13 @@ export default function WorkoutDetailView() {
   const [workoutMeta, setWorkoutMeta] = useState(null);
   const [useMetric, setUseMetric] = useState(true);
   const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
+  const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
+  const editingInputRef = useRef(null);
+  const handleEditingInputRef = useCallback((node) => {
+    editingInputRef.current = node;
+  }, []);
   const updateExercises = useCallback((updater) => {
     setExercises((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -668,7 +673,7 @@ export default function WorkoutDetailView() {
 
       if (normalized <= 0) {
         setRestTimer({ isVisible: false, seconds: 0, startingSeconds: 0 });
-        return;
+        return false;
       }
 
       setRestTimer({
@@ -688,6 +693,7 @@ export default function WorkoutDetailView() {
           return { ...prev, seconds: nextSeconds };
         });
       }, 1000);
+      return true;
     },
     [clearRestInterval]
   );
@@ -834,6 +840,21 @@ export default function WorkoutDetailView() {
     );
   };
 
+  const setEditingWithFocus = useCallback(
+    (nextEditing, shouldFocus = false) => {
+      setEditing(nextEditing);
+      setShouldAutoFocusEditing(Boolean(nextEditing && shouldFocus));
+    },
+    [setEditing, setShouldAutoFocusEditing]
+  );
+
+  useEffect(() => {
+    if (shouldAutoFocusEditing && editingInputRef.current) {
+      editingInputRef.current.focus();
+      setShouldAutoFocusEditing(false);
+    }
+  }, [shouldAutoFocusEditing, editing, setShouldAutoFocusEditing]);
+
   const handleComplete = (exerciseId, setId) => {
     const key = `${exerciseId}-${setId}`;
     if (inFlight.current.has(key)) return;
@@ -890,12 +911,7 @@ export default function WorkoutDetailView() {
       )
     );
 
-    setEditing({
-      exerciseId,
-      setId,
-      field: "weight",
-      initialValue: String(getInputDefaultValue(nextSet, "weight")),
-    });
+    setEditingWithFocus(null);
     queueSetAutoSave(exerciseId, setId, 0);
     inFlight.current.delete(key);
   };
@@ -1143,8 +1159,9 @@ export default function WorkoutDetailView() {
     queueSetAutoSave(exerciseId, setId, 0);
   };
 
-  const onCellClick = (exerciseId, setId, field, initialValue) =>
-    setEditing({ exerciseId, setId, field, initialValue });
+  const onCellClick = (exerciseId, setId, field, initialValue) => {
+    setEditingWithFocus({ exerciseId, setId, field, initialValue }, true);
+  };
 
   const renderEditableCell = (exercise, set, field) => {
     if (set.status !== "done") {
@@ -1165,10 +1182,10 @@ export default function WorkoutDetailView() {
 
       return (
         <input
+          ref={handleEditingInputRef}
           type="number"
           className="table-cell-input"
           defaultValue={inputDefaultValue}
-          autoFocus
           onFocus={(e) => e.target.select()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
           onClick={(e) => e.stopPropagation()}

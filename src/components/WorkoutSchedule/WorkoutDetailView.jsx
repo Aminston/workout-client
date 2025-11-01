@@ -296,7 +296,7 @@ export default function WorkoutDetailView() {
   const [exercises, setExercises] = useState([]);
   const [workoutMeta, setWorkoutMeta] = useState(null);
   const [useMetric, setUseMetric] = useState(true);
-  const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
+  const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue,shouldAutoFocus?}
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
   const updateExercises = useCallback((updater) => {
@@ -895,6 +895,7 @@ export default function WorkoutDetailView() {
       setId,
       field: "weight",
       initialValue: String(getInputDefaultValue(nextSet, "weight")),
+      shouldAutoFocus: false,
     });
     queueSetAutoSave(exerciseId, setId, 0);
     inFlight.current.delete(key);
@@ -1144,7 +1145,13 @@ export default function WorkoutDetailView() {
   };
 
   const onCellClick = (exerciseId, setId, field, initialValue) =>
-    setEditing({ exerciseId, setId, field, initialValue });
+    setEditing({
+      exerciseId,
+      setId,
+      field,
+      initialValue,
+      shouldAutoFocus: true,
+    });
 
   const renderEditableCell = (exercise, set, field) => {
     if (set.status !== "done") {
@@ -1161,6 +1168,7 @@ export default function WorkoutDetailView() {
       editing?.field === field;
 
     if (isEditing) {
+      const shouldAutoFocus = editing?.shouldAutoFocus !== false;
       const inputDefaultValue = getInputDefaultValue(set, field);
 
       return (
@@ -1168,7 +1176,7 @@ export default function WorkoutDetailView() {
           type="number"
           className="table-cell-input"
           defaultValue={inputDefaultValue}
-          autoFocus
+          autoFocus={shouldAutoFocus}
           onFocus={(e) => e.target.select()}
           onBlur={(e) => onCellEdit(exercise.id, set.id, field, e.target.value)}
           onClick={(e) => e.stopPropagation()}

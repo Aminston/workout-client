@@ -16,17 +16,17 @@ export const computeRestBadgeView = ({
 
   if (remainingSeconds > 0) {
     return {
-      label: "Rest",
       time: formatTime(remainingSeconds),
       isElapsed: false,
+      showIcon: true,
       overSeconds,
     };
   }
 
   return {
-    label: "Rest elapsed",
     time: formatTime(overSeconds),
     isElapsed: true,
+    showIcon: false,
     overSeconds,
   };
 };

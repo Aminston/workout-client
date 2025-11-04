@@ -19,13 +19,6 @@
   flex-shrink: 0;
 }
 
-.rest-badge__label {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 12px;
-  opacity: 0.8;
-}
-
 .rest-badge__time {
   font-variant-numeric: tabular-nums;
 }
@@ -54,13 +47,12 @@
   color: rgba(232, 246, 246, 0.7);
 }
 
-.rest-badge--elapsed .rest-badge__label {
-  opacity: 1;
-  color: #3aafa9;
-}
-
 .rest-badge--elapsed .rest-badge__time {
   color: #cbe7e6;
+}
+
+.rest-badge--elapsed .rest-badge__icon {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

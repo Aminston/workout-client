@@ -1,0 +1,70 @@
+.rest-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #1e2a2a;
+  border: 1px solid #3aafa9;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e8f6f6;
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+.rest-badge__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.rest-badge__label {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.rest-badge__time {
+  font-variant-numeric: tabular-nums;
+}
+
+.rest-badge__close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+  font-size: 16px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rest-badge__close:hover,
+.rest-badge__close:focus-visible {
+  color: #3aafa9;
+  outline: none;
+}
+
+.rest-badge--elapsed {
+  color: rgba(232, 246, 246, 0.7);
+}
+
+.rest-badge--elapsed .rest-badge__label {
+  opacity: 1;
+  color: #3aafa9;
+}
+
+.rest-badge--elapsed .rest-badge__time {
+  color: #cbe7e6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rest-badge {
+    transition: none;
+  }
+}

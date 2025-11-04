@@ -573,11 +573,29 @@
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-text-main);
-  display: flex; align-items: center; justify-content: center; width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
-.set-time.completed { color: var(--md-sys-color-success); font-weight: 600; }
-.set-time.pending { color: var(--color-text-secondary); }
+.set-time {
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.set-time__value {
+  display: block;
+}
+
+.set-time.completed .set-time__value {
+  color: var(--md-sys-color-success);
+  font-weight: 600;
+}
+
+.set-time.pending .set-time__value {
+  color: var(--color-text-secondary);
+}
 
 .set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }
 

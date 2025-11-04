@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
-import RestTimerBubble from "./RestTimerBubble";
+import RestBadge from "./RestBadge";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
@@ -222,6 +222,14 @@ const fmtElapsed = (sec) => {
 };
 
 const DEFAULT_REST_SECONDS = 60;
+const INITIAL_REST_STATE = {
+  isVisible: false,
+  secondsRemaining: 0,
+  startingSeconds: 0,
+  elapsedSeconds: 0,
+  exerciseId: null,
+  setId: null,
+};
 
 const normalizeAlternativesResponse = (payload, identifiers = {}) => {
   if (!payload) return [];
@@ -313,11 +321,7 @@ export default function WorkoutDetailView() {
   }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [restTimer, setRestTimer] = useState({
-    isVisible: false,
-    seconds: 0,
-    startingSeconds: 0,
-  });
+  const [restTimer, setRestTimer] = useState(INITIAL_REST_STATE);
   const [activeExercise, setActiveExercise] = useState(null);
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const [exerciseDetailsCache, setExerciseDetailsCache] = useState({});
@@ -667,30 +671,32 @@ export default function WorkoutDetailView() {
   );
 
   const startRestTimer = useCallback(
-    (initialSeconds = DEFAULT_REST_SECONDS) => {
+    (exerciseId, setId, initialSeconds = DEFAULT_REST_SECONDS) => {
       const normalized = Math.max(0, Math.round(initialSeconds));
       clearRestInterval();
 
       if (normalized <= 0) {
-        setRestTimer({ isVisible: false, seconds: 0, startingSeconds: 0 });
+        setRestTimer(INITIAL_REST_STATE);
         return false;
       }
 
       setRestTimer({
         isVisible: true,
-        seconds: normalized,
+        secondsRemaining: normalized,
         startingSeconds: normalized,
+        elapsedSeconds: 0,
+        exerciseId,
+        setId,
       });
 
       restIntervalRef.current = setInterval(() => {
         setRestTimer((prev) => {
           if (!prev.isVisible) return prev;
-          const nextSeconds = Math.max(0, prev.seconds - 1);
-          if (nextSeconds <= 0) {
-            clearRestInterval();
-            return { isVisible: false, seconds: 0, startingSeconds: prev.startingSeconds };
-          }
-          return { ...prev, seconds: nextSeconds };
+          return {
+            ...prev,
+            secondsRemaining: Math.max(0, prev.secondsRemaining - 1),
+            elapsedSeconds: prev.elapsedSeconds + 1,
+          };
         });
       }, 1000);
       return true;
@@ -698,29 +704,9 @@ export default function WorkoutDetailView() {
     [clearRestInterval]
   );
 
-  const adjustRestTimer = useCallback(
-    (delta) => {
-      setRestTimer((prev) => {
-        if (!prev.isVisible) return prev;
-        const nextSeconds = Math.max(0, Math.round(prev.seconds + delta));
-        if (nextSeconds <= 0) {
-          clearRestInterval();
-          return { isVisible: false, seconds: 0, startingSeconds: prev.startingSeconds };
-        }
-        const nextStarting = delta > 0 ? Math.max(prev.startingSeconds, nextSeconds) : prev.startingSeconds;
-        return {
-          ...prev,
-          seconds: nextSeconds,
-          startingSeconds: nextStarting,
-        };
-      });
-    },
-    [clearRestInterval]
-  );
-
   const closeRestTimer = useCallback(() => {
     clearRestInterval();
-    setRestTimer({ isVisible: false, seconds: 0, startingSeconds: 0 });
+    setRestTimer(INITIAL_REST_STATE);
   }, [clearRestInterval]);
 
   useEffect(() => {
@@ -871,7 +857,7 @@ export default function WorkoutDetailView() {
       return;
     }
 
-    startRestTimer();
+    startRestTimer(exerciseId, setId);
 
     const completedAt = new Date().toISOString();
     const duration = prevSet.startedAt
@@ -1273,14 +1259,6 @@ export default function WorkoutDetailView() {
 
   return (
     <div className="workout-detail-container">
-      {restTimer.isVisible && (
-        <RestTimerBubble
-          seconds={restTimer.seconds}
-          startingSeconds={restTimer.startingSeconds}
-          onAdjust={adjustRestTimer}
-          onClose={closeRestTimer}
-        />
-      )}
       {/* Header */}
       <div className="workout-detail-header">
         <button
@@ -1398,79 +1376,98 @@ export default function WorkoutDetailView() {
                   </span>
                 </div>
               ) : (
-                exercise.sets.map((set) => (
-                  <div
-                    key={set.id}
-                    className={`set-row ${
-                      set.status === "in-progress" ? "set-active" : ""
-                    } ${set.status === "done" ? "set-completed" : ""}`}
-                  >
-                    <span className="set-number">{set.id}</span>
+                exercise.sets.map((set) => {
+                  const isResting =
+                    restTimer.isVisible &&
+                    restTimer.exerciseId === exercise.id &&
+                    restTimer.setId === set.id;
 
-                    <span className="set-weight">
-                      {renderEditableCell(exercise, set, "weight")}
-                    </span>
-
-                    <span className="set-reps">
-                      {renderEditableCell(exercise, set, "reps")}
-                    </span>
-
-                    <span
-                      className={`set-time ${
-                        set.status === "done" && set.duration ? "completed" : "pending"
-                      }`}
+                  return (
+                    <div
+                      key={set.id}
+                      className={`set-row ${
+                        set.status === "in-progress" ? "set-active" : ""
+                      } ${set.status === "done" ? "set-completed" : ""}`}
                     >
-                      {set.status === "done" && set.duration ? fmtElapsed(set.duration) : "-"}
-                    </span>
+                      <span className="set-number">{set.id}</span>
 
-                    <div className="set-action">
-                      {set.status === "done" ? (
-                        set.saveError ? (
+                      <span className="set-weight">
+                        {renderEditableCell(exercise, set, "weight")}
+                      </span>
+
+                      <span className="set-reps">
+                        {renderEditableCell(exercise, set, "reps")}
+                      </span>
+
+                      <div
+                        className={`set-time ${
+                          set.status === "done" && set.duration ? "completed" : "pending"
+                        }`}
+                      >
+                        <span className="set-time__value">
+                          {set.status === "done" && set.duration
+                            ? fmtElapsed(set.duration)
+                            : "-"}
+                        </span>
+                        {isResting && (
+                          <RestBadge
+                            remainingSeconds={restTimer.secondsRemaining}
+                            elapsedSeconds={restTimer.elapsedSeconds}
+                            startingSeconds={restTimer.startingSeconds}
+                            onDismiss={closeRestTimer}
+                          />
+                        )}
+                      </div>
+
+                      <div className="set-action">
+                        {set.status === "done" ? (
+                          set.saveError ? (
+                            <button
+                              type="button"
+                              className="status-badge status-error"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRetrySetSave(exercise.id, set.id);
+                              }}
+                            >
+                              Retry Save
+                            </button>
+                          ) : (
+                            <span
+                              className={`status-badge status-done ${
+                                set.isSynced ? "synced" : "status-saving"
+                              }`}
+                              role="status"
+                              aria-live="polite"
+                            >
+                              {set.isSynced ? "Saved ✓" : "Saving..."}
+                            </span>
+                          )
+                        ) : set.status === "in-progress" ? (
                           <button
-                            type="button"
-                            className="status-badge status-error"
+                            className="btn btn-warning btn-sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleRetrySetSave(exercise.id, set.id);
+                              handleComplete(exercise.id, set.id);
                             }}
                           >
-                            Retry Save
+                            End
                           </button>
                         ) : (
-                          <span
-                            className={`status-badge status-done ${
-                              set.isSynced ? "synced" : "status-saving"
-                            }`}
-                            role="status"
-                            aria-live="polite"
+                          <button
+                            className="btn btn-success btn-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStart(exercise.id, set.id);
+                            }}
                           >
-                            {set.isSynced ? "Saved ✓" : "Saving..."}
-                          </span>
-                        )
-                      ) : set.status === "in-progress" ? (
-                        <button
-                          className="btn btn-warning btn-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleComplete(exercise.id, set.id);
-                          }}
-                        >
-                          End
-                        </button>
-                      ) : (
-                        <button
-                          className="btn btn-success btn-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStart(exercise.id, set.id);
-                          }}
-                        >
-                          Start
-                        </button>
-                      )}
+                            Start
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

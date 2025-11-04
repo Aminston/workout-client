@@ -1383,7 +1383,12 @@ export default function WorkoutDetailView() {
                     restTimer.setId === set.id;
                   const showCooldownBadge =
                     isResting && restTimer.secondsRemaining > 0;
-                  const showSetDuration = !showCooldownBadge;
+                  const shouldShowDuration =
+                    !showCooldownBadge &&
+                    set.status === "done" &&
+                    set.duration;
+                  const shouldShowPlaceholder =
+                    !showCooldownBadge && !shouldShowDuration;
 
                   return (
                     <div
@@ -1407,11 +1412,12 @@ export default function WorkoutDetailView() {
                           set.status === "done" && set.duration ? "completed" : "pending"
                         }`}
                       >
-                        <span className="set-time__value">
-                          {showSetDuration && set.status === "done" && set.duration
-                            ? fmtElapsed(set.duration)
-                            : "-"}
-                        </span>
+                        {shouldShowDuration ? (
+                          <span className="set-time__value">{fmtElapsed(set.duration)}</span>
+                        ) : null}
+                        {shouldShowPlaceholder ? (
+                          <span className="set-time__value">-</span>
+                        ) : null}
                         {showCooldownBadge && (
                           <RestBadge
                             remainingSeconds={restTimer.secondsRemaining}

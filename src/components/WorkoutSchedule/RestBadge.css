@@ -11,6 +11,8 @@
   font-weight: 500;
   color: #e8f6f6;
   transition: color 0.3s ease, opacity 0.3s ease;
+  max-width: 100%;
+  flex-wrap: nowrap;
 }
 
 .rest-badge__icon {
@@ -46,5 +48,18 @@
 @media (prefers-reduced-motion: reduce) {
   .rest-badge {
     transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .rest-badge {
+    gap: 0.35rem;
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+
+  .rest-badge__icon {
+    width: 14px;
+    height: 14px;
   }
 }

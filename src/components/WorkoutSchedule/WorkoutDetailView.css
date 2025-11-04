@@ -44,10 +44,10 @@
   --transition-smooth: 0.3s ease;
 
   /* Grids / sizes */
-  --grid-desktop: 60px 80px 80px 80px 1fr;
-  --grid-tablet: 50px 70px 70px 70px 1fr;
-  --grid-mobile: 40px 60px 60px 60px 1fr;
-  --grid-small: 35px 50px 50px 50px 1fr;
+  --grid-desktop: 60px 80px 80px 96px 1fr;
+  --grid-tablet: 50px 70px 70px minmax(96px, 0.8fr) 1fr;
+  --grid-mobile: 40px 56px 56px minmax(100px, auto) minmax(96px, 1fr);
+  --grid-small: 35px 48px 48px minmax(96px, auto) minmax(90px, 1fr);
 
   --btn-min-width-lg: 120px;
   --btn-min-width-md: 90px;
@@ -582,10 +582,17 @@
 .set-time {
   flex-direction: column;
   gap: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
 }
 
 .set-time__value {
   display: block;
+}
+
+.set-time .rest-badge {
+  justify-content: center;
 }
 
 .set-time.completed .set-time__value {

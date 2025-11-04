@@ -9,7 +9,7 @@ export default function RestBadge({
   startingSeconds,
   onDismiss,
 }) {
-  const { time, isElapsed, showIcon } = useMemo(
+  const { time, showIcon } = useMemo(
     () =>
       computeRestBadgeView({
         remainingSeconds,
@@ -25,14 +25,13 @@ export default function RestBadge({
     return Math.max(0, Math.min(1, consumed / startingSeconds));
   }, [remainingSeconds, startingSeconds]);
 
+  if (!showIcon) {
+    return null;
+  }
+
   return (
-    <div
-      className={`rest-badge${isElapsed ? " rest-badge--elapsed" : ""}`}
-      role="status"
-      aria-live="polite"
-      data-progress={progress}
-    >
-      {showIcon ? <FiClock className="rest-badge__icon" aria-hidden="true" /> : null}
+    <div className="rest-badge" role="status" aria-live="polite" data-progress={progress}>
+      <FiClock className="rest-badge__icon" aria-hidden="true" />
       <span className="rest-badge__time">{time}</span>
       {onDismiss ? (
         <button

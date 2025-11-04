@@ -43,18 +43,6 @@
   outline: none;
 }
 
-.rest-badge--elapsed {
-  color: rgba(232, 246, 246, 0.7);
-}
-
-.rest-badge--elapsed .rest-badge__time {
-  color: #cbe7e6;
-}
-
-.rest-badge--elapsed .rest-badge__icon {
-  display: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rest-badge {
     transition: none;

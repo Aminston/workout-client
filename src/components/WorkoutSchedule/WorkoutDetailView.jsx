@@ -5,6 +5,7 @@ import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestBadge from "./RestBadge";
+import { formatTime as formatRestTime } from "./RestBadge.utils";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
@@ -1381,6 +1382,15 @@ export default function WorkoutDetailView() {
                     restTimer.isVisible &&
                     restTimer.exerciseId === exercise.id &&
                     restTimer.setId === set.id;
+                  const showCooldownBadge =
+                    isResting && restTimer.secondsRemaining > 0;
+                  const restElapsedSeconds = isResting && !showCooldownBadge
+                    ? Math.max(
+                        0,
+                        (restTimer.elapsedSeconds ?? 0) -
+                          (restTimer.startingSeconds ?? 0)
+                      )
+                    : null;
 
                   return (
                     <div
@@ -1409,13 +1419,18 @@ export default function WorkoutDetailView() {
                             ? fmtElapsed(set.duration)
                             : "-"}
                         </span>
-                        {isResting && (
+                        {showCooldownBadge && (
                           <RestBadge
                             remainingSeconds={restTimer.secondsRemaining}
                             elapsedSeconds={restTimer.elapsedSeconds}
                             startingSeconds={restTimer.startingSeconds}
                             onDismiss={closeRestTimer}
                           />
+                        )}
+                        {restElapsedSeconds != null && (
+                          <span className="set-time__rest-elapsed">
+                            {formatRestTime(restElapsedSeconds)}
+                          </span>
                         )}
                       </div>
 

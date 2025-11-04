@@ -588,6 +588,13 @@
   display: block;
 }
 
+.set-time__rest-elapsed {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
 .set-time.completed .set-time__value {
   color: var(--md-sys-color-success);
   font-weight: 600;

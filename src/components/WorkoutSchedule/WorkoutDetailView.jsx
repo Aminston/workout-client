@@ -5,7 +5,6 @@ import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
 import RestBadge from "./RestBadge";
-import { formatTime as formatRestTime } from "./RestBadge.utils";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
@@ -1384,13 +1383,7 @@ export default function WorkoutDetailView() {
                     restTimer.setId === set.id;
                   const showCooldownBadge =
                     isResting && restTimer.secondsRemaining > 0;
-                  const restElapsedSeconds = isResting && !showCooldownBadge
-                    ? Math.max(
-                        0,
-                        (restTimer.elapsedSeconds ?? 0) -
-                          (restTimer.startingSeconds ?? 0)
-                      )
-                    : null;
+                  const showSetDuration = !showCooldownBadge;
 
                   return (
                     <div
@@ -1415,7 +1408,7 @@ export default function WorkoutDetailView() {
                         }`}
                       >
                         <span className="set-time__value">
-                          {set.status === "done" && set.duration
+                          {showSetDuration && set.status === "done" && set.duration
                             ? fmtElapsed(set.duration)
                             : "-"}
                         </span>
@@ -1426,11 +1419,6 @@ export default function WorkoutDetailView() {
                             startingSeconds={restTimer.startingSeconds}
                             onDismiss={closeRestTimer}
                           />
-                        )}
-                        {restElapsedSeconds != null && (
-                          <span className="set-time__rest-elapsed">
-                            {formatRestTime(restElapsedSeconds)}
-                          </span>
                         )}
                       </div>
 

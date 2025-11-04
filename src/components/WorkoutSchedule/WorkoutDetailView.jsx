@@ -212,16 +212,7 @@ function toApiSession(exercise, sets) {
   };
 }
 
-/* ================== UI helpers ================== */
-const fmtElapsed = (sec) => {
-  if (sec == null) return "-";
-  if (sec < 60) return sec % 1 === 0 ? `${sec}s` : `${sec.toFixed(1)}s`;
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
-  return s === 0 ? `${m}m` : `${m}m ${s}s`;
-};
-
-const DEFAULT_REST_SECONDS = 60;
+const DEFAULT_REST_SECONDS = 120;
 const INITIAL_REST_STATE = {
   isVisible: false,
   secondsRemaining: 0,
@@ -714,6 +705,12 @@ export default function WorkoutDetailView() {
       clearRestInterval();
     };
   }, [clearRestInterval]);
+
+  useEffect(() => {
+    if (restTimer.isVisible && restTimer.secondsRemaining <= 0) {
+      closeRestTimer();
+    }
+  }, [closeRestTimer, restTimer.isVisible, restTimer.secondsRemaining]);
 
   useEffect(() => {
     if (!isExerciseModalOpen || !activeWorkoutId) return;
@@ -1326,7 +1323,7 @@ export default function WorkoutDetailView() {
               }
             }}
           >
-            <div className="exercise-card-header">
+            <div className="exercise-header">
               <div className="exercise-header-main">
                 <h3 className="exercise-name" title="View exercise details">
                   {exercise.name}
@@ -1360,18 +1357,16 @@ export default function WorkoutDetailView() {
               </span>
             </div>
 
-            <div className="exercise-card-body">
-              <div className="sets-table">
-                <div className="sets-header">
-                  <span>Set</span>
-                  <span>Weight</span>
-                  <span>Reps</span>
-                  <span>Time</span>
-                  <span>Action</span>
-                </div>
+            <div className="sets-table">
+              <div className="sets-header">
+                <span>Set</span>
+                <span>Weight</span>
+                <span>Reps</span>
+                <span>Action</span>
+              </div>
 
-                {exercise.sets.length === 0 ? (
-                  <div className="set-row">
+              {exercise.sets.length === 0 ? (
+                <div className="set-row">
                   <span className="set-number" style={{ gridColumn: "1 / -1" }}>
                     No sets available for this exercise yet.
                   </span>
@@ -1384,12 +1379,6 @@ export default function WorkoutDetailView() {
                     restTimer.setId === set.id;
                   const showCooldownBadge =
                     isResting && restTimer.secondsRemaining > 0;
-                  const shouldShowDuration =
-                    !showCooldownBadge &&
-                    set.status === "done" &&
-                    set.duration;
-                  const shouldShowPlaceholder =
-                    !showCooldownBadge && !shouldShowDuration;
 
                   return (
                     <div
@@ -1408,29 +1397,15 @@ export default function WorkoutDetailView() {
                         {renderEditableCell(exercise, set, "reps")}
                       </span>
 
-                      <div
-                        className={`set-time ${
-                          set.status === "done" && set.duration ? "completed" : "pending"
-                        }`}
-                      >
-                        {shouldShowDuration ? (
-                          <span className="set-time__value">{fmtElapsed(set.duration)}</span>
-                        ) : null}
-                        {shouldShowPlaceholder ? (
-                          <span className="set-time__value">-</span>
-                        ) : null}
-                        {showCooldownBadge && (
+                      <div className="set-action">
+                        {showCooldownBadge ? (
                           <RestBadge
                             remainingSeconds={restTimer.secondsRemaining}
                             elapsedSeconds={restTimer.elapsedSeconds}
                             startingSeconds={restTimer.startingSeconds}
                             onDismiss={closeRestTimer}
                           />
-                        )}
-                      </div>
-
-                      <div className="set-action">
-                        {set.status === "done" ? (
+                        ) : set.status === "done" ? (
                           set.saveError ? (
                             <button
                               type="button"
@@ -1479,7 +1454,6 @@ export default function WorkoutDetailView() {
                   );
                 })
               )}
-            </div>
             </div>
           </div>
         ))}

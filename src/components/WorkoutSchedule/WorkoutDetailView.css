@@ -44,10 +44,10 @@
   --transition-smooth: 0.3s ease;
 
   /* Grids / sizes */
-  --grid-desktop: 60px 80px 80px 96px 1fr;
-  --grid-tablet: 50px 70px 70px minmax(96px, 0.8fr) 1fr;
-  --grid-mobile: 40px 56px 56px minmax(100px, auto) minmax(96px, 1fr);
-  --grid-small: 35px 48px 48px minmax(96px, auto) minmax(90px, 1fr);
+  --grid-desktop: 60px 80px 80px 1fr;
+  --grid-tablet: 50px 70px 70px 1fr;
+  --grid-mobile: 40px 60px 60px 1fr;
+  --grid-small: 35px 50px 50px 1fr;
 
   --btn-min-width-lg: 120px;
   --btn-min-width-md: 90px;
@@ -425,15 +425,11 @@
 .exercises-container { display:flex; flex-direction:column; gap: 1.25rem; }
 
 .exercise-detail-card {
-  background: linear-gradient(180deg, rgba(19,25,36,0.92) 0%, rgba(10,14,20,0.94) 100%);
-  border-radius: var(--radius-lg);
+  background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
   border: 1px solid var(--color-border);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  padding: 0;
   cursor: pointer;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast),
     border-color var(--transition-fast);
@@ -467,24 +463,7 @@
 /* ======================
    EXERCISE HEADER
    ====================== */
-.exercise-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 1.25rem;
-  background: linear-gradient(135deg, rgba(32,42,58,0.95), rgba(18,24,34,0.96));
-  box-shadow: inset 0 -1px 0 rgba(255,255,255,0.04);
-}
-
-.exercise-card-body {
-  background: linear-gradient(180deg, rgba(15,21,30,0.9) 0%, rgba(10,14,20,0.96) 100%);
-  padding: 0.85rem 1.25rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+.exercise-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; gap: 1rem; min-height: 2rem; }
 
 .exercise-header-main {
   display: flex;
@@ -542,114 +521,61 @@
    SETS TABLE
    ====================== */
 .sets-table {
+  margin-bottom: 1rem;
+  background-color: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  border: 1px solid var(--color-border);
 }
 
-.sets-header {
-  display: grid;
-  grid-template-columns: var(--grid-desktop);
-  gap: 0;
-  padding: 0 0.5rem;
-  align-items: center;
-  font-weight: 600;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-}
-
-.sets-header span {
-  text-align: left;
-  opacity: 0.85;
-}
-
-.sets-header span:last-child {
-  text-align: right;
-}
-
+.sets-header,
 .set-row {
   display: grid;
   grid-template-columns: var(--grid-desktop);
   gap: 0;
-  padding: 0.75rem 0.5rem;
+  padding: 0.875rem 0.5rem;
+  text-align: center;
   align-items: center;
-  background: rgba(10, 15, 24, 0.9);
-  border-radius: var(--radius-sm);
-  min-height: 52px;
-  transition: transform var(--transition-fast), background var(--transition-fast),
-    box-shadow var(--transition-fast);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-.set-row + .set-row {
-  margin-top: 0.35rem;
+.sets-header {
+  background-color: var(--color-bg-hover);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.set-row:hover {
-  background: rgba(14, 20, 30, 0.94);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transform: translateY(-1px);
+.set-row {
+  background-color: var(--color-bg-card);
+  transition: all var(--transition-fast);
+  border-bottom: 1px solid var(--color-border);
+  min-height: 56px;
 }
+.set-row:last-child { border-bottom: none; }
+.set-row:hover { background-color: var(--color-bg-hover); }
 
 /* Estados de fila */
 .set-active {
-  background: linear-gradient(135deg, rgba(30, 46, 72, 0.95), rgba(21, 32, 52, 0.95));
-  box-shadow: inset 0 0 0 1px rgba(143, 185, 255, 0.35),
-    0 6px 18px rgba(9, 14, 22, 0.4);
+  background-color: rgba(143,185,255,var(--alpha-01));
+  border-left: 4px solid var(--md-sys-color-primary);
 }
 .set-completed {
-  background: linear-gradient(135deg, rgba(24, 56, 42, 0.92), rgba(17, 40, 30, 0.92));
-  box-shadow: inset 0 0 0 1px rgba(70, 230, 138, 0.28),
-    0 6px 16px rgba(7, 20, 14, 0.35);
+  background-color: rgba(70,230,138,var(--alpha-01));
+  border-left: 4px solid var(--md-sys-color-success);
 }
 
 .set-number,
 .set-weight,
-.set-reps,
-.set-time {
+.set-reps {
   font-size: 1rem;
   font-weight: 500;
   color: var(--color-text-main);
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
+  display: flex; align-items: center; justify-content: center; width: 100%;
 }
 
-.set-number {
-  font-variant-numeric: tabular-nums;
-}
-
-.set-time {
-  flex-direction: column;
-  gap: 0.35rem;
-  align-items: flex-start;
-  justify-content: center;
-  min-width: 0;
-}
-
-.set-time__value {
-  display: block;
-}
-
-.set-time .rest-badge {
-  justify-content: flex-start;
-  align-self: flex-start;
-}
-
-.set-time.completed .set-time__value {
-  color: var(--md-sys-color-success);
-  font-weight: 600;
-}
-
-.set-time.pending .set-time__value {
-  color: var(--color-text-secondary);
-}
-
-.set-action { display:flex; justify-content:flex-end; align-items:center; padding:0; width:100%; }
+.set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }
 
 /* ======================
    INLINE EDITING
@@ -1206,8 +1132,7 @@
   .workout-title { font-size: 1.375rem; }
   .workout-detail-header { flex-wrap: wrap; gap: 0.75rem; }
   .session-status { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
-  .exercise-card-header { flex-wrap: wrap; gap: 0.75rem; padding: 0.9rem 1.1rem; }
-  .exercise-card-body { padding: 0.75rem 1.1rem 1.1rem; }
+  .exercise-header { gap: 0.75rem; margin-bottom: 0.75rem; }
   .exercise-name { font-size: 1.125rem; }
   .exercise-status-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-tablet); padding: 0.875rem 0.4rem; font-size: 0.875rem; }
@@ -1234,8 +1159,7 @@
   .workout-title { font-size: 1.25rem; }
   .workout-detail-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
   .session-status { align-self: flex-end; font-size: 0.65rem; padding: 0.2rem 0.4rem; }
-  .exercise-card-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; padding: 0.85rem 1rem; }
-  .exercise-card-body { padding: 0.75rem 1rem 1rem; }
+  .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
   .exercise-name { font-size: 1.125rem; flex:1; }
   .exercise-status-badge { font-size: 0.65rem; padding: 0.2rem 0.4rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-mobile); gap:0; padding: 0.75rem 0.25rem; font-size: .8125rem; }
@@ -1258,8 +1182,7 @@
   .day-title { font-size: 1rem; }
   .start-workout-btn { padding: 0.75rem; font-size: 0.8rem; }
   .workout-detail-container { padding: 0.5rem; }
-  .exercise-card-header { flex-direction: column; align-items: flex-start; gap: 0.45rem; padding: 0.75rem 0.9rem; }
-  .exercise-card-body { padding: 0.65rem 0.9rem 0.9rem; }
+  .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
   .exercise-name { font-size: 1rem; }
   .exercise-status-badge { font-size: 0.6rem; padding: 0.15rem 0.35rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-small); padding: 0.5rem 0.2rem; font-size: 0.75rem; }

@@ -1326,7 +1326,7 @@ export default function WorkoutDetailView() {
               }
             }}
           >
-            <div className="exercise-header">
+            <div className="exercise-card-header">
               <div className="exercise-header-main">
                 <h3 className="exercise-name" title="View exercise details">
                   {exercise.name}
@@ -1360,17 +1360,18 @@ export default function WorkoutDetailView() {
               </span>
             </div>
 
-            <div className="sets-table">
-              <div className="sets-header">
-                <span>Set</span>
-                <span>Weight</span>
-                <span>Reps</span>
-                <span>Time</span>
-                <span>Action</span>
-              </div>
+            <div className="exercise-card-body">
+              <div className="sets-table">
+                <div className="sets-header">
+                  <span>Set</span>
+                  <span>Weight</span>
+                  <span>Reps</span>
+                  <span>Time</span>
+                  <span>Action</span>
+                </div>
 
-              {exercise.sets.length === 0 ? (
-                <div className="set-row">
+                {exercise.sets.length === 0 ? (
+                  <div className="set-row">
                   <span className="set-number" style={{ gridColumn: "1 / -1" }}>
                     No sets available for this exercise yet.
                   </span>
@@ -1478,6 +1479,7 @@ export default function WorkoutDetailView() {
                   );
                 })
               )}
+            </div>
             </div>
           </div>
         ))}

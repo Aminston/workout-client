@@ -1288,11 +1288,6 @@ export default function WorkoutDetailView() {
           {completedSets} of {totalSets} sets completed ({progressPct}%)
         </p>
 
-        {hasUnsaved && (
-          <div className="unsaved-indicator">
-            Some sets haven&apos;t synced yet. We&apos;ll keep trying automatically—retry any set with a warning badge.
-          </div>
-        )}
       </div>
 
       {/* Units */}

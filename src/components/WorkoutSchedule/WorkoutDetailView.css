@@ -342,19 +342,6 @@
 /* ======================
    SAVE CONTROLS & STATUS
    ====================== */
-.unsaved-indicator {
-  background-color: rgba(247,198,75, var(--alpha-02));
-  border: 1px solid rgba(247,198,75, var(--alpha-04));
-  color: var(--md-sys-color-warning-strong);
-  padding: 0.75rem 1rem;
-  border-radius: var(--radius-md);
-  margin: 1rem 0;
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.875rem;
-  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
-}
-
 .save-controls { text-align: center; margin: 1rem 0; }
 
 .save-button {
@@ -1141,7 +1128,7 @@
   .session-controls { gap: 0.5rem; }
   .session-controls .btn { min-width: var(--btn-min-width-md); font-size: 0.8rem; padding: 0.6rem 0.8rem; }
   .save-button { min-width: 120px; padding: 0.75rem 1.25rem; font-size: 0.9rem; }
-  .unsaved-indicator, .save-status { font-size: 0.8rem; padding: 0.65rem 0.875rem; }
+  .save-status { font-size: 0.8rem; padding: 0.65rem 0.875rem; }
 }
 
 /* Mobile phones */
@@ -1171,7 +1158,7 @@
   .session-controls .btn { min-width: 100%; font-size: 0.75rem; padding: 0.75rem; }
   .saving-indicator { font-size: 0.8rem; }
   .save-button { width: 100%; min-width: auto; padding: 0.875rem; font-size: 0.875rem; }
-  .unsaved-indicator, .save-status { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
+  .save-status { font-size: 0.75rem; padding: 0.5rem 0.75rem; }
 }
 
 /* Very small phones */

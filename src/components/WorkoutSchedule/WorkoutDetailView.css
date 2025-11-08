@@ -540,8 +540,11 @@
 }
 
 .exercise-name {
-  font-size: 1.125rem; font-weight: 700; color: var(--md-sys-color-primary);
-  margin: 0; text-decoration: none; line-height: 1.2; flex: 1;
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  color: var(--md-sys-color-primary);
 }
 
 .exercise-name-button {
@@ -551,14 +554,34 @@
   margin: 0;
   font: inherit;
   color: inherit;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
+  display: block;
+  width: 100%;
   cursor: pointer;
+  text-align: left;
+  white-space: normal;
+}
+
+.exercise-name-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: clamp(0.9rem, 2vw, 1.125rem);
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  line-height: 1.25;
+  text-align: left;
+  word-break: break-word;
 }
 
 .exercise-name-button:hover,
 .exercise-name-button:focus-visible {
+  text-decoration: none;
+}
+
+.exercise-name-button:hover .exercise-name-text,
+.exercise-name-button:focus-visible .exercise-name-text {
   text-decoration: underline;
 }
 
@@ -1222,7 +1245,7 @@
   .workout-title { font-size: 1.35rem; }
   .session-status { font-size: 0.7rem; padding: 0.25rem 0.5rem; }
   .exercise-header { gap: 0.75rem; margin-bottom: 0.75rem; }
-  .exercise-name { font-size: 1.125rem; }
+  .exercise-name-text { font-size: clamp(0.875rem, 2.5vw, 1.05rem); }
   .exercise-status-badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-tablet); padding: 0.875rem 0.4rem; font-size: 0.875rem; }
   .btn { min-width: 75px; font-size: 0.7rem; }
@@ -1255,7 +1278,8 @@
   }
   .session-status { align-self: flex-end; font-size: 0.65rem; padding: 0.2rem 0.4rem; }
   .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
-  .exercise-name { font-size: 1.125rem; flex:1; }
+  .exercise-name { flex:1; }
+  .exercise-name-text { font-size: clamp(0.85rem, 3vw, 1rem); }
   .exercise-status-badge { font-size: 0.65rem; padding: 0.2rem 0.4rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-mobile); gap:0; padding: 0.75rem 0.25rem; font-size: .8125rem; }
   .btn { min-width: var(--btn-min-width-sm); font-size: .625rem; }
@@ -1278,7 +1302,7 @@
   .start-workout-btn { padding: 0.75rem; font-size: 0.8rem; }
   .workout-detail-container { padding: 0.5rem; }
   .exercise-header { display:flex; justify-content:space-between; align-items:center; gap:.5rem; margin-bottom:.75rem; }
-  .exercise-name { font-size: 1rem; }
+  .exercise-name-text { font-size: clamp(0.8rem, 3.5vw, 0.95rem); }
   .exercise-status-badge { font-size: 0.6rem; padding: 0.15rem 0.35rem; }
   .sets-header, .set-row { grid-template-columns: var(--grid-small); padding: 0.5rem 0.2rem; font-size: 0.75rem; }
   .btn { min-width: 55px; font-size: 0.6rem; }

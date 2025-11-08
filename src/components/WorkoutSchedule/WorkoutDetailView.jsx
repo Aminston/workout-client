@@ -1298,15 +1298,15 @@ export default function WorkoutDetailView() {
           <div key={exercise.id} className="exercise-detail-card">
             <div className="exercise-header">
               <div className="exercise-header-main">
-                <h3 className="exercise-name">
+                <h3 className="exercise-name" title={exercise.name}>
                   <button
                     type="button"
                     className="exercise-name-button"
                     onClick={() => openExerciseModal(exercise)}
-                    title="View exercise details"
+                    title={exercise.name}
                     aria-label={`View details for ${exercise.name}`}
                   >
-                    {exercise.name}
+                    <span className="exercise-name-text">{exercise.name}</span>
                   </button>
                 </h3>
                 <button

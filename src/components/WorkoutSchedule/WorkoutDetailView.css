@@ -562,17 +562,25 @@
 }
 
 .exercise-name-text {
+  --exercise-title-base-size: clamp(1.05rem, calc(1.05rem + 0.35vw), 1.3rem);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: clamp(0.9rem, 2vw, 1.125rem);
+  font-size: var(--exercise-title-base-size);
   font-weight: 700;
   color: var(--md-sys-color-primary);
   line-height: 1.25;
   text-align: left;
   word-break: break-word;
+  letter-spacing: 0.01em;
+  transition: font-size var(--transition-fast), letter-spacing var(--transition-fast);
+}
+
+.exercise-name-text--compressed {
+  font-size: clamp(0.95rem, calc(0.95rem + 0.3vw), 1.2rem);
+  letter-spacing: 0.005em;
 }
 
 .exercise-name-button:hover,

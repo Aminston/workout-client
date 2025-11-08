@@ -8,6 +8,143 @@ import RestBadge from "./RestBadge";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
 
+function ExerciseNameButton({ name, onClick }) {
+  const buttonRef = useRef(null);
+  const textRef = useRef(null);
+  const [isCompressed, setIsCompressed] = useState(false);
+
+  const measureOverflow = useCallback(() => {
+    const textEl = textRef.current;
+    const buttonEl = buttonRef.current;
+
+    if (!textEl || typeof window === "undefined") {
+      return;
+    }
+
+    const wasCompressed = textEl.classList.contains("exercise-name-text--compressed");
+    if (wasCompressed) {
+      textEl.classList.remove("exercise-name-text--compressed");
+    }
+
+    const prevClamp = textEl.style.getPropertyValue("-webkit-line-clamp");
+    const prevDisplay = textEl.style.getPropertyValue("display");
+    const prevOverflow = textEl.style.getPropertyValue("overflow");
+    textEl.style.setProperty("-webkit-line-clamp", "unset");
+    textEl.style.setProperty("display", "block");
+    textEl.style.setProperty("overflow", "visible");
+
+    const availableWidth = buttonEl?.clientWidth ?? textEl.clientWidth;
+    const fullHeight = textEl.scrollHeight;
+    const computedStyle = window.getComputedStyle(textEl);
+    const rawLineHeight = parseFloat(computedStyle.lineHeight);
+    const rawFontSize = parseFloat(computedStyle.fontSize);
+    const lineHeight = Number.isFinite(rawLineHeight)
+      ? rawLineHeight
+      : Number.isFinite(rawFontSize)
+      ? rawFontSize * 1.25
+      : 0;
+    const maxHeight = lineHeight > 0 ? lineHeight * 2 : 0;
+    const overflowWidth = textEl.scrollWidth - availableWidth > 1;
+    const overflowHeight = maxHeight > 0 ? fullHeight - maxHeight > 1 : false;
+    const shouldCompress = overflowWidth || overflowHeight;
+
+    if (prevClamp) {
+      textEl.style.setProperty("-webkit-line-clamp", prevClamp);
+    } else {
+      textEl.style.removeProperty("-webkit-line-clamp");
+    }
+    if (prevDisplay) {
+      textEl.style.setProperty("display", prevDisplay);
+    } else {
+      textEl.style.removeProperty("display");
+    }
+    if (prevOverflow) {
+      textEl.style.setProperty("overflow", prevOverflow);
+    } else {
+      textEl.style.removeProperty("overflow");
+    }
+
+    if (wasCompressed) {
+      textEl.classList.add("exercise-name-text--compressed");
+    }
+
+    setIsCompressed((prev) => (prev !== shouldCompress ? shouldCompress : prev));
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    let raf = window.requestAnimationFrame(() => measureOverflow());
+    return () => {
+      if (raf) {
+        window.cancelAnimationFrame(raf);
+      }
+    };
+  }, [measureOverflow, name, isCompressed]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    if (typeof ResizeObserver === "undefined") {
+      const handleResize = () => measureOverflow();
+      window.addEventListener("resize", handleResize);
+      return () => {
+        window.removeEventListener("resize", handleResize);
+      };
+    }
+
+    const textEl = textRef.current;
+    if (!textEl) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(() => {
+      measureOverflow();
+    });
+
+    observer.observe(textEl);
+
+    const buttonEl = buttonRef.current;
+    if (buttonEl) {
+      observer.observe(buttonEl);
+      const container = buttonEl.closest(".exercise-header-main");
+      if (container) {
+        observer.observe(container);
+      }
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [measureOverflow]);
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      className="exercise-name-button"
+      onClick={onClick}
+      title={name}
+      aria-label={`View details for ${name}`}
+    >
+      <span
+        ref={textRef}
+        className={`exercise-name-text${
+          isCompressed ? " exercise-name-text--compressed" : ""
+        }`}
+        title={name}
+        data-state={isCompressed ? "compressed" : "default"}
+      >
+        {name}
+      </span>
+    </button>
+  );
+}
+
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
 const nnum = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
@@ -1299,15 +1436,10 @@ export default function WorkoutDetailView() {
             <div className="exercise-header">
               <div className="exercise-header-main">
                 <h3 className="exercise-name" title={exercise.name}>
-                  <button
-                    type="button"
-                    className="exercise-name-button"
+                  <ExerciseNameButton
+                    name={exercise.name}
                     onClick={() => openExerciseModal(exercise)}
-                    title={exercise.name}
-                    aria-label={`View details for ${exercise.name}`}
-                  >
-                    <span className="exercise-name-text">{exercise.name}</span>
-                  </button>
+                  />
                 </h3>
                 <button
                   type="button"

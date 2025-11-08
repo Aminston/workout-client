@@ -227,7 +227,7 @@
   border-color: var(--color-border);
 }
 .back-button:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--md-sys-color-primary);
   outline-offset: 2px;
 }
 
@@ -260,16 +260,16 @@
 }
 .unit-toggle-btn:hover {
   background-color: var(--color-bg-card);
-  border-color: var(--color-accent);
+  border-color: var(--md-sys-color-primary);
 }
 .unit-toggle-btn:focus-visible {
-  outline: 2px solid var(--color-accent);
+  outline: 2px solid var(--md-sys-color-primary);
   outline-offset: 2px;
 }
 .unit-toggle-btn.active {
-  background-color: var(--color-accent);
-  color: #fff;
-  border-color: var(--color-accent);
+  background-color: var(--md-sys-color-primary);
+  color: #0b1220;
+  border-color: var(--md-sys-color-primary);
 }
 
 @media (max-width: 599px) {

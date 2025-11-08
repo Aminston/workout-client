@@ -1265,13 +1265,15 @@ export default function WorkoutDetailView() {
         >
           Back
         </button>
-        <h1 className="workout-title">{workoutMeta.day}</h1>
-        <button
-          className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-          onClick={() => setUseMetric((v) => !v)}
-        >
-          Display: {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-        </button>
+        <div className="workout-title-row">
+          <h1 className="workout-title">{workoutMeta.day}</h1>
+          <button
+            className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+            onClick={() => setUseMetric((v) => !v)}
+          >
+            {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+          </button>
+        </div>
       </div>
 
       {/* Progress */}

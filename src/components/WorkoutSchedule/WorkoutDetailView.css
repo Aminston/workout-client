@@ -199,10 +199,28 @@
 }
 
 .workout-header-bar {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  position: relative;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
+  min-height: 2.75rem;
+}
+
+.header-slot {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  z-index: 1;
+}
+
+.header-slot.start {
+  justify-content: flex-start;
+}
+
+.header-slot.end {
+  justify-content: flex-end;
 }
 
 .back-button {
@@ -238,7 +256,14 @@
   margin: 0;
   line-height: 1.2;
   text-align: center;
-  justify-self: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 8rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 0;
 }
 
 /* ======================
@@ -292,17 +317,30 @@
 
 @media (min-width: 900px) {
   .workout-header-bar {
+    justify-content: flex-start;
     max-width: none;
-    grid-template-columns: auto auto 1fr;
+  }
+
+  .header-slot {
+    flex: 0 0 auto;
+  }
+
+  .header-slot.start {
+    margin-right: 0.75rem;
   }
 
   .workout-title {
-    justify-self: start;
+    position: static;
+    transform: none;
     text-align: left;
+    max-width: none;
+    overflow: visible;
+    white-space: normal;
+    margin-right: auto;
   }
 
-  .unit-toggle-btn {
-    justify-self: end;
+  .header-slot.end {
+    margin-left: auto;
   }
 }
 

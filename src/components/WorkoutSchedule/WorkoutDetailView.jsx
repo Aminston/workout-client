@@ -1251,28 +1251,32 @@ export default function WorkoutDetailView() {
       {/* Header */}
       <div className="workout-detail-header">
         <div className="workout-header-bar">
-          <button
-            className="back-button"
-            onClick={() => {
-              if (
-                hasUnsaved &&
-                !window.confirm(
-                  "Some workout updates are still syncing. Leave this page anyway?"
+          <div className="header-slot start">
+            <button
+              className="back-button"
+              onClick={() => {
+                if (
+                  hasUnsaved &&
+                  !window.confirm(
+                    "Some workout updates are still syncing. Leave this page anyway?"
+                  )
                 )
-              )
-                return;
-              navigate("/schedule");
-            }}
-          >
-            ← Back
-          </button>
+                  return;
+                navigate("/schedule");
+              }}
+            >
+              ← Back
+            </button>
+          </div>
           <h1 className="workout-title">{workoutMeta.day}</h1>
-          <button
-            className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-            onClick={() => setUseMetric((v) => !v)}
-          >
-            {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-          </button>
+          <div className="header-slot end">
+            <button
+              className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+              onClick={() => setUseMetric((v) => !v)}
+            >
+              {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+            </button>
+          </div>
         </div>
       </div>
 

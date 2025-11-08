@@ -1147,14 +1147,6 @@ export default function WorkoutDetailView() {
   };
 
   const renderEditableCell = (exercise, set, field) => {
-    if (set.status !== "done") {
-      const lockedValue =
-        field === "weight"
-          ? weightConverter.display(set.weight, useMetric)
-          : set[field] ?? "-";
-      return <span className="editable-cell cell-readonly">{lockedValue}</span>;
-    }
-
     const isEditing =
       editing?.exerciseId === exercise.id &&
       editing?.setId === set.id &&

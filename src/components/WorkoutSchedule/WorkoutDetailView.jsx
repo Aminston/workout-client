@@ -1303,25 +1303,19 @@ export default function WorkoutDetailView() {
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (
-          <div
-            key={exercise.id}
-            className="exercise-detail-card"
-            role="button"
-            tabIndex={0}
-            aria-label={`View details for ${exercise.name}`}
-            onClick={() => openExerciseModal(exercise)}
-            onKeyDown={(e) => {
-              if (e.target !== e.currentTarget) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                openExerciseModal(exercise);
-              }
-            }}
-          >
+          <div key={exercise.id} className="exercise-detail-card">
             <div className="exercise-header">
               <div className="exercise-header-main">
-                <h3 className="exercise-name" title="View exercise details">
-                  {exercise.name}
+                <h3 className="exercise-name">
+                  <button
+                    type="button"
+                    className="exercise-name-button"
+                    onClick={() => openExerciseModal(exercise)}
+                    title="View exercise details"
+                    aria-label={`View details for ${exercise.name}`}
+                  >
+                    {exercise.name}
+                  </button>
                 </h3>
                 <button
                   type="button"

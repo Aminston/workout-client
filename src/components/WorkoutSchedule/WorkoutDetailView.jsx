@@ -1250,27 +1250,38 @@ export default function WorkoutDetailView() {
     <div className="workout-detail-container">
       {/* Header */}
       <div className="workout-detail-header">
-        <button
-          className="back-button"
-          onClick={() => {
-            if (
-              hasUnsaved &&
-              !window.confirm(
-                "Some workout updates are still syncing. Leave this page anyway?"
-              )
-            )
-              return;
-            navigate("/schedule");
-          }}
-        >
-          Back
-        </button>
-        <h1 className="workout-title">{workoutMeta.day}</h1>
+        <div className="workout-header-bar">
+          <div className="header-slot start">
+            <button
+              className="back-button"
+              onClick={() => {
+                if (
+                  hasUnsaved &&
+                  !window.confirm(
+                    "Some workout updates are still syncing. Leave this page anyway?"
+                  )
+                )
+                  return;
+                navigate("/schedule");
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+          <h1 className="workout-title">{workoutMeta.day}</h1>
+          <div className="header-slot end">
+            <button
+              className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+              onClick={() => setUseMetric((v) => !v)}
+            >
+              {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Progress */}
       <div className="workout-progress-section">
-        <h3 className="progress-title">Workout Progress</h3>
         <div className="progress-bar-container">
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progressPct}%` }} />
@@ -1281,17 +1292,6 @@ export default function WorkoutDetailView() {
         </p>
 
       </div>
-
-      {/* Units */}
-      <div className="unit-toggle-container">
-        <button
-          className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-          onClick={() => setUseMetric((v) => !v)}
-        >
-          Display: {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-        </button>
-      </div>
-
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (

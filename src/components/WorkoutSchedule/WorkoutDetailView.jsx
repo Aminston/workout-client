@@ -1250,22 +1250,22 @@ export default function WorkoutDetailView() {
     <div className="workout-detail-container">
       {/* Header */}
       <div className="workout-detail-header">
-        <button
-          className="back-button"
-          onClick={() => {
-            if (
-              hasUnsaved &&
-              !window.confirm(
-                "Some workout updates are still syncing. Leave this page anyway?"
+        <div className="workout-header-bar">
+          <button
+            className="back-button"
+            onClick={() => {
+              if (
+                hasUnsaved &&
+                !window.confirm(
+                  "Some workout updates are still syncing. Leave this page anyway?"
+                )
               )
-            )
-              return;
-            navigate("/schedule");
-          }}
-        >
-          Back
-        </button>
-        <div className="workout-title-row">
+                return;
+              navigate("/schedule");
+            }}
+          >
+            ← Back
+          </button>
           <h1 className="workout-title">{workoutMeta.day}</h1>
           <button
             className={`unit-toggle-btn ${useMetric ? "active" : ""}`}

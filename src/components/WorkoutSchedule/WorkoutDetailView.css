@@ -533,7 +533,7 @@
 
 .exercise-header-main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   flex: 1;
   min-width: 0;
@@ -542,6 +542,8 @@
 .exercise-name {
   font-size: 1.125rem; font-weight: 700; color: var(--md-sys-color-primary);
   margin: 0; text-decoration: none; line-height: 1.2; flex: 1;
+  display: flex; align-items: center; justify-content: flex-start;
+  min-width: 0; text-align: left;
 }
 
 .exercise-name-button {
@@ -553,8 +555,18 @@
   color: inherit;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.35rem;
   cursor: pointer;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.exercise-name-button.is-truncated {
+  cursor: help;
 }
 
 .exercise-name-button:hover,

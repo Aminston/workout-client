@@ -1266,11 +1266,16 @@ export default function WorkoutDetailView() {
           Back
         </button>
         <h1 className="workout-title">{workoutMeta.day}</h1>
+        <button
+          className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+          onClick={() => setUseMetric((v) => !v)}
+        >
+          Display: {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+        </button>
       </div>
 
       {/* Progress */}
       <div className="workout-progress-section">
-        <h3 className="progress-title">Workout Progress</h3>
         <div className="progress-bar-container">
           <div className="progress-bar">
             <div className="progress-fill" style={{ width: `${progressPct}%` }} />
@@ -1281,17 +1286,6 @@ export default function WorkoutDetailView() {
         </p>
 
       </div>
-
-      {/* Units */}
-      <div className="unit-toggle-container">
-        <button
-          className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-          onClick={() => setUseMetric((v) => !v)}
-        >
-          Display: {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-        </button>
-      </div>
-
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (

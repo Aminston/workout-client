@@ -225,12 +225,6 @@
 /* ======================
    UNIT TOGGLE
    ====================== */
-.unit-toggle-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
 .unit-toggle-btn {
   background-color: var(--color-bg-card);
   color: var(--color-text-secondary);
@@ -241,6 +235,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 .unit-toggle-btn:hover { background-color: var(--color-bg-hover); }
 
@@ -311,14 +306,6 @@
   margin-bottom: 1.5rem;
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
   border: 1px solid var(--color-border);
-}
-
-.progress-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin-bottom: 0.75rem;
-  text-align: center;
 }
 
 .progress-bar-container { margin-bottom: 0.75rem; }

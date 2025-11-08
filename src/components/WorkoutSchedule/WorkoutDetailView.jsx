@@ -1,5 +1,12 @@
 // src/components/WorkoutSchedule/WorkoutDetailView.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
@@ -7,6 +14,90 @@ import { weightConverter } from "./workoutUtils";
 import RestBadge from "./RestBadge";
 import ExerciseDetailModal from "./ExerciseDetailModal";
 import ExerciseAlternativesModal from "./ExerciseAlternativesModal";
+
+function useAdaptiveTextFit(ref, text) {
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    let frameId = null;
+
+    const adjust = () => {
+      const node = ref.current;
+      if (!node) return;
+
+      node.style.fontSize = "";
+      node.classList.remove("is-truncated");
+
+      const computed = window.getComputedStyle(node);
+      const defaultSize = parseFloat(computed.fontSize) || 18;
+      const minSize = Math.max(defaultSize - 3, defaultSize * 0.92);
+
+      let currentSize = defaultSize;
+      while (node.scrollWidth > node.clientWidth && currentSize > minSize) {
+        currentSize = Math.max(currentSize - 0.5, minSize);
+        node.style.fontSize = `${currentSize}px`;
+        if (currentSize <= minSize) break;
+      }
+
+      if (node.scrollWidth > node.clientWidth) {
+        node.classList.add("is-truncated");
+      }
+    };
+
+    const scheduleAdjust = () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(adjust);
+    };
+
+    scheduleAdjust();
+
+    const node = ref.current;
+    const observer =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(scheduleAdjust)
+        : null;
+
+    if (observer && node) {
+      observer.observe(node);
+      if (node.parentElement) {
+        observer.observe(node.parentElement);
+      }
+    }
+
+    window.addEventListener("resize", scheduleAdjust);
+
+    return () => {
+      if (frameId != null) {
+        cancelAnimationFrame(frameId);
+      }
+      if (observer) {
+        observer.disconnect();
+      }
+      window.removeEventListener("resize", scheduleAdjust);
+    };
+  }, [ref, text]);
+}
+
+function AdaptiveExerciseNameButton({ name, onClick, ariaLabel }) {
+  const buttonRef = useRef(null);
+
+  useAdaptiveTextFit(buttonRef, name);
+
+  return (
+    <button
+      type="button"
+      className="exercise-name-button"
+      onClick={onClick}
+      title={name}
+      aria-label={ariaLabel}
+      ref={buttonRef}
+    >
+      {name}
+    </button>
+  );
+}
 
 /* ================== tiny helpers ================== */
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
@@ -1298,16 +1389,12 @@ export default function WorkoutDetailView() {
           <div key={exercise.id} className="exercise-detail-card">
             <div className="exercise-header">
               <div className="exercise-header-main">
-                <h3 className="exercise-name">
-                  <button
-                    type="button"
-                    className="exercise-name-button"
+                <h3 className="exercise-name" title={exercise.name}>
+                  <AdaptiveExerciseNameButton
+                    name={exercise.name}
                     onClick={() => openExerciseModal(exercise)}
-                    title="View exercise details"
-                    aria-label={`View details for ${exercise.name}`}
-                  >
-                    {exercise.name}
-                  </button>
+                    ariaLabel={`View details for ${exercise.name}`}
+                  />
                 </h3>
                 <button
                   type="button"

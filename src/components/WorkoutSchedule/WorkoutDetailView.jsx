@@ -417,7 +417,8 @@ export default function WorkoutDetailView() {
   const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
-  const latestFetchSignatureRef = useRef(null);
+  const lastResolvedFetchSignatureRef = useRef(null);
+  const activeFetchRef = useRef(null);
   const editingInputRef = useRef(null);
   const handleEditingInputRef = useCallback((node) => {
     editingInputRef.current = node;
@@ -871,8 +872,6 @@ export default function WorkoutDetailView() {
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
-    let mounted = true;
-
     const statePayload =
       parsedLocationState?.originalApiData ??
       parsedLocationState?.workoutData?.originalApiData ??
@@ -906,15 +905,20 @@ export default function WorkoutDetailView() {
       stateKey: locationStateKey,
       targetDay: targetDayNumber ?? null,
     });
-    const shouldFetchLatest = latestFetchSignatureRef.current !== fetchSignature;
+    const shouldFetchLatest =
+      lastResolvedFetchSignatureRef.current !== fetchSignature;
 
     if (!shouldFetchLatest) {
-      return () => {
-        mounted = false;
-      };
+      setLoading(false);
+      return () => {};
     }
 
-    latestFetchSignatureRef.current = fetchSignature;
+    if (activeFetchRef.current?.controller) {
+      activeFetchRef.current.controller.abort();
+    }
+
+    const abortController = new AbortController();
+    activeFetchRef.current = { signature: fetchSignature, controller: abortController };
     setLoading(true);
 
     const fetchLatest = async () => {
@@ -930,6 +934,7 @@ export default function WorkoutDetailView() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          signal: abortController.signal,
         });
 
         if (!response.ok) {
@@ -968,25 +973,33 @@ export default function WorkoutDetailView() {
         if (!Array.isArray(resolvedDay.workouts)) {
           throw new Error("Invalid workout data: missing workouts array.");
         }
-
-        if (!mounted) return;
-
         applyDayData(resolvedDay);
         setError(null);
+        lastResolvedFetchSignatureRef.current = fetchSignature;
       } catch (err) {
-        if (!mounted) return;
+        if (abortController.signal.aborted) {
+          return;
+        }
         setError(err.message || "Failed to load workout");
         resetLocalState();
-        latestFetchSignatureRef.current = null;
+        lastResolvedFetchSignatureRef.current = null;
       } finally {
-        if (mounted) setLoading(false);
+        if (activeFetchRef.current?.controller === abortController) {
+          activeFetchRef.current = null;
+        }
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchLatest();
 
     return () => {
-      mounted = false;
+      abortController.abort();
+      if (activeFetchRef.current?.controller === abortController) {
+        activeFetchRef.current = null;
+      }
     };
   }, [
     applyDayData,

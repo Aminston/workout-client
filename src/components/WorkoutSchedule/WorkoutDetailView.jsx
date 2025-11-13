@@ -313,6 +313,27 @@ const INITIAL_REST_STATE = {
   setId: null,
 };
 
+const activeScheduleRequestCache = new Map();
+
+function ensureScheduleRequest(signature, factory) {
+  const existing = activeScheduleRequestCache.get(signature);
+  if (existing && !existing.controller.signal.aborted) {
+    return { entry: existing, created: false };
+  }
+
+  const entry = factory();
+  activeScheduleRequestCache.set(signature, entry);
+
+  entry.promise.finally(() => {
+    const current = activeScheduleRequestCache.get(signature);
+    if (current && current.promise === entry.promise) {
+      activeScheduleRequestCache.delete(signature);
+    }
+  });
+
+  return { entry, created: true };
+}
+
 const normalizeAlternativesResponse = (payload, identifiers = {}) => {
   if (!payload) return [];
 
@@ -418,7 +439,6 @@ export default function WorkoutDetailView() {
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
   const lastResolvedFetchSignatureRef = useRef(null);
-  const activeFetchRef = useRef(null);
   const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
   const handleEditingInputRef = useCallback((node) => {
@@ -915,31 +935,9 @@ export default function WorkoutDetailView() {
       return () => {};
     }
 
-    const existingFetch = activeFetchRef.current;
-    const hasActiveSameSignature =
-      existingFetch &&
-      existingFetch.signature === fetchSignature &&
-      !existingFetch.controller.signal.aborted;
-
-    if (hasActiveSameSignature) {
-      return () => {};
-    }
-
-    if (
-      existingFetch &&
-      existingFetch.controller &&
-      !existingFetch.controller.signal.aborted &&
-      existingFetch.signature !== fetchSignature
-    ) {
-      existingFetch.controller.abort();
-    }
-
-    const abortController = new AbortController();
-    activeFetchRef.current = { signature: fetchSignature, controller: abortController };
-    setLoading(true);
-
-    const fetchLatest = async () => {
-      try {
+    const { entry } = ensureScheduleRequest(fetchSignature, () => {
+      const controller = new AbortController();
+      const promise = (async () => {
         const token =
           localStorage.getItem("jwt_token") ||
           localStorage.getItem("X-API-Token");
@@ -951,7 +949,7 @@ export default function WorkoutDetailView() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-          signal: abortController.signal,
+          signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -961,7 +959,22 @@ export default function WorkoutDetailView() {
           );
         }
 
-        const payload = await response.json().catch(() => ({}));
+        return response.json().catch(() => ({}));
+      })();
+
+      return { controller, promise };
+    });
+
+    let didCancel = false;
+
+    setLoading(true);
+
+    entry.promise
+      .then((payload) => {
+        if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
+          return;
+        }
+
         const schedule = Array.isArray(payload.schedule)
           ? payload.schedule
           : [];
@@ -990,14 +1003,13 @@ export default function WorkoutDetailView() {
         if (!Array.isArray(resolvedDay.workouts)) {
           throw new Error("Invalid workout data: missing workouts array.");
         }
-        if (!isMountedRef.current) {
-          return;
-        }
+
         applyDayData(resolvedDay);
         setError(null);
         lastResolvedFetchSignatureRef.current = fetchSignature;
-      } catch (err) {
-        if (abortController.signal.aborted) {
+      })
+      .catch((err) => {
+        if (entry.controller.signal.aborted || didCancel) {
           return;
         }
         if (isMountedRef.current) {
@@ -1005,19 +1017,17 @@ export default function WorkoutDetailView() {
           resetLocalState();
         }
         lastResolvedFetchSignatureRef.current = null;
-      } finally {
-        if (activeFetchRef.current?.controller === abortController) {
-          activeFetchRef.current = null;
+      })
+      .finally(() => {
+        if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
+          return;
         }
-        if (!abortController.signal.aborted && isMountedRef.current) {
-          setLoading(false);
-        }
-      }
+        setLoading(false);
+      });
+
+    return () => {
+      didCancel = true;
     };
-
-    fetchLatest();
-
-    return () => {};
   }, [
     applyDayData,
     location.key,
@@ -1031,7 +1041,6 @@ export default function WorkoutDetailView() {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-      activeFetchRef.current = null;
     };
   }, []);
 

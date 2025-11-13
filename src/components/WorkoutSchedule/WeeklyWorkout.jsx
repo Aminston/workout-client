@@ -280,12 +280,18 @@ export default function WeeklyWorkout({
 
       console.log('🎯 Navigating to workout:', workoutDetailData);
 
-      navigate('/workout-detail', { 
-        state: { 
+      const dayNumberParam = dayData.day_number ?? dayData.dayNumber ?? null;
+      const detailPath =
+        dayNumberParam != null
+          ? `/workout-detail?day=${encodeURIComponent(dayNumberParam)}`
+          : '/workout-detail';
+
+      navigate(detailPath, {
+        state: {
           workoutData: workoutDetailData,
           meta: meta,
           originalApiData: dayData
-        } 
+        }
       });
     } catch (error) {
       console.error('Navigation error:', error);

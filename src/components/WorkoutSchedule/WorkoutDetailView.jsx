@@ -898,10 +898,9 @@ export default function WorkoutDetailView() {
 
     if (!appliedFromState) {
       resetLocalState();
-      setLoading(true);
-    } else {
-      setLoading(false);
     }
+
+    setLoading(true);
 
     const fetchLatest = async () => {
       try {

@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "@/components/ToastManager";
 import "./WorkoutDetailView.css";
 import { weightConverter } from "./workoutUtils";
@@ -313,6 +313,27 @@ const INITIAL_REST_STATE = {
   setId: null,
 };
 
+const activeScheduleRequestCache = new Map();
+
+function ensureScheduleRequest(signature, factory) {
+  const existing = activeScheduleRequestCache.get(signature);
+  if (existing && !existing.controller.signal.aborted) {
+    return { entry: existing, created: false };
+  }
+
+  const entry = factory();
+  activeScheduleRequestCache.set(signature, entry);
+
+  entry.promise.finally(() => {
+    const current = activeScheduleRequestCache.get(signature);
+    if (current && current.promise === entry.promise) {
+      activeScheduleRequestCache.delete(signature);
+    }
+  });
+
+  return { entry, created: true };
+}
+
 const normalizeAlternativesResponse = (payload, identifiers = {}) => {
   if (!payload) return [];
 
@@ -381,6 +402,33 @@ const SwapArrowsIcon = ({ className }) => (
 export default function WorkoutDetailView() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const locationStateKey = useMemo(
+    () => JSON.stringify(location.state ?? {}),
+    [location.state]
+  );
+  const parsedLocationState = useMemo(() => {
+    if (!locationStateKey) return null;
+    try {
+      return JSON.parse(locationStateKey);
+    } catch {
+      return null;
+    }
+  }, [locationStateKey]);
+  const dayQueryValue = searchParams.get("day");
+  const stateDayNumber = useMemo(() => {
+    const originalDayNumber =
+      parsedLocationState?.originalApiData?.day_number ??
+      parsedLocationState?.workoutData?.originalApiData?.day_number ??
+      null;
+    const parsed = Number(originalDayNumber);
+    return Number.isNaN(parsed) ? null : parsed;
+  }, [parsedLocationState]);
+  const targetDayNumber = useMemo(() => {
+    const fromQuery = Number(dayQueryValue);
+    if (!Number.isNaN(fromQuery)) return fromQuery;
+    return stateDayNumber;
+  }, [dayQueryValue, stateDayNumber]);
 
   // state
   const [exercises, setExercises] = useState([]);
@@ -390,6 +438,8 @@ export default function WorkoutDetailView() {
   const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
+  const lastResolvedFetchSignatureRef = useRef(null);
+  const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
   const handleEditingInputRef = useCallback((node) => {
     editingInputRef.current = node;
@@ -401,6 +451,25 @@ export default function WorkoutDetailView() {
       return next;
     });
   }, []);
+  const applyDayData = useCallback(
+    (dayData) => {
+      if (!dayData) {
+        throw new Error("Invalid workout data: missing day information.");
+      }
+
+      const built = buildExercisesFromDay(dayData);
+
+      autoSaveTimers.current.forEach((t) => clearTimeout(t));
+      autoSaveTimers.current.clear();
+
+      updateExercises(built);
+      setWorkoutMeta({
+        day: dayData.day_name || `Day ${dayData.day_number}`,
+        dayNumber: dayData.day_number ?? null,
+      });
+    },
+    [updateExercises, setWorkoutMeta]
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [restTimer, setRestTimer] = useState(INITIAL_REST_STATE);
@@ -824,44 +893,156 @@ export default function WorkoutDetailView() {
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
-    let mounted = true;
+    const statePayload =
+      parsedLocationState?.originalApiData ??
+      parsedLocationState?.workoutData?.originalApiData ??
+      null;
 
-    (async () => {
+    const resetLocalState = () => {
+      autoSaveTimers.current.forEach((t) => clearTimeout(t));
+      autoSaveTimers.current.clear();
+      if (!isMountedRef.current) return;
+      updateExercises([]);
+    };
+
+    const appliedFromState = (() => {
+      if (!statePayload) return false;
       try {
-        setLoading(true);
+        applyDayData(statePayload);
         setError(null);
-        updateExercises([]);
-        autoSaveTimers.current.forEach((t) => clearTimeout(t));
-        autoSaveTimers.current.clear();
-
-        const originalApiData = location.state?.originalApiData;
-        const passedWorkoutData = location.state?.workoutData;
-        const dayData =
-          originalApiData ??
-          (passedWorkoutData && passedWorkoutData.originalApiData);
-
-        if (!dayData) throw new Error("API data not found");
-        if (!Array.isArray(dayData.workouts))
-          throw new Error("Invalid workout data: missing workouts array.");
-
-        const built = buildExercisesFromDay(dayData);
-        if (!mounted) return;
-
-        updateExercises(built);
-        setWorkoutMeta({
-          day: dayData.day_name || `Day ${dayData.day_number}`,
-        });
-      } catch (e) {
-        if (mounted) setError(e.message || "Failed to load workout");
-      } finally {
-        if (mounted) setLoading(false);
+        return true;
+      } catch (err) {
+        setError(err.message || "Failed to load workout");
+        resetLocalState();
+        return false;
       }
     })();
 
+    if (!appliedFromState) {
+      resetLocalState();
+    }
+
+    const fetchSignature = JSON.stringify({
+      locationKey: location.key,
+      stateKey: locationStateKey,
+      targetDay: targetDayNumber ?? null,
+    });
+    const shouldFetchLatest =
+      lastResolvedFetchSignatureRef.current !== fetchSignature;
+
+    if (!shouldFetchLatest) {
+      setLoading(false);
+      return () => {};
+    }
+
+    const { entry } = ensureScheduleRequest(fetchSignature, () => {
+      const controller = new AbortController();
+      const promise = (async () => {
+        const token =
+          localStorage.getItem("jwt_token") ||
+          localStorage.getItem("X-API-Token");
+        if (!token) {
+          throw new Error("No autenticado. Inicia sesión nuevamente.");
+        }
+
+        const response = await fetch(getApiUrl("/schedule/v2"), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          throw new Error(
+            text || "No se pudo cargar el entrenamiento más reciente."
+          );
+        }
+
+        return response.json().catch(() => ({}));
+      })();
+
+      return { controller, promise };
+    });
+
+    let didCancel = false;
+
+    setLoading(true);
+
+    entry.promise
+      .then((payload) => {
+        if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
+          return;
+        }
+
+        const schedule = Array.isArray(payload.schedule)
+          ? payload.schedule
+          : [];
+
+        let resolvedDay = null;
+        if (targetDayNumber != null) {
+          resolvedDay = schedule.find(
+            (day) => Number(day?.day_number) === Number(targetDayNumber)
+          );
+        }
+        if (!resolvedDay && statePayload) {
+          resolvedDay = schedule.find(
+            (day) =>
+              Number(day?.day_number) === Number(statePayload.day_number) ||
+              day?.day_name === statePayload.day_name
+          );
+        }
+        if (!resolvedDay) {
+          resolvedDay = schedule.find(
+            (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
+          );
+        }
+        if (!resolvedDay) {
+          throw new Error("No se encontró el entrenamiento solicitado.");
+        }
+        if (!Array.isArray(resolvedDay.workouts)) {
+          throw new Error("Invalid workout data: missing workouts array.");
+        }
+
+        applyDayData(resolvedDay);
+        setError(null);
+        lastResolvedFetchSignatureRef.current = fetchSignature;
+      })
+      .catch((err) => {
+        if (entry.controller.signal.aborted || didCancel) {
+          return;
+        }
+        if (isMountedRef.current) {
+          setError(err.message || "Failed to load workout");
+          resetLocalState();
+        }
+        lastResolvedFetchSignatureRef.current = null;
+      })
+      .finally(() => {
+        if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
+          return;
+        }
+        setLoading(false);
+      });
+
     return () => {
-      mounted = false;
+      didCancel = true;
     };
-  }, [location.key, JSON.stringify(location.state)]);
+  }, [
+    applyDayData,
+    location.key,
+    locationStateKey,
+    parsedLocationState,
+    targetDayNumber,
+    updateExercises,
+  ]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     exercisesRef.current = exercises;
@@ -1008,7 +1189,7 @@ export default function WorkoutDetailView() {
       }
       try {
         return await res.json();
-      } catch (err) {
+      } catch {
         return null;
       }
     };

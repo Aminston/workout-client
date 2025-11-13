@@ -419,6 +419,7 @@ export default function WorkoutDetailView() {
   const exercisesRef = useRef([]);
   const lastResolvedFetchSignatureRef = useRef(null);
   const activeFetchRef = useRef(null);
+  const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
   const handleEditingInputRef = useCallback((node) => {
     editingInputRef.current = node;
@@ -880,6 +881,7 @@ export default function WorkoutDetailView() {
     const resetLocalState = () => {
       autoSaveTimers.current.forEach((t) => clearTimeout(t));
       autoSaveTimers.current.clear();
+      if (!isMountedRef.current) return;
       updateExercises([]);
     };
 
@@ -988,6 +990,9 @@ export default function WorkoutDetailView() {
         if (!Array.isArray(resolvedDay.workouts)) {
           throw new Error("Invalid workout data: missing workouts array.");
         }
+        if (!isMountedRef.current) {
+          return;
+        }
         applyDayData(resolvedDay);
         setError(null);
         lastResolvedFetchSignatureRef.current = fetchSignature;
@@ -995,14 +1000,16 @@ export default function WorkoutDetailView() {
         if (abortController.signal.aborted) {
           return;
         }
-        setError(err.message || "Failed to load workout");
-        resetLocalState();
+        if (isMountedRef.current) {
+          setError(err.message || "Failed to load workout");
+          resetLocalState();
+        }
         lastResolvedFetchSignatureRef.current = null;
       } finally {
         if (activeFetchRef.current?.controller === abortController) {
           activeFetchRef.current = null;
         }
-        if (!abortController.signal.aborted) {
+        if (!abortController.signal.aborted && isMountedRef.current) {
           setLoading(false);
         }
       }
@@ -1020,15 +1027,13 @@ export default function WorkoutDetailView() {
     updateExercises,
   ]);
 
-  useEffect(
-    () => () => {
-      if (activeFetchRef.current?.controller) {
-        activeFetchRef.current.controller.abort();
-        activeFetchRef.current = null;
-      }
-    },
-    []
-  );
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      activeFetchRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     exercisesRef.current = exercises;

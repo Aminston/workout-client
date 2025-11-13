@@ -913,8 +913,23 @@ export default function WorkoutDetailView() {
       return () => {};
     }
 
-    if (activeFetchRef.current?.controller) {
-      activeFetchRef.current.controller.abort();
+    const existingFetch = activeFetchRef.current;
+    const hasActiveSameSignature =
+      existingFetch &&
+      existingFetch.signature === fetchSignature &&
+      !existingFetch.controller.signal.aborted;
+
+    if (hasActiveSameSignature) {
+      return () => {};
+    }
+
+    if (
+      existingFetch &&
+      existingFetch.controller &&
+      !existingFetch.controller.signal.aborted &&
+      existingFetch.signature !== fetchSignature
+    ) {
+      existingFetch.controller.abort();
     }
 
     const abortController = new AbortController();
@@ -995,12 +1010,7 @@ export default function WorkoutDetailView() {
 
     fetchLatest();
 
-    return () => {
-      abortController.abort();
-      if (activeFetchRef.current?.controller === abortController) {
-        activeFetchRef.current = null;
-      }
-    };
+    return () => {};
   }, [
     applyDayData,
     location.key,
@@ -1009,6 +1019,16 @@ export default function WorkoutDetailView() {
     targetDayNumber,
     updateExercises,
   ]);
+
+  useEffect(
+    () => () => {
+      if (activeFetchRef.current?.controller) {
+        activeFetchRef.current.controller.abort();
+        activeFetchRef.current = null;
+      }
+    },
+    []
+  );
 
   useEffect(() => {
     exercisesRef.current = exercises;

@@ -146,7 +146,12 @@ export default function App() {
 
     setUserName(localStorage.getItem('userName') || '');
 
-    // Initial load or token change
+    const isScheduleRoute = location.pathname === '/schedule';
+    if (!isScheduleRoute) {
+      return;
+    }
+
+    // Initial load or token change when viewing the schedule
     if (!hasFetchedRef.current) {
       fetchSchedule(token, 'initial-load');
       hasFetchedRef.current = true;
@@ -154,16 +159,16 @@ export default function App() {
     }
 
     // Navigation back to schedule with state (workout completion)
-    if (location.pathname === '/schedule' && location.state) {
+    if (location.state) {
       const state = location.state;
-      
+
       if (state?.message || state?.completedSets !== undefined) {
         console.log('🎉 Workout completed, showing message:', state.message);
         if (state.message) {
           toast.show('success', state.message);
         }
       }
-      
+
       if (state?.message || state?.completedSets !== undefined || state?.forceRefresh) {
         fetchSchedule(token, 'workout-completion');
       }

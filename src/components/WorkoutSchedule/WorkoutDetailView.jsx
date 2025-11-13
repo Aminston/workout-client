@@ -417,6 +417,7 @@ export default function WorkoutDetailView() {
   const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
+  const latestFetchSignatureRef = useRef(null);
   const editingInputRef = useRef(null);
   const handleEditingInputRef = useCallback((node) => {
     editingInputRef.current = node;
@@ -900,6 +901,20 @@ export default function WorkoutDetailView() {
       resetLocalState();
     }
 
+    const fetchSignature = JSON.stringify({
+      locationKey: location.key,
+      stateKey: locationStateKey,
+      targetDay: targetDayNumber ?? null,
+    });
+    const shouldFetchLatest = latestFetchSignatureRef.current !== fetchSignature;
+
+    if (!shouldFetchLatest) {
+      return () => {
+        mounted = false;
+      };
+    }
+
+    latestFetchSignatureRef.current = fetchSignature;
     setLoading(true);
 
     const fetchLatest = async () => {
@@ -962,6 +977,7 @@ export default function WorkoutDetailView() {
         if (!mounted) return;
         setError(err.message || "Failed to load workout");
         resetLocalState();
+        latestFetchSignatureRef.current = null;
       } finally {
         if (mounted) setLoading(false);
       }

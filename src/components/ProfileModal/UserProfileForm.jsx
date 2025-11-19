@@ -1,4 +1,4 @@
-import { Form, Button, Spinner } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import FormField from '@/components/FormField';
 import MetricInput from '@/styles/MetricInput';
 import {
@@ -48,17 +48,14 @@ const profileFields = [
 
 export default function UserProfileForm({
   form,
-  isDirty,
-  isValid,
-  loading,
   handleChange,
   handleSubmit,
-  handleCancel
+  formId
 }) {
-  console.log('🧪 UserProfileForm:', { isDirty, isValid, loading, form }); // <-- ADD THIS
+  console.log('🧪 UserProfileForm:', { form });
 
   return (
-    <Form onSubmit={handleSubmit}>
+    <Form id={formId} onSubmit={handleSubmit}>
       <div className="form-spaced">
         {profileFields.map(({ name, label, type, autoFocus, options }) => (
           <Form.Group key={name} className="mb-3">
@@ -107,18 +104,6 @@ export default function UserProfileForm({
           />
         </Form.Group>
 
-        <div className="modal-footer modal-footer-actions mt-3">
-          <Button type="button" onClick={handleCancel} className="btn-outline-secondary btn-modal-cancel">
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={!isDirty || loading}
-            className="btn-modal-confirm btn-accent"
-          >
-            {loading ? <Spinner size="sm" animation="border" /> : 'Save'}
-          </Button>
-        </div>
       </div>
     </Form>
   );

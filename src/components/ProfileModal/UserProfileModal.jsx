@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import BaseModal from '@/components/BaseModal/BaseModal';
+import ModalFooter from '@/components/BaseModal/ModalFooter';
 import UserProfileForm from './UserProfileForm';
 import { toast } from '@/components/ToastManager';
 import useUserProfile from '@/hooks/useUserProfile';
@@ -77,8 +78,20 @@ export default function UserProfileModal({ show, onHide, token, setUserName, onS
   const showLoadingState = loading && !hasFetched;
   const showFormState = (form.name || form.email) && !showLoadingState;
 
+  const formId = 'user-profile-form';
+
+  const footer = (
+    <ModalFooter
+      onCancel={handleCancel}
+      confirmType="submit"
+      confirmForm={formId}
+      confirmDisabled={!isDirty || loading}
+      confirmLoading={loading}
+    />
+  );
+
   return (
-    <BaseModal show={show} onHide={onHide} title="Edit Profile">
+    <BaseModal show={show} onHide={onHide} title="Edit Profile" footer={footer}>
       {showLoadingState ? (
         <div className="p-3 text-center">
           <div className="spinner-border text-primary mb-2" role="status" />
@@ -87,11 +100,9 @@ export default function UserProfileModal({ show, onHide, token, setUserName, onS
       ) : showFormState ? (
         <UserProfileForm
           form={form}
-          isDirty={isDirty}
-          loading={loading}
           handleChange={handleChange}
           handleSubmit={handleSubmit}
-          handleCancel={handleCancel}
+          formId={formId}
         />
       ) : (
         <div className="p-3 text-center text-muted">

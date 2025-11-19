@@ -1,39 +1,47 @@
-.modal-content {
+.base-modal .modal-content {
     background-color: var(--color-bg-card);
     color: var(--color-text-main);
     border-radius: var(--radius-md);
     border: none;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
   }
-  
-  .modal-header,
-  .modal-body,
-  .modal-footer {
+
+.base-modal .modal-header,
+.base-modal .modal-body,
+.base-modal .modal-footer {
     background-color: var(--color-bg-card);
     border-color: var(--color-border);
     color: var(--color-text-main);
   }
-  
-  .modal-title {
+
+.base-modal .modal-title {
     color: var(--color-text-main);
   }
-  
-  .modal-body .form-control,
-  .modal-body .form-select {
+
+.base-modal .modal-body {
+    padding-bottom: 1rem;
+    overflow-y: auto;
+  }
+
+.base-modal .modal-body .form-control,
+.base-modal .modal-body .form-select {
     background-color: var(--color-bg-hover);
     color: var(--color-text-main);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
   }
-  
-  .modal-body .form-control::placeholder {
+
+.base-modal .modal-body .form-control::placeholder {
     color: var(--color-text-secondary);
     opacity: 1;
   }
-  
-  .modal-body .form-control:focus,
-  .modal-body .form-select:focus {
+
+.base-modal .modal-body .form-control:focus,
+.base-modal .modal-body .form-select:focus {
     background-color: var(--color-bg-card);
     color: var(--color-text-main);
     border-color: var(--color-accent);

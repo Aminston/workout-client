@@ -7,7 +7,9 @@ export default function ModalFooter({
   onConfirm,
   confirmDisabled = false,
   confirmLoading = false,
-  confirmVariant = 'accent'
+  confirmVariant = 'accent',
+  confirmType = 'button',
+  confirmForm
 }) {
   return (
     <div className="modal-footer modal-footer-actions">
@@ -19,7 +21,8 @@ export default function ModalFooter({
         {cancelLabel}
       </Button>
       <Button
-        type="button"
+        type={confirmType}
+        form={confirmForm}
         onClick={onConfirm}
         disabled={confirmDisabled || confirmLoading}
         className={`btn-modal-confirm btn-${confirmVariant}`}

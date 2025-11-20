@@ -1431,7 +1431,9 @@ export default function WorkoutDetailView() {
         );
       } catch (err) {
         console.warn("Auto-save failed:", err);
-        toast.show("danger", "Failed to save set. Please check your connection and try again.");
+        const message =
+          err?.body || err?.message || "Failed to save set. Please check your connection and try again.";
+        toast.show("danger", message);
         updateExercises((prev) =>
           prev.map((ex) =>
             ex.id !== exerciseId
@@ -1975,15 +1977,19 @@ export default function WorkoutDetailView() {
                               </button>
                             ) : (
                               <div className="set-done-actions">
-                                <span
-                                  className={`status-badge status-done ${
-                                    set.isSynced ? "synced" : "status-saving"
-                                  }`}
-                                  role="status"
-                                  aria-live="polite"
-                                >
-                                  {set.isSynced ? "Saved ✓" : "Saving..."}
-                                </span>
+                                {set.isSynced ? (
+                                  <span className="set-sync-label" role="status" aria-live="polite">
+                                    Saved ✓
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="status-badge status-saving"
+                                    role="status"
+                                    aria-live="polite"
+                                  >
+                                    Saving...
+                                  </span>
+                                )}
                                 <button
                                   className="set-action-button neutral"
                                   aria-label="Restart set"

@@ -469,32 +469,6 @@ const RestartIcon = () => (
   </svg>
 );
 
-const RefreshIcon = ({ className }) => (
-  <svg
-    className={className}
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M4 8a8 8 0 0 1 13.657-2.657L20 7.686m0 0h-3.2m3.2 0V4.5"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M20 16a8 8 0 0 1-13.657 2.657L4 16.314m0 0H7.2M4 16v3.2"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
 function SetActionMenu({ onDelete, onReset, onClose }) {
   const menuRef = useRef(null);
 
@@ -1833,15 +1807,6 @@ export default function WorkoutDetailView() {
           <h1 className="workout-title">{workoutMeta.day}</h1>
           <div className="header-slot end">
             <div className="header-actions">
-              <button
-                type="button"
-                className="header-icon-button"
-                onClick={() => loadLatestSchedule(true)}
-                aria-label="Refresh workout"
-                title="Refresh workout"
-              >
-                <RefreshIcon />
-              </button>
               <button
                 className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
                 onClick={() => setUseMetric((v) => !v)}

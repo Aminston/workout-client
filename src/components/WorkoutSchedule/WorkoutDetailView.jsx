@@ -103,6 +103,12 @@ function AdaptiveExerciseNameButton({ name, onClick, ariaLabel }) {
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
 const nnum = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 const numOr = (v, fb = 0) => (Number.isFinite(Number(v)) ? Number(v) : fb);
+const deriveExerciseStatus = (sets) => {
+  const done = sets.filter((x) => x.status === "done").length;
+  if (done === sets.length && sets.length > 0) return "done";
+  if (done > 0) return "in-progress";
+  return "pending";
+};
 
 /* ---- tolerant session field readers (backend varies slightly) ---- */
 const isCompleted = (s) => {
@@ -197,6 +203,18 @@ function buildExercisesFromDay(dayData) {
       }
     }
 
+    const programWeight =
+      w.weight?.value != null
+        ? w.weight.value
+        : w.weight_value != null
+        ? w.weight_value
+        : w.weight ?? 0;
+    const defaultTemplate = {
+      reps: numOr(w.reps, 0),
+      weight: numOr(programWeight, 0),
+      weightUnit: w.weight?.unit || w.weight_unit || "kg",
+    };
+
     const sets = [];
     for (let i = 1; i <= totalSets; i++) {
       const s = latestBySet[i];
@@ -212,37 +230,28 @@ function buildExercisesFromDay(dayData) {
           completedAt: getCreatedAt(s),
           isFromSession: true,
           isSynced: true,
+          defaultReps: defaultTemplate.reps,
+          defaultWeight: defaultTemplate.weight,
+          defaultWeightUnit: defaultTemplate.weightUnit,
         });
       } else {
         // Pending - use program defaults (base reps & weight)
-        const defaultWeight =
-          w.weight?.value != null
-            ? w.weight.value
-            : w.weight_value != null
-            ? w.weight_value
-            : w.weight ?? 0;
-
         sets.push({
           id: i,
-          reps: numOr(w.reps, 0),
-          weight: numOr(defaultWeight, 0),
-          weightUnit: w.weight?.unit || w.weight_unit || "kg",
+          reps: defaultTemplate.reps,
+          weight: defaultTemplate.weight,
+          weightUnit: defaultTemplate.weightUnit,
           duration: null,
           status: "pending",
           completedAt: null,
           isFromSession: false,
           isSynced: false,
+          defaultReps: defaultTemplate.reps,
+          defaultWeight: defaultTemplate.weight,
+          defaultWeightUnit: defaultTemplate.weightUnit,
         });
       }
     }
-
-    const done = sets.filter((x) => x.status === "done").length;
-    const status =
-      done === sets.length && sets.length > 0
-        ? "done"
-        : done > 0
-        ? "in-progress"
-        : "pending";
 
     return {
       id: scheduleId,
@@ -252,7 +261,8 @@ function buildExercisesFromDay(dayData) {
       category,
       type,
       sets,
-      status,
+      status: deriveExerciseStatus(sets),
+      defaultSetTemplate: defaultTemplate,
     };
   });
 }
@@ -398,6 +408,39 @@ const SwapArrowsIcon = ({ className }) => (
   </svg>
 );
 
+function SetActionMenu({ onDelete, onReset, onClose }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!menuRef.current || menuRef.current.contains(event.target)) return;
+      onClose();
+    };
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="set-action-menu" ref={menuRef} role="menu">
+      <button type="button" className="set-action-menu__item" onClick={onReset} role="menuitem">
+        Reset
+      </button>
+      <button type="button" className="set-action-menu__item delete" onClick={onDelete} role="menuitem">
+        Delete
+      </button>
+    </div>
+  );
+}
+
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
@@ -491,6 +534,7 @@ export default function WorkoutDetailView() {
   const [selectedAlternative, setSelectedAlternative] = useState(null);
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+  const [activeSetMenu, setActiveSetMenu] = useState(null);
 
   const clearRestInterval = useCallback(() => {
     if (restIntervalRef.current) {
@@ -1469,6 +1513,122 @@ export default function WorkoutDetailView() {
 
   };
 
+  const closeSetMenu = useCallback(() => setActiveSetMenu(null), []);
+
+  const getSetDefaults = useCallback((exercise, set = null) => {
+    const template = exercise?.defaultSetTemplate ?? {};
+    return {
+      reps: set?.defaultReps ?? template.reps ?? 0,
+      weight: set?.defaultWeight ?? template.weight ?? 0,
+      weightUnit: set?.defaultWeightUnit ?? template.weightUnit ?? "kg",
+    };
+  }, []);
+
+  const createSetFromDefaults = useCallback(
+    (exercise, id) => {
+      const defaults = getSetDefaults(exercise);
+      return {
+        id,
+        reps: defaults.reps,
+        weight: defaults.weight,
+        weightUnit: defaults.weightUnit,
+        duration: null,
+        status: "pending",
+        completedAt: null,
+        isFromSession: false,
+        isSynced: false,
+        isModified: false,
+        defaultReps: defaults.reps,
+        defaultWeight: defaults.weight,
+        defaultWeightUnit: defaults.weightUnit,
+      };
+    },
+    [getSetDefaults]
+  );
+
+  const handleAddSet = useCallback(
+    (exerciseId) => {
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextId =
+            ex.sets.reduce((max, set) => Math.max(max, Number(set.id) || 0), 0) + 1;
+          const nextSet = createSetFromDefaults(ex, nextId);
+          const nextSets = [...ex.sets, nextSet];
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+    },
+    [createSetFromDefaults, updateExercises]
+  );
+
+  const handleResetSet = useCallback(
+    (exerciseId, setId) => {
+      setEditing((prev) =>
+        prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
+      );
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.map((set) => {
+            if (set.id !== setId) return set;
+            const defaults = getSetDefaults(ex, set);
+            return {
+              ...set,
+              reps: defaults.reps,
+              weight: defaults.weight,
+              weightUnit: defaults.weightUnit,
+              status: "pending",
+              isModified: false,
+              isSynced: false,
+              saveError: false,
+              completedAt: null,
+              startedAt: null,
+            };
+          });
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+      setActiveSetMenu(null);
+    },
+    [getSetDefaults, updateExercises]
+  );
+
+  const handleDeleteSet = useCallback(
+    (exerciseId, setId) => {
+      setEditing((prev) =>
+        prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
+      );
+
+      if (restTimer.exerciseId === exerciseId && restTimer.setId === setId) {
+        closeRestTimer();
+      }
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.filter((set) => set.id !== setId);
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+      setActiveSetMenu(null);
+    },
+    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+  );
+
   /* ---------- leave warning ---------- */
   useEffect(() => {
     const onBeforeUnload = (e) => {
@@ -1612,6 +1772,7 @@ export default function WorkoutDetailView() {
                 <span>Weight</span>
                 <span>Reps</span>
                 <span>Action</span>
+                <span className="set-menu-header" aria-hidden="true" />
               </div>
 
               {exercise.sets.length === 0 ? (
@@ -1628,6 +1789,9 @@ export default function WorkoutDetailView() {
                     restTimer.setId === set.id;
                   const showCooldownBadge =
                     isResting && restTimer.secondsRemaining > 0;
+                  const isMenuOpen =
+                    activeSetMenu?.exerciseId === exercise.id &&
+                    activeSetMenu?.setId === set.id;
 
                   return (
                     <div
@@ -1699,10 +1863,47 @@ export default function WorkoutDetailView() {
                           </button>
                         )}
                       </div>
+                      <div className="set-menu-cell">
+                        <button
+                          type="button"
+                          className="set-menu-trigger"
+                          aria-label="Set options"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveSetMenu((prev) => {
+                              if (
+                                prev?.exerciseId === exercise.id &&
+                                prev?.setId === set.id
+                              ) {
+                                return null;
+                              }
+                              return { exerciseId: exercise.id, setId: set.id };
+                            });
+                          }}
+                        >
+                          ⋮
+                        </button>
+                        {isMenuOpen && (
+                          <SetActionMenu
+                            onDelete={() => handleDeleteSet(exercise.id, set.id)}
+                            onReset={() => handleResetSet(exercise.id, set.id)}
+                            onClose={closeSetMenu}
+                          />
+                        )}
+                      </div>
                     </div>
                   );
                 })
               )}
+            </div>
+            <div className="sets-footer">
+              <button
+                type="button"
+                className="add-set-button"
+                onClick={() => handleAddSet(exercise.id)}
+              >
+                + Add Set
+              </button>
             </div>
           </div>
         ))}

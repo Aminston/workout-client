@@ -44,10 +44,10 @@
   --transition-smooth: 0.3s ease;
 
   /* Grids / sizes */
-  --grid-desktop: 60px 80px 80px 1fr;
-  --grid-tablet: 50px 70px 70px 1fr;
-  --grid-mobile: 40px 60px 60px 1fr;
-  --grid-small: 35px 50px 50px 1fr;
+  --grid-desktop: 60px 80px 80px 1fr 40px;
+  --grid-tablet: 50px 70px 70px 1fr 36px;
+  --grid-mobile: 40px 60px 60px 1fr 32px;
+  --grid-small: 35px 50px 50px 1fr 32px;
 
   --btn-min-width-lg: 120px;
   --btn-min-width-md: 90px;
@@ -676,6 +676,94 @@
 }
 
 .set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }
+.set-menu-cell {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+}
+
+.set-menu-header {
+  width: 100%;
+}
+
+.set-menu-trigger {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.set-menu-trigger:hover,
+.set-menu-trigger:focus-visible {
+  color: var(--color-text-main);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.set-action-menu {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0.25rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+  padding: 0.25rem;
+  z-index: 10;
+}
+
+.set-action-menu__item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--color-text-main);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.set-action-menu__item:hover,
+.set-action-menu__item:focus-visible {
+  background: var(--color-bg-hover);
+}
+
+.set-action-menu__item.delete {
+  color: var(--md-sys-color-error);
+}
+
+.sets-footer {
+  margin-top: -0.5rem;
+  padding: 0 0.5rem 0.75rem;
+}
+
+.add-set-button {
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--color-border);
+  color: var(--color-text-secondary);
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  transition: all var(--transition-fast);
+}
+
+.add-set-button:hover,
+.add-set-button:focus-visible {
+  color: var(--color-text-main);
+  border-color: var(--md-sys-color-primary);
+  background: rgba(143, 185, 255, 0.08);
+}
 
 /* ======================
    INLINE EDITING

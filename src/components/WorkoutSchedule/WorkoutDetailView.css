@@ -762,6 +762,12 @@
   outline: none;
 }
 
+.set-action-button.neutral {
+  background: rgba(255, 255, 255, var(--alpha-01));
+  color: var(--color-text-main);
+  border-color: rgba(255, 255, 255, var(--alpha-03));
+}
+
 .set-action-button.success {
   background: rgba(70, 230, 138, var(--alpha-01));
   color: var(--md-sys-color-success-strong);
@@ -777,6 +783,13 @@
 .set-action-button:active {
   transform: translateY(0);
   box-shadow: none;
+}
+
+.set-done-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }

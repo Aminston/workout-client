@@ -443,6 +443,32 @@ const StopIcon = () => (
   </svg>
 );
 
+const RestartIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M7 7v4.5h4.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M11.5 7h4a2.5 2.5 0 0 1 2.5 2.5v5A2.5 2.5 0 0 1 15.5 17H9a2 2 0 0 1-2-2v-3.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="m5.75 9.25 1.75 2.25"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 const RefreshIcon = ({ className }) => (
   <svg
     className={className}
@@ -1671,6 +1697,40 @@ export default function WorkoutDetailView() {
     [getSetDefaults, updateExercises]
   );
 
+  const handleRestartSet = useCallback(
+    (exerciseId, setId) => {
+      if (restTimer.exerciseId === exerciseId && restTimer.setId === setId) {
+        closeRestTimer();
+      }
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.map((set) =>
+            set.id !== setId
+              ? set
+              : {
+                  ...set,
+                  status: "pending",
+                  completedAt: null,
+                  duration: null,
+                  startedAt: null,
+                  isFromSession: false,
+                  isSynced: false,
+                  saveError: false,
+                }
+          );
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+    },
+    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+  );
+
   const handleDeleteSet = useCallback(
     (exerciseId, setId) => {
       setEditing((prev) =>
@@ -1914,15 +1974,28 @@ export default function WorkoutDetailView() {
                                 Retry Save
                               </button>
                             ) : (
-                              <span
-                                className={`status-badge status-done ${
-                                  set.isSynced ? "synced" : "status-saving"
-                                }`}
-                                role="status"
-                                aria-live="polite"
-                              >
-                                {set.isSynced ? "Saved ✓" : "Saving..."}
-                              </span>
+                              <div className="set-done-actions">
+                                <span
+                                  className={`status-badge status-done ${
+                                    set.isSynced ? "synced" : "status-saving"
+                                  }`}
+                                  role="status"
+                                  aria-live="polite"
+                                >
+                                  {set.isSynced ? "Saved ✓" : "Saving..."}
+                                </span>
+                                <button
+                                  className="set-action-button neutral"
+                                  aria-label="Restart set"
+                                  title="Restart set"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRestartSet(exercise.id, set.id);
+                                  }}
+                                >
+                                  <RestartIcon />
+                                </button>
+                              </div>
                             )
                           ) : set.status === "in-progress" ? (
                             <button

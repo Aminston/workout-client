@@ -103,6 +103,20 @@ function AdaptiveExerciseNameButton({ name, onClick, ariaLabel }) {
 const toIso = (s) => (typeof s === "string" ? s.replace(" ", "T") : s);
 const nnum = (v) => (Number.isFinite(Number(v)) ? Number(v) : null);
 const numOr = (v, fb = 0) => (Number.isFinite(Number(v)) ? Number(v) : fb);
+const deriveExerciseStatus = (sets) => {
+  const done = sets.filter((x) => x.status === "done").length;
+  if (done === sets.length && sets.length > 0) return "done";
+  if (done > 0) return "in-progress";
+  return "pending";
+};
+
+const formatDuration = (seconds) => {
+  if (!Number.isFinite(Number(seconds))) return "—";
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds)));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
 
 /* ---- tolerant session field readers (backend varies slightly) ---- */
 const isCompleted = (s) => {
@@ -197,6 +211,18 @@ function buildExercisesFromDay(dayData) {
       }
     }
 
+    const programWeight =
+      w.weight?.value != null
+        ? w.weight.value
+        : w.weight_value != null
+        ? w.weight_value
+        : w.weight ?? 0;
+    const defaultTemplate = {
+      reps: numOr(w.reps, 0),
+      weight: numOr(programWeight, 0),
+      weightUnit: w.weight?.unit || w.weight_unit || "kg",
+    };
+
     const sets = [];
     for (let i = 1; i <= totalSets; i++) {
       const s = latestBySet[i];
@@ -212,37 +238,28 @@ function buildExercisesFromDay(dayData) {
           completedAt: getCreatedAt(s),
           isFromSession: true,
           isSynced: true,
+          defaultReps: defaultTemplate.reps,
+          defaultWeight: defaultTemplate.weight,
+          defaultWeightUnit: defaultTemplate.weightUnit,
         });
       } else {
         // Pending - use program defaults (base reps & weight)
-        const defaultWeight =
-          w.weight?.value != null
-            ? w.weight.value
-            : w.weight_value != null
-            ? w.weight_value
-            : w.weight ?? 0;
-
         sets.push({
           id: i,
-          reps: numOr(w.reps, 0),
-          weight: numOr(defaultWeight, 0),
-          weightUnit: w.weight?.unit || w.weight_unit || "kg",
+          reps: defaultTemplate.reps,
+          weight: defaultTemplate.weight,
+          weightUnit: defaultTemplate.weightUnit,
           duration: null,
           status: "pending",
           completedAt: null,
           isFromSession: false,
           isSynced: false,
+          defaultReps: defaultTemplate.reps,
+          defaultWeight: defaultTemplate.weight,
+          defaultWeightUnit: defaultTemplate.weightUnit,
         });
       }
     }
-
-    const done = sets.filter((x) => x.status === "done").length;
-    const status =
-      done === sets.length && sets.length > 0
-        ? "done"
-        : done > 0
-        ? "in-progress"
-        : "pending";
 
     return {
       id: scheduleId,
@@ -252,7 +269,8 @@ function buildExercisesFromDay(dayData) {
       category,
       type,
       sets,
-      status,
+      status: deriveExerciseStatus(sets),
+      defaultSetTemplate: defaultTemplate,
     };
   });
 }
@@ -398,6 +416,92 @@ const SwapArrowsIcon = ({ className }) => (
   </svg>
 );
 
+const PlayIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M8.25 5.5v13l10.5-6.5-10.5-6.5Z"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const StopIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <rect
+      x="7"
+      y="7"
+      width="10"
+      height="10"
+      rx="2"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+  </svg>
+);
+
+const RestartIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M7 7v4.5h4.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M11.5 7h4a2.5 2.5 0 0 1 2.5 2.5v5A2.5 2.5 0 0 1 15.5 17H9a2 2 0 0 1-2-2v-3.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="m5.75 9.25 1.75 2.25"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+function SetActionMenu({ onDelete, onReset, onClose }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!menuRef.current || menuRef.current.contains(event.target)) return;
+      onClose();
+    };
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="set-action-menu" ref={menuRef} role="menu">
+      <button type="button" className="set-action-menu__item" onClick={onReset} role="menuitem">
+        Reset
+      </button>
+      <button type="button" className="set-action-menu__item delete" onClick={onDelete} role="menuitem">
+        Delete
+      </button>
+    </div>
+  );
+}
+
 /* ================== Component ================== */
 export default function WorkoutDetailView() {
   const location = useLocation();
@@ -491,6 +595,7 @@ export default function WorkoutDetailView() {
   const [selectedAlternative, setSelectedAlternative] = useState(null);
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+  const [activeSetMenu, setActiveSetMenu] = useState(null);
 
   const clearRestInterval = useCallback(() => {
     if (restIntervalRef.current) {
@@ -891,151 +996,158 @@ export default function WorkoutDetailView() {
     ? exerciseDetailsCache[activeWorkoutId]
     : null;
 
-  /* ---------- load day data from router state ---------- */
-  useEffect(() => {
-    const statePayload =
-      parsedLocationState?.originalApiData ??
-      parsedLocationState?.workoutData?.originalApiData ??
-      null;
+  const loadLatestSchedule = useCallback(
+    (force = false) => {
+      const statePayload =
+        parsedLocationState?.originalApiData ??
+        parsedLocationState?.workoutData?.originalApiData ??
+        null;
 
-    const resetLocalState = () => {
-      autoSaveTimers.current.forEach((t) => clearTimeout(t));
-      autoSaveTimers.current.clear();
-      if (!isMountedRef.current) return;
-      updateExercises([]);
-    };
+      const resetLocalState = () => {
+        autoSaveTimers.current.forEach((t) => clearTimeout(t));
+        autoSaveTimers.current.clear();
+        if (!isMountedRef.current) return;
+        updateExercises([]);
+      };
 
-    const appliedFromState = (() => {
-      if (!statePayload) return false;
-      try {
-        applyDayData(statePayload);
-        setError(null);
-        return true;
-      } catch (err) {
-        setError(err.message || "Failed to load workout");
-        resetLocalState();
-        return false;
-      }
-    })();
-
-    if (!appliedFromState) {
-      resetLocalState();
-    }
-
-    const fetchSignature = JSON.stringify({
-      locationKey: location.key,
-      stateKey: locationStateKey,
-      targetDay: targetDayNumber ?? null,
-    });
-    const shouldFetchLatest =
-      lastResolvedFetchSignatureRef.current !== fetchSignature;
-
-    if (!shouldFetchLatest) {
-      setLoading(false);
-      return () => {};
-    }
-
-    const { entry } = ensureScheduleRequest(fetchSignature, () => {
-      const controller = new AbortController();
-      const promise = (async () => {
-        const token =
-          localStorage.getItem("jwt_token") ||
-          localStorage.getItem("X-API-Token");
-        if (!token) {
-          throw new Error("No autenticado. Inicia sesión nuevamente.");
-        }
-
-        const response = await fetch(getApiUrl("/schedule/v2"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          throw new Error(
-            text || "No se pudo cargar el entrenamiento más reciente."
-          );
-        }
-
-        return response.json().catch(() => ({}));
-      })();
-
-      return { controller, promise };
-    });
-
-    let didCancel = false;
-
-    setLoading(true);
-
-    entry.promise
-      .then((payload) => {
-        if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
-          return;
-        }
-
-        const schedule = Array.isArray(payload.schedule)
-          ? payload.schedule
-          : [];
-
-        let resolvedDay = null;
-        if (targetDayNumber != null) {
-          resolvedDay = schedule.find(
-            (day) => Number(day?.day_number) === Number(targetDayNumber)
-          );
-        }
-        if (!resolvedDay && statePayload) {
-          resolvedDay = schedule.find(
-            (day) =>
-              Number(day?.day_number) === Number(statePayload.day_number) ||
-              day?.day_name === statePayload.day_name
-          );
-        }
-        if (!resolvedDay) {
-          resolvedDay = schedule.find(
-            (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
-          );
-        }
-        if (!resolvedDay) {
-          throw new Error("No se encontró el entrenamiento solicitado.");
-        }
-        if (!Array.isArray(resolvedDay.workouts)) {
-          throw new Error("Invalid workout data: missing workouts array.");
-        }
-
-        applyDayData(resolvedDay);
-        setError(null);
-        lastResolvedFetchSignatureRef.current = fetchSignature;
-      })
-      .catch((err) => {
-        if (entry.controller.signal.aborted || didCancel) {
-          return;
-        }
-        if (isMountedRef.current) {
+      const appliedFromState = (() => {
+        if (!statePayload) return false;
+        try {
+          applyDayData(statePayload);
+          setError(null);
+          return true;
+        } catch (err) {
           setError(err.message || "Failed to load workout");
           resetLocalState();
+          return false;
         }
-        lastResolvedFetchSignatureRef.current = null;
-      })
-      .finally(() => {
-        if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
-          return;
-        }
-        setLoading(false);
+      })();
+
+      if (!appliedFromState) {
+        resetLocalState();
+      }
+
+      const fetchSignature = JSON.stringify({
+        locationKey: location.key,
+        stateKey: locationStateKey,
+        targetDay: targetDayNumber ?? null,
       });
 
+      const shouldFetchLatest =
+        force || lastResolvedFetchSignatureRef.current !== fetchSignature;
+
+      if (!shouldFetchLatest) {
+        setLoading(false);
+        return () => {};
+      }
+
+      const { entry } = ensureScheduleRequest(fetchSignature, () => {
+        const controller = new AbortController();
+        const promise = (async () => {
+          const token =
+            localStorage.getItem("jwt_token") ||
+            localStorage.getItem("X-API-Token");
+          if (!token) {
+            throw new Error("No autenticado. Inicia sesión nuevamente.");
+          }
+
+          const response = await fetch(getApiUrl("/schedule/v2"), {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            const text = await response.text().catch(() => "");
+            throw new Error(text || "No se pudo cargar el entrenamiento más reciente.");
+          }
+
+          return response.json().catch(() => ({}));
+        })();
+
+        return { controller, promise };
+      });
+
+      let didCancel = false;
+
+      setLoading(true);
+
+      entry.promise
+        .then((payload) => {
+          if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
+            return;
+          }
+
+          const schedule = Array.isArray(payload.schedule) ? payload.schedule : [];
+
+          let resolvedDay = null;
+          if (targetDayNumber != null) {
+            resolvedDay = schedule.find(
+              (day) => Number(day?.day_number) === Number(targetDayNumber)
+            );
+          }
+          if (!resolvedDay && statePayload) {
+            resolvedDay = schedule.find(
+              (day) =>
+                Number(day?.day_number) === Number(statePayload.day_number) ||
+                day?.day_name === statePayload.day_name
+            );
+          }
+          if (!resolvedDay) {
+            resolvedDay = schedule.find(
+              (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
+            );
+          }
+          if (!resolvedDay) {
+            throw new Error("No se encontró el entrenamiento solicitado.");
+          }
+          if (!Array.isArray(resolvedDay.workouts)) {
+            throw new Error("Invalid workout data: missing workouts array.");
+          }
+
+          applyDayData(resolvedDay);
+          setError(null);
+          lastResolvedFetchSignatureRef.current = fetchSignature;
+        })
+        .catch((err) => {
+          if (entry.controller.signal.aborted || didCancel) {
+            return;
+          }
+          if (isMountedRef.current) {
+            setError(err.message || "Failed to load workout");
+            resetLocalState();
+          }
+          lastResolvedFetchSignatureRef.current = null;
+        })
+        .finally(() => {
+          if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
+            return;
+          }
+          setLoading(false);
+        });
+
+      return () => {
+        didCancel = true;
+      };
+    },
+    [
+      applyDayData,
+      location.key,
+      locationStateKey,
+      parsedLocationState,
+      targetDayNumber,
+      updateExercises,
+    ]
+  );
+
+  /* ---------- load day data from router state ---------- */
+  useEffect(() => {
+    const cleanup = loadLatestSchedule();
     return () => {
-      didCancel = true;
+      if (typeof cleanup === "function") cleanup();
     };
-  }, [
-    applyDayData,
-    location.key,
-    locationStateKey,
-    parsedLocationState,
-    targetDayNumber,
-    updateExercises,
-  ]);
+  }, [loadLatestSchedule]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -1293,7 +1405,9 @@ export default function WorkoutDetailView() {
         );
       } catch (err) {
         console.warn("Auto-save failed:", err);
-        toast.show("danger", "Failed to save set. Please check your connection and try again.");
+        const message =
+          err?.body || err?.message || "Failed to save set. Please check your connection and try again.";
+        toast.show("danger", message);
         updateExercises((prev) =>
           prev.map((ex) =>
             ex.id !== exerciseId
@@ -1469,6 +1583,156 @@ export default function WorkoutDetailView() {
 
   };
 
+  const closeSetMenu = useCallback(() => setActiveSetMenu(null), []);
+
+  const getSetDefaults = useCallback((exercise, set = null) => {
+    const template = exercise?.defaultSetTemplate ?? {};
+    return {
+      reps: set?.defaultReps ?? template.reps ?? 0,
+      weight: set?.defaultWeight ?? template.weight ?? 0,
+      weightUnit: set?.defaultWeightUnit ?? template.weightUnit ?? "kg",
+    };
+  }, []);
+
+  const createSetFromDefaults = useCallback(
+    (exercise, id) => {
+      const defaults = getSetDefaults(exercise);
+      return {
+        id,
+        reps: defaults.reps,
+        weight: defaults.weight,
+        weightUnit: defaults.weightUnit,
+        duration: null,
+        status: "pending",
+        completedAt: null,
+        isFromSession: false,
+        isSynced: false,
+        isModified: false,
+        defaultReps: defaults.reps,
+        defaultWeight: defaults.weight,
+        defaultWeightUnit: defaults.weightUnit,
+      };
+    },
+    [getSetDefaults]
+  );
+
+  const handleAddSet = useCallback(
+    (exerciseId) => {
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextId =
+            ex.sets.reduce((max, set) => Math.max(max, Number(set.id) || 0), 0) + 1;
+          const nextSet = createSetFromDefaults(ex, nextId);
+          const nextSets = [...ex.sets, nextSet];
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+    },
+    [createSetFromDefaults, updateExercises]
+  );
+
+  const handleResetSet = useCallback(
+    (exerciseId, setId) => {
+      setEditing((prev) =>
+        prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
+      );
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.map((set) => {
+            if (set.id !== setId) return set;
+            const defaults = getSetDefaults(ex, set);
+            return {
+              ...set,
+              reps: defaults.reps,
+              weight: defaults.weight,
+              weightUnit: defaults.weightUnit,
+              status: "pending",
+              isModified: false,
+              isSynced: false,
+              saveError: false,
+              completedAt: null,
+              startedAt: null,
+            };
+          });
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+      setActiveSetMenu(null);
+    },
+    [getSetDefaults, updateExercises]
+  );
+
+  const handleRestartSet = useCallback(
+    (exerciseId, setId) => {
+      if (restTimer.exerciseId === exerciseId && restTimer.setId === setId) {
+        closeRestTimer();
+      }
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.map((set) =>
+            set.id !== setId
+              ? set
+              : {
+                  ...set,
+                  status: "pending",
+                  completedAt: null,
+                  duration: null,
+                  startedAt: null,
+                  isFromSession: false,
+                  isSynced: false,
+                  saveError: false,
+                }
+          );
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+    },
+    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+  );
+
+  const handleDeleteSet = useCallback(
+    (exerciseId, setId) => {
+      setEditing((prev) =>
+        prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
+      );
+
+      if (restTimer.exerciseId === exerciseId && restTimer.setId === setId) {
+        closeRestTimer();
+      }
+
+      updateExercises((prev) =>
+        prev.map((ex) => {
+          if (ex.id !== exerciseId) return ex;
+          const nextSets = ex.sets.filter((set) => set.id !== setId);
+          return {
+            ...ex,
+            sets: nextSets,
+            status: deriveExerciseStatus(nextSets),
+          };
+        })
+      );
+      setActiveSetMenu(null);
+    },
+    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+  );
+
   /* ---------- leave warning ---------- */
   useEffect(() => {
     const onBeforeUnload = (e) => {
@@ -1542,12 +1806,14 @@ export default function WorkoutDetailView() {
           </div>
           <h1 className="workout-title">{workoutMeta.day}</h1>
           <div className="header-slot end">
-            <button
-              className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-              onClick={() => setUseMetric((v) => !v)}
-            >
-              {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-            </button>
+            <div className="header-actions">
+              <button
+                className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+                onClick={() => setUseMetric((v) => !v)}
+              >
+                {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1606,103 +1872,157 @@ export default function WorkoutDetailView() {
               </span>
             </div>
 
-            <div className="sets-table">
-              <div className="sets-header">
-                <span>Set</span>
-                <span>Weight</span>
-                <span>Reps</span>
-                <span>Action</span>
-              </div>
-
-              {exercise.sets.length === 0 ? (
-                <div className="set-row">
-                  <span className="set-number" style={{ gridColumn: "1 / -1" }}>
-                    No sets available for this exercise yet.
-                  </span>
+            <div className="exercise-body">
+              <div className="sets-table">
+                <div className="sets-header">
+                  <span>Set</span>
+                  <span>Weight</span>
+                  <span>Reps</span>
+                  <span>Time</span>
+                  <span>Action</span>
+                  <span className="set-menu-header" aria-hidden="true" />
                 </div>
-              ) : (
-                exercise.sets.map((set) => {
-                  const isResting =
-                    restTimer.isVisible &&
-                    restTimer.exerciseId === exercise.id &&
-                    restTimer.setId === set.id;
-                  const showCooldownBadge =
-                    isResting && restTimer.secondsRemaining > 0;
 
-                  return (
-                    <div
-                      key={set.id}
-                      className={`set-row ${
-                        set.status === "in-progress" ? "set-active" : ""
-                      } ${set.status === "done" ? "set-completed" : ""}`}
-                    >
-                      <span className="set-number">{set.id}</span>
+                {exercise.sets.length === 0 ? (
+                  <div className="set-row">
+                    <span className="set-number" style={{ gridColumn: "1 / -1" }}>
+                      No sets available for this exercise yet.
+                    </span>
+                  </div>
+                ) : (
+                  exercise.sets.map((set) => {
+                    const isResting =
+                      restTimer.isVisible &&
+                      restTimer.exerciseId === exercise.id &&
+                      restTimer.setId === set.id;
+                    const showCooldownBadge =
+                      isResting && restTimer.secondsRemaining > 0;
+                    const isMenuOpen =
+                      activeSetMenu?.exerciseId === exercise.id &&
+                      activeSetMenu?.setId === set.id;
 
-                      <span className="set-weight">
-                        {renderEditableCell(exercise, set, "weight")}
-                      </span>
+                    return (
+                      <div
+                        key={set.id}
+                        className={`set-row ${
+                          set.status === "in-progress" ? "set-active" : ""
+                        } ${set.status === "done" ? "set-completed" : ""}`}
+                      >
+                        <span className="set-number">{set.id}</span>
 
-                      <span className="set-reps">
-                        {renderEditableCell(exercise, set, "reps")}
-                      </span>
+                        <span className="set-weight">
+                          {renderEditableCell(exercise, set, "weight")}
+                        </span>
 
-                      <div className="set-action">
-                        {showCooldownBadge ? (
-                          <RestBadge
-                            remainingSeconds={restTimer.secondsRemaining}
-                            elapsedSeconds={restTimer.elapsedSeconds}
-                            startingSeconds={restTimer.startingSeconds}
-                            onDismiss={closeRestTimer}
-                          />
-                        ) : set.status === "done" ? (
-                          set.saveError ? (
+                        <span className="set-reps">
+                          {renderEditableCell(exercise, set, "reps")}
+                        </span>
+
+                        <span className="set-time">{formatDuration(set.duration)}</span>
+
+                        <div className="set-action">
+                          {showCooldownBadge ? (
+                            <RestBadge
+                              remainingSeconds={restTimer.secondsRemaining}
+                              elapsedSeconds={restTimer.elapsedSeconds}
+                              startingSeconds={restTimer.startingSeconds}
+                              onDismiss={closeRestTimer}
+                            />
+                          ) : set.status === "done" ? (
+                            set.saveError ? (
+                              <button
+                                type="button"
+                                className="status-badge status-error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRetrySetSave(exercise.id, set.id);
+                                }}
+                              >
+                                Retry Save
+                              </button>
+                            ) : (
+                              <div className="set-done-actions">
+                                {set.isSynced ? null : (
+                                  <span
+                                    className="status-badge status-saving"
+                                    role="status"
+                                    aria-live="polite"
+                                  >
+                                    Saving...
+                                  </span>
+                                )}
+                                <button
+                                  className="set-action-button neutral"
+                                  aria-label="Restart set"
+                                  title="Restart set"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRestartSet(exercise.id, set.id);
+                                  }}
+                                >
+                                  <RestartIcon />
+                                </button>
+                              </div>
+                            )
+                          ) : set.status === "in-progress" ? (
                             <button
-                              type="button"
-                              className="status-badge status-error"
+                              className="set-action-button danger"
+                              aria-label="End set"
+                              title="End set"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRetrySetSave(exercise.id, set.id);
+                                handleComplete(exercise.id, set.id);
                               }}
                             >
-                              Retry Save
+                              <StopIcon />
                             </button>
                           ) : (
-                            <span
-                              className={`status-badge status-done ${
-                                set.isSynced ? "synced" : "status-saving"
-                              }`}
-                              role="status"
-                              aria-live="polite"
+                            <button
+                              className="set-action-button success"
+                              aria-label="Start set"
+                              title="Start set"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStart(exercise.id, set.id);
+                              }}
                             >
-                              {set.isSynced ? "Saved ✓" : "Saving..."}
-                            </span>
-                          )
-                        ) : set.status === "in-progress" ? (
+                              <PlayIcon />
+                            </button>
+                          )}
+                        </div>
+                        <div className="set-menu-cell">
                           <button
-                            className="btn btn-warning btn-sm"
+                            type="button"
+                            className="set-menu-trigger"
+                            aria-label="Set options"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleComplete(exercise.id, set.id);
+                              setActiveSetMenu((prev) => {
+                                if (
+                                  prev?.exerciseId === exercise.id &&
+                                  prev?.setId === set.id
+                                ) {
+                                  return null;
+                                }
+                                return { exerciseId: exercise.id, setId: set.id };
+                              });
                             }}
                           >
-                            End
+                            ⋮
                           </button>
-                        ) : (
-                          <button
-                            className="btn btn-success btn-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStart(exercise.id, set.id);
-                            }}
-                          >
-                            Start
-                          </button>
-                        )}
+                          {isMenuOpen && (
+                            <SetActionMenu
+                              onDelete={() => handleDeleteSet(exercise.id, set.id)}
+                              onReset={() => handleResetSet(exercise.id, set.id)}
+                              onClose={closeSetMenu}
+                            />
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         ))}

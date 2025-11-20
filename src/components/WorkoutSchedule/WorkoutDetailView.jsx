@@ -110,6 +110,14 @@ const deriveExerciseStatus = (sets) => {
   return "pending";
 };
 
+const formatDuration = (seconds) => {
+  if (!Number.isFinite(Number(seconds))) return "—";
+  const totalSeconds = Math.max(0, Math.floor(Number(seconds)));
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
 /* ---- tolerant session field readers (backend varies slightly) ---- */
 const isCompleted = (s) => {
   const v = s?.set_status ?? s?.status ?? s?.state ?? null;
@@ -402,6 +410,59 @@ const SwapArrowsIcon = ({ className }) => (
       d="M17 17H6l3.5 3.5"
       stroke="currentColor"
       strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const PlayIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M8.25 5.5v13l10.5-6.5-10.5-6.5Z"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const StopIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <rect
+      x="7"
+      y="7"
+      width="10"
+      height="10"
+      rx="2"
+      fill="currentColor"
+      stroke="currentColor"
+      strokeWidth="1.5"
+    />
+  </svg>
+);
+
+const RefreshIcon = ({ className }) => (
+  <svg
+    className={className}
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M4 8a8 8 0 0 1 13.657-2.657L20 7.686m0 0h-3.2m3.2 0V4.5"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M20 16a8 8 0 0 1-13.657 2.657L4 16.314m0 0H7.2M4 16v3.2"
+      stroke="currentColor"
+      strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -937,149 +998,11 @@ export default function WorkoutDetailView() {
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
-    const statePayload =
-      parsedLocationState?.originalApiData ??
-      parsedLocationState?.workoutData?.originalApiData ??
-      null;
-
-    const resetLocalState = () => {
-      autoSaveTimers.current.forEach((t) => clearTimeout(t));
-      autoSaveTimers.current.clear();
-      if (!isMountedRef.current) return;
-      updateExercises([]);
-    };
-
-    const appliedFromState = (() => {
-      if (!statePayload) return false;
-      try {
-        applyDayData(statePayload);
-        setError(null);
-        return true;
-      } catch (err) {
-        setError(err.message || "Failed to load workout");
-        resetLocalState();
-        return false;
-      }
-    })();
-
-    if (!appliedFromState) {
-      resetLocalState();
-    }
-
-    const fetchSignature = JSON.stringify({
-      locationKey: location.key,
-      stateKey: locationStateKey,
-      targetDay: targetDayNumber ?? null,
-    });
-    const shouldFetchLatest =
-      lastResolvedFetchSignatureRef.current !== fetchSignature;
-
-    if (!shouldFetchLatest) {
-      setLoading(false);
-      return () => {};
-    }
-
-    const { entry } = ensureScheduleRequest(fetchSignature, () => {
-      const controller = new AbortController();
-      const promise = (async () => {
-        const token =
-          localStorage.getItem("jwt_token") ||
-          localStorage.getItem("X-API-Token");
-        if (!token) {
-          throw new Error("No autenticado. Inicia sesión nuevamente.");
-        }
-
-        const response = await fetch(getApiUrl("/schedule/v2"), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          throw new Error(
-            text || "No se pudo cargar el entrenamiento más reciente."
-          );
-        }
-
-        return response.json().catch(() => ({}));
-      })();
-
-      return { controller, promise };
-    });
-
-    let didCancel = false;
-
-    setLoading(true);
-
-    entry.promise
-      .then((payload) => {
-        if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
-          return;
-        }
-
-        const schedule = Array.isArray(payload.schedule)
-          ? payload.schedule
-          : [];
-
-        let resolvedDay = null;
-        if (targetDayNumber != null) {
-          resolvedDay = schedule.find(
-            (day) => Number(day?.day_number) === Number(targetDayNumber)
-          );
-        }
-        if (!resolvedDay && statePayload) {
-          resolvedDay = schedule.find(
-            (day) =>
-              Number(day?.day_number) === Number(statePayload.day_number) ||
-              day?.day_name === statePayload.day_name
-          );
-        }
-        if (!resolvedDay) {
-          resolvedDay = schedule.find(
-            (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
-          );
-        }
-        if (!resolvedDay) {
-          throw new Error("No se encontró el entrenamiento solicitado.");
-        }
-        if (!Array.isArray(resolvedDay.workouts)) {
-          throw new Error("Invalid workout data: missing workouts array.");
-        }
-
-        applyDayData(resolvedDay);
-        setError(null);
-        lastResolvedFetchSignatureRef.current = fetchSignature;
-      })
-      .catch((err) => {
-        if (entry.controller.signal.aborted || didCancel) {
-          return;
-        }
-        if (isMountedRef.current) {
-          setError(err.message || "Failed to load workout");
-          resetLocalState();
-        }
-        lastResolvedFetchSignatureRef.current = null;
-      })
-      .finally(() => {
-        if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
-          return;
-        }
-        setLoading(false);
-      });
-
+    const cleanup = loadLatestSchedule();
     return () => {
-      didCancel = true;
+      if (typeof cleanup === "function") cleanup();
     };
-  }, [
-    applyDayData,
-    location.key,
-    locationStateKey,
-    parsedLocationState,
-    targetDayNumber,
-    updateExercises,
-  ]);
+  }, [loadLatestSchedule]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -1119,6 +1042,151 @@ export default function WorkoutDetailView() {
       return numOr(set[field], 0);
     },
     [useMetric]
+  );
+
+  const loadLatestSchedule = useCallback(
+    (force = false) => {
+      const statePayload =
+        parsedLocationState?.originalApiData ??
+        parsedLocationState?.workoutData?.originalApiData ??
+        null;
+
+      const resetLocalState = () => {
+        autoSaveTimers.current.forEach((t) => clearTimeout(t));
+        autoSaveTimers.current.clear();
+        if (!isMountedRef.current) return;
+        updateExercises([]);
+      };
+
+      const appliedFromState = (() => {
+        if (!statePayload) return false;
+        try {
+          applyDayData(statePayload);
+          setError(null);
+          return true;
+        } catch (err) {
+          setError(err.message || "Failed to load workout");
+          resetLocalState();
+          return false;
+        }
+      })();
+
+      if (!appliedFromState) {
+        resetLocalState();
+      }
+
+      const fetchSignature = JSON.stringify({
+        locationKey: location.key,
+        stateKey: locationStateKey,
+        targetDay: targetDayNumber ?? null,
+      });
+
+      const shouldFetchLatest =
+        force || lastResolvedFetchSignatureRef.current !== fetchSignature;
+
+      if (!shouldFetchLatest) {
+        setLoading(false);
+        return () => {};
+      }
+
+      const { entry } = ensureScheduleRequest(fetchSignature, () => {
+        const controller = new AbortController();
+        const promise = (async () => {
+          const token =
+            localStorage.getItem("jwt_token") ||
+            localStorage.getItem("X-API-Token");
+          if (!token) {
+            throw new Error("No autenticado. Inicia sesión nuevamente.");
+          }
+
+          const response = await fetch(getApiUrl("/schedule/v2"), {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            signal: controller.signal,
+          });
+
+          if (!response.ok) {
+            const text = await response.text().catch(() => "");
+            throw new Error(text || "No se pudo cargar el entrenamiento más reciente.");
+          }
+
+          return response.json().catch(() => ({}));
+        })();
+
+        return { controller, promise };
+      });
+
+      let didCancel = false;
+
+      setLoading(true);
+
+      entry.promise
+        .then((payload) => {
+          if (didCancel || entry.controller.signal.aborted || !isMountedRef.current) {
+            return;
+          }
+
+          const schedule = Array.isArray(payload.schedule) ? payload.schedule : [];
+
+          let resolvedDay = null;
+          if (targetDayNumber != null) {
+            resolvedDay = schedule.find(
+              (day) => Number(day?.day_number) === Number(targetDayNumber)
+            );
+          }
+          if (!resolvedDay && statePayload) {
+            resolvedDay = schedule.find(
+              (day) =>
+                Number(day?.day_number) === Number(statePayload.day_number) ||
+                day?.day_name === statePayload.day_name
+            );
+          }
+          if (!resolvedDay) {
+            resolvedDay = schedule.find(
+              (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
+            );
+          }
+          if (!resolvedDay) {
+            throw new Error("No se encontró el entrenamiento solicitado.");
+          }
+          if (!Array.isArray(resolvedDay.workouts)) {
+            throw new Error("Invalid workout data: missing workouts array.");
+          }
+
+          applyDayData(resolvedDay);
+          setError(null);
+          lastResolvedFetchSignatureRef.current = fetchSignature;
+        })
+        .catch((err) => {
+          if (entry.controller.signal.aborted || didCancel) {
+            return;
+          }
+          if (isMountedRef.current) {
+            setError(err.message || "Failed to load workout");
+            resetLocalState();
+          }
+          lastResolvedFetchSignatureRef.current = null;
+        })
+        .finally(() => {
+          if (entry.controller.signal.aborted || didCancel || !isMountedRef.current) {
+            return;
+          }
+          setLoading(false);
+        });
+
+      return () => {
+        didCancel = true;
+      };
+    },
+    [
+      applyDayData,
+      location.key,
+      locationStateKey,
+      parsedLocationState,
+      targetDayNumber,
+      updateExercises,
+    ]
   );
 
   /* ---------- actions ---------- */
@@ -1702,12 +1770,23 @@ export default function WorkoutDetailView() {
           </div>
           <h1 className="workout-title">{workoutMeta.day}</h1>
           <div className="header-slot end">
-            <button
-              className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
-              onClick={() => setUseMetric((v) => !v)}
-            >
-              {useMetric ? "Metric (kg)" : "Imperial (lb)"}
-            </button>
+            <div className="header-actions">
+              <button
+                type="button"
+                className="header-icon-button"
+                onClick={() => loadLatestSchedule(true)}
+                aria-label="Refresh workout"
+                title="Refresh workout"
+              >
+                <RefreshIcon />
+              </button>
+              <button
+                className={`unit-toggle-btn ${useMetric ? "active" : ""}`}
+                onClick={() => setUseMetric((v) => !v)}
+              >
+                {useMetric ? "Metric (kg)" : "Imperial (lb)"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1766,14 +1845,15 @@ export default function WorkoutDetailView() {
               </span>
             </div>
 
-            <div className="sets-table">
-              <div className="sets-header">
-                <span>Set</span>
-                <span>Weight</span>
-                <span>Reps</span>
-                <span>Action</span>
-                <span className="set-menu-header" aria-hidden="true" />
-              </div>
+              <div className="sets-table">
+                <div className="sets-header">
+                  <span>Set</span>
+                  <span>Weight</span>
+                  <span>Reps</span>
+                  <span>Time</span>
+                  <span>Action</span>
+                  <span className="set-menu-header" aria-hidden="true" />
+                </div>
 
               {exercise.sets.length === 0 ? (
                 <div className="set-row">
@@ -1810,6 +1890,8 @@ export default function WorkoutDetailView() {
                         {renderEditableCell(exercise, set, "reps")}
                       </span>
 
+                      <span className="set-time">{formatDuration(set.duration)}</span>
+
                       <div className="set-action">
                         {showCooldownBadge ? (
                           <RestBadge
@@ -1843,23 +1925,27 @@ export default function WorkoutDetailView() {
                           )
                         ) : set.status === "in-progress" ? (
                           <button
-                            className="btn btn-warning btn-sm"
+                            className="set-action-button danger"
+                            aria-label="End set"
+                            title="End set"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleComplete(exercise.id, set.id);
                             }}
                           >
-                            End
+                            <StopIcon />
                           </button>
                         ) : (
                           <button
-                            className="btn btn-success btn-sm"
+                            className="set-action-button success"
+                            aria-label="Start set"
+                            title="Start set"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleStart(exercise.id, set.id);
                             }}
                           >
-                            Start
+                            <PlayIcon />
                           </button>
                         )}
                       </div>

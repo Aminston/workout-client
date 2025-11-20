@@ -785,21 +785,6 @@
   box-shadow: none;
 }
 
-.set-sync-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, var(--alpha-02));
-  color: var(--color-text-main);
-  border: 1px solid var(--color-border);
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
 .set-done-actions {
   display: inline-flex;
   align-items: center;

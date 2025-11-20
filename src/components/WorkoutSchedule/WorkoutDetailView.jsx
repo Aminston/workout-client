@@ -1977,11 +1977,7 @@ export default function WorkoutDetailView() {
                               </button>
                             ) : (
                               <div className="set-done-actions">
-                                {set.isSynced ? (
-                                  <span className="set-sync-label" role="status" aria-live="polite">
-                                    Saved ✓
-                                  </span>
-                                ) : (
+                                {set.isSynced ? null : (
                                   <span
                                     className="status-badge status-saving"
                                     role="status"

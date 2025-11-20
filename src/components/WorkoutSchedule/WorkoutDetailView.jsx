@@ -996,54 +996,6 @@ export default function WorkoutDetailView() {
     ? exerciseDetailsCache[activeWorkoutId]
     : null;
 
-  /* ---------- load day data from router state ---------- */
-  useEffect(() => {
-    const cleanup = loadLatestSchedule();
-    return () => {
-      if (typeof cleanup === "function") cleanup();
-    };
-  }, [loadLatestSchedule]);
-
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    exercisesRef.current = exercises;
-  }, [exercises]);
-
-  useEffect(() => () => {
-    autoSaveTimers.current.forEach((t) => clearTimeout(t));
-    autoSaveTimers.current.clear();
-  }, []);
-
-  const hasUnsaved = useMemo(
-    () =>
-      exercises.some((ex) =>
-        ex.sets.some(
-          (set) => set.status === "done" && (!set.isSynced || set.saveError)
-        )
-      ),
-    [exercises]
-  );
-
-  const getInputDefaultValue = useCallback(
-    (set, field) => {
-      if (!set) return "";
-      if (field === "weight") {
-        return useMetric
-          ? numOr(set.weight, 0)
-          : Math.round(weightConverter.kgToLbs(numOr(set.weight, 0)));
-      }
-
-      return numOr(set[field], 0);
-    },
-    [useMetric]
-  );
-
   const loadLatestSchedule = useCallback(
     (force = false) => {
       const statePayload =
@@ -1187,6 +1139,54 @@ export default function WorkoutDetailView() {
       targetDayNumber,
       updateExercises,
     ]
+  );
+
+  /* ---------- load day data from router state ---------- */
+  useEffect(() => {
+    const cleanup = loadLatestSchedule();
+    return () => {
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, [loadLatestSchedule]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
+
+  useEffect(() => () => {
+    autoSaveTimers.current.forEach((t) => clearTimeout(t));
+    autoSaveTimers.current.clear();
+  }, []);
+
+  const hasUnsaved = useMemo(
+    () =>
+      exercises.some((ex) =>
+        ex.sets.some(
+          (set) => set.status === "done" && (!set.isSynced || set.saveError)
+        )
+      ),
+    [exercises]
+  );
+
+  const getInputDefaultValue = useCallback(
+    (set, field) => {
+      if (!set) return "";
+      if (field === "weight") {
+        return useMetric
+          ? numOr(set.weight, 0)
+          : Math.round(weightConverter.kgToLbs(numOr(set.weight, 0)));
+      }
+
+      return numOr(set[field], 0);
+    },
+    [useMetric]
   );
 
   /* ---------- actions ---------- */

@@ -2023,15 +2023,6 @@ export default function WorkoutDetailView() {
                   })
                 )}
               </div>
-              <div className="sets-footer">
-                <button
-                  type="button"
-                  className="add-set-button"
-                  onClick={() => handleAddSet(exercise.id)}
-                >
-                  + Add Set
-                </button>
-              </div>
             </div>
           </div>
         ))}

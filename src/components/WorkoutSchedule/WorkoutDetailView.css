@@ -534,13 +534,16 @@
 .exercise-detail-card {
   background: linear-gradient(0deg, var(--elev-1), var(--elev-1)), var(--color-bg-card);
   border-radius: var(--radius-md);
-  padding: 1.25rem;
+  padding: 0;
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
   border: 1px solid var(--color-border);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast),
     border-color var(--transition-fast);
   position: relative;
   outline: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .exercise-detail-card:hover {
@@ -563,7 +566,16 @@
 /* ======================
    EXERCISE HEADER
    ====================== */
-.exercise-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: .75rem; gap: 1rem; min-height: 2rem; }
+.exercise-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 1rem;
+  min-height: 2rem;
+  padding: 1rem 1.25rem;
+  background: var(--md-sys-color-surface-high);
+  border-bottom: 1px solid var(--color-border);
+}
 
 .exercise-header-main {
   display: flex;
@@ -650,6 +662,14 @@
 }
 
 .exercise-status-badge { align-self:center; }
+
+.exercise-body {
+  background: var(--color-bg-card);
+  padding: 1rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
 
 /* ======================
    SETS TABLE

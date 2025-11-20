@@ -1845,6 +1845,7 @@ export default function WorkoutDetailView() {
               </span>
             </div>
 
+            <div className="exercise-body">
               <div className="sets-table">
                 <div className="sets-header">
                   <span>Set</span>
@@ -1855,141 +1856,142 @@ export default function WorkoutDetailView() {
                   <span className="set-menu-header" aria-hidden="true" />
                 </div>
 
-              {exercise.sets.length === 0 ? (
-                <div className="set-row">
-                  <span className="set-number" style={{ gridColumn: "1 / -1" }}>
-                    No sets available for this exercise yet.
-                  </span>
-                </div>
-              ) : (
-                exercise.sets.map((set) => {
-                  const isResting =
-                    restTimer.isVisible &&
-                    restTimer.exerciseId === exercise.id &&
-                    restTimer.setId === set.id;
-                  const showCooldownBadge =
-                    isResting && restTimer.secondsRemaining > 0;
-                  const isMenuOpen =
-                    activeSetMenu?.exerciseId === exercise.id &&
-                    activeSetMenu?.setId === set.id;
+                {exercise.sets.length === 0 ? (
+                  <div className="set-row">
+                    <span className="set-number" style={{ gridColumn: "1 / -1" }}>
+                      No sets available for this exercise yet.
+                    </span>
+                  </div>
+                ) : (
+                  exercise.sets.map((set) => {
+                    const isResting =
+                      restTimer.isVisible &&
+                      restTimer.exerciseId === exercise.id &&
+                      restTimer.setId === set.id;
+                    const showCooldownBadge =
+                      isResting && restTimer.secondsRemaining > 0;
+                    const isMenuOpen =
+                      activeSetMenu?.exerciseId === exercise.id &&
+                      activeSetMenu?.setId === set.id;
 
-                  return (
-                    <div
-                      key={set.id}
-                      className={`set-row ${
-                        set.status === "in-progress" ? "set-active" : ""
-                      } ${set.status === "done" ? "set-completed" : ""}`}
-                    >
-                      <span className="set-number">{set.id}</span>
+                    return (
+                      <div
+                        key={set.id}
+                        className={`set-row ${
+                          set.status === "in-progress" ? "set-active" : ""
+                        } ${set.status === "done" ? "set-completed" : ""}`}
+                      >
+                        <span className="set-number">{set.id}</span>
 
-                      <span className="set-weight">
-                        {renderEditableCell(exercise, set, "weight")}
-                      </span>
+                        <span className="set-weight">
+                          {renderEditableCell(exercise, set, "weight")}
+                        </span>
 
-                      <span className="set-reps">
-                        {renderEditableCell(exercise, set, "reps")}
-                      </span>
+                        <span className="set-reps">
+                          {renderEditableCell(exercise, set, "reps")}
+                        </span>
 
-                      <span className="set-time">{formatDuration(set.duration)}</span>
+                        <span className="set-time">{formatDuration(set.duration)}</span>
 
-                      <div className="set-action">
-                        {showCooldownBadge ? (
-                          <RestBadge
-                            remainingSeconds={restTimer.secondsRemaining}
-                            elapsedSeconds={restTimer.elapsedSeconds}
-                            startingSeconds={restTimer.startingSeconds}
-                            onDismiss={closeRestTimer}
-                          />
-                        ) : set.status === "done" ? (
-                          set.saveError ? (
+                        <div className="set-action">
+                          {showCooldownBadge ? (
+                            <RestBadge
+                              remainingSeconds={restTimer.secondsRemaining}
+                              elapsedSeconds={restTimer.elapsedSeconds}
+                              startingSeconds={restTimer.startingSeconds}
+                              onDismiss={closeRestTimer}
+                            />
+                          ) : set.status === "done" ? (
+                            set.saveError ? (
+                              <button
+                                type="button"
+                                className="status-badge status-error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRetrySetSave(exercise.id, set.id);
+                                }}
+                              >
+                                Retry Save
+                              </button>
+                            ) : (
+                              <span
+                                className={`status-badge status-done ${
+                                  set.isSynced ? "synced" : "status-saving"
+                                }`}
+                                role="status"
+                                aria-live="polite"
+                              >
+                                {set.isSynced ? "Saved ✓" : "Saving..."}
+                              </span>
+                            )
+                          ) : set.status === "in-progress" ? (
                             <button
-                              type="button"
-                              className="status-badge status-error"
+                              className="set-action-button danger"
+                              aria-label="End set"
+                              title="End set"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRetrySetSave(exercise.id, set.id);
+                                handleComplete(exercise.id, set.id);
                               }}
                             >
-                              Retry Save
+                              <StopIcon />
                             </button>
                           ) : (
-                            <span
-                              className={`status-badge status-done ${
-                                set.isSynced ? "synced" : "status-saving"
-                              }`}
-                              role="status"
-                              aria-live="polite"
+                            <button
+                              className="set-action-button success"
+                              aria-label="Start set"
+                              title="Start set"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleStart(exercise.id, set.id);
+                              }}
                             >
-                              {set.isSynced ? "Saved ✓" : "Saving..."}
-                            </span>
-                          )
-                        ) : set.status === "in-progress" ? (
+                              <PlayIcon />
+                            </button>
+                          )}
+                        </div>
+                        <div className="set-menu-cell">
                           <button
-                            className="set-action-button danger"
-                            aria-label="End set"
-                            title="End set"
+                            type="button"
+                            className="set-menu-trigger"
+                            aria-label="Set options"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleComplete(exercise.id, set.id);
+                              setActiveSetMenu((prev) => {
+                                if (
+                                  prev?.exerciseId === exercise.id &&
+                                  prev?.setId === set.id
+                                ) {
+                                  return null;
+                                }
+                                return { exerciseId: exercise.id, setId: set.id };
+                              });
                             }}
                           >
-                            <StopIcon />
+                            ⋮
                           </button>
-                        ) : (
-                          <button
-                            className="set-action-button success"
-                            aria-label="Start set"
-                            title="Start set"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleStart(exercise.id, set.id);
-                            }}
-                          >
-                            <PlayIcon />
-                          </button>
-                        )}
+                          {isMenuOpen && (
+                            <SetActionMenu
+                              onDelete={() => handleDeleteSet(exercise.id, set.id)}
+                              onReset={() => handleResetSet(exercise.id, set.id)}
+                              onClose={closeSetMenu}
+                            />
+                          )}
+                        </div>
                       </div>
-                      <div className="set-menu-cell">
-                        <button
-                          type="button"
-                          className="set-menu-trigger"
-                          aria-label="Set options"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveSetMenu((prev) => {
-                              if (
-                                prev?.exerciseId === exercise.id &&
-                                prev?.setId === set.id
-                              ) {
-                                return null;
-                              }
-                              return { exerciseId: exercise.id, setId: set.id };
-                            });
-                          }}
-                        >
-                          ⋮
-                        </button>
-                        {isMenuOpen && (
-                          <SetActionMenu
-                            onDelete={() => handleDeleteSet(exercise.id, set.id)}
-                            onReset={() => handleResetSet(exercise.id, set.id)}
-                            onClose={closeSetMenu}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-            <div className="sets-footer">
-              <button
-                type="button"
-                className="add-set-button"
-                onClick={() => handleAddSet(exercise.id)}
-              >
-                + Add Set
-              </button>
+                    );
+                  })
+                )}
+              </div>
+              <div className="sets-footer">
+                <button
+                  type="button"
+                  className="add-set-button"
+                  onClick={() => handleAddSet(exercise.id)}
+                >
+                  + Add Set
+                </button>
+              </div>
             </div>
           </div>
         ))}

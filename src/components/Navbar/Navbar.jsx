@@ -9,7 +9,6 @@ import {
 } from 'react-bootstrap';
 import { toast } from '../ToastManager';
 import UserProfileModal from '../ProfileModal/UserProfileModal';
-import SplitSelectionModal from './SplitSelectionModal'; // ✅ NEW: Import split modal
 
 import './Navbar.css';
 
@@ -34,7 +33,6 @@ export default function AppNavbar({
   const navigate = useNavigate();
   const [userName, setUserName] = useState(localStorage.getItem('userName') || '');
   const [showUserModal, setShowUserModal] = useState(false);
-  const [showSplitModal, setShowSplitModal] = useState(false); // ✅ NEW: Split modal state
   
   // ✅ RESTORED: Cache profile for validation without duplicate API calls
   const [cachedProfile, setCachedProfile] = useState(null);
@@ -174,9 +172,9 @@ export default function AppNavbar({
     setShowUserModal(true);
   };
 
-  // ✅ NEW: Handle split selection modal
+  // ✅ NEW: Route to workout settings
   const handleConfigureSplit = () => {
-    setShowSplitModal(true);
+    navigate('/settings');
   };
 
   // ✅ RESTORED: Handle profile save success and invalidate cache
@@ -192,14 +190,6 @@ export default function AppNavbar({
       console.log('🔄 Auto-retrying workout generation after profile update...');
       handleGetWorkout();
     }, 1000);
-  };
-
-  // ✅ NEW: Handle split change success
-  const handleSplitChanged = (newSplit) => {
-    toast.show('success', `✅ Workout split changed to "${newSplit?.name}". Will apply to your next program!`);
-    
-    // Optional: Refresh schedule if needed
-    // fetchSchedule?.();
   };
 
   const displayName = userName || meta?.user_name || '';
@@ -271,15 +261,6 @@ export default function AppNavbar({
         />
       )}
 
-      {/* ✅ NEW: Split Selection Modal */}
-      {token && showSplitModal && (
-        <SplitSelectionModal
-          show={showSplitModal}
-          onHide={() => setShowSplitModal(false)}
-          token={token}
-          onSplitChanged={handleSplitChanged}
-        />
-      )}
     </>
   );
 }

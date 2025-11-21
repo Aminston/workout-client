@@ -5,6 +5,7 @@ import WeeklyWorkout from './components/WorkoutSchedule/WeeklyWorkout';
 import WorkoutDetailView from './components/WorkoutSchedule/WorkoutDetailView';
 import WorkoutHistory from './components/WorkoutHistory/WorkoutHistory';
 import LandingPage from './pages/Landing/LandingPage';
+import WorkoutSettings from './pages/WorkoutSettings/WorkoutSettings';
 import ProfileOnboardingModal from './components/ProfileOnboardingModal/ProfileOnboardingModal';
 import ToastManager, { toast } from './components/ToastManager';
 import MobileNavBar from './components/Navigation/MobileNavBar';
@@ -232,6 +233,30 @@ export default function App() {
                       loadingWorkout={loadingWorkout}
                       onRefreshSchedule={fetchSchedule}
                     />
+                  </div>
+                </main>
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute token={token}>
+              <AppLayout showMobileNav={true}>
+                <Navbar
+                  token={token}
+                  setToken={setToken}
+                  onPersonalized={fetchSchedule}
+                  fetchSchedule={fetchSchedule}
+                  meta={meta}
+                  loadingWorkout={loadingWorkout}
+                  setLoadingWorkout={setLoadingWorkout}
+                />
+                <main className="app-main">
+                  <div className="content-container settings-container">
+                    <WorkoutSettings />
                   </div>
                 </main>
               </AppLayout>

@@ -22,7 +22,7 @@
   background-color: var(--color-bg-card);
   border-radius: var(--radius-md);
   width: 100%;
-  max-width: 600px;
+  max-width: 680px;
   max-height: 90vh;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease-out;
@@ -84,6 +84,7 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
+  scroll-behavior: smooth;
 }
 
 /* Custom scrollbar styling */
@@ -103,6 +104,52 @@
 
 .split-modal-body::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-secondary);
+}
+
+/* Tabs */
+.split-modal-tabs {
+  display: inline-flex;
+  gap: 0.5rem;
+  padding: 0.25rem;
+  background-color: var(--color-bg-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.split-modal-tab {
+  border: none;
+  background: none;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.split-modal-tab:hover {
+  color: var(--color-text-main);
+  background-color: var(--color-bg-main);
+}
+
+.split-modal-tab.active {
+  background-color: #3b82f6;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+/* Sections */
+.config-section {
+  background-color: var(--color-bg-main);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* Loading State */

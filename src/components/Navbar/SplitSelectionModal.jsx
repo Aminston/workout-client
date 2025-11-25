@@ -1,19 +1,28 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './SplitSelectionModal.css';
 
-export default function SplitSelectionModal({ 
-  show, 
-  onHide, 
-  token, 
-  onSplitChanged 
+export default function SplitSelectionModal({
+  show,
+  onHide,
+  token,
+  onSplitChanged
 }) {
+  const apiBase = import.meta.env.VITE_API_URL;
   const [splits, setSplits] = useState([]);
   const [currentSplit, setCurrentSplit] = useState(null);
   const [selectedSplitId, setSelectedSplitId] = useState(null);
+  const [locations, setLocations] = useState([]);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [activeSection, setActiveSection] = useState('splits');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const splitsSectionRef = useRef(null);
+  const locationsSectionRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   
   // ✅ BETTER: Single cache object with all data
   const cacheRef = useRef({
@@ -46,7 +55,7 @@ export default function SplitSelectionModal({
       console.log('📋 Fetch already in progress for this token');
       return cache.data;
     }
-    
+
     // Use cache if valid
     if (isCacheValid(currentToken)) {
       console.log('📋 Using cached data');
@@ -60,17 +69,30 @@ export default function SplitSelectionModal({
     cache.token = currentToken;
     setLoading(true);
     setError(null);
-    
+
+    if (!apiBase) {
+      cache.isLoading = false;
+      setLoading(false);
+      setError('Missing API configuration. Please set VITE_API_URL.');
+      return null;
+    }
+
     try {
-      // Fetch available splits and current user preference in parallel
-      const [splitsResponse, userPreferenceResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/splits`, {
+      // Fetch available splits/locations and current user preferences in parallel
+      const [splitsResponse, userPreferenceResponse, locationsResponse] = await Promise.all([
+        fetch(`${apiBase}/schedule/v2/splits`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/user/split-preference`, {
+        fetch(`${apiBase}/schedule/v2/user/split-preference`, {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${apiBase}/schedule/v2/locations`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
@@ -83,11 +105,19 @@ export default function SplitSelectionModal({
       }
       
       if (!userPreferenceResponse.ok) {
-        throw new Error('Failed to fetch user preference');
+        throw new Error('Failed to fetch user split preference');
+      }
+
+      if (locationsResponse && !locationsResponse.ok) {
+        throw new Error('Failed to fetch available locations');
       }
 
       const splitsData = await splitsResponse.json();
       const userPreferenceData = await userPreferenceResponse.json();
+      const locationsData = await locationsResponse.json();
+
+      const availableLocations = locationsData.locations || locationsData.available_locations || [];
+      const currentLocationFromLocations = locationsData.selected_location || locationsData.current_location;
 
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
@@ -95,7 +125,9 @@ export default function SplitSelectionModal({
       // ✅ BETTER: Store in cache and component state
       const fetchedData = {
         splits: splitsData.available_splits || [],
-        currentSplit: userPreferenceData.current_split
+        currentSplit: userPreferenceData.current_split,
+        locations: availableLocations,
+        currentLocation: currentLocationFromLocations || null
       };
 
       // Update cache
@@ -107,6 +139,11 @@ export default function SplitSelectionModal({
       setSplits(fetchedData.splits);
       setCurrentSplit(fetchedData.currentSplit);
       setSelectedSplitId(fetchedData.currentSplit?.id);
+      setLocations(fetchedData.locations);
+      setCurrentLocation(fetchedData.currentLocation);
+      setSelectedLocationId(
+        fetchedData.currentLocation?.id ?? fetchedData.currentLocation?.location_id ?? null
+      );
 
       return fetchedData;
 
@@ -144,6 +181,11 @@ export default function SplitSelectionModal({
       setSplits(cachedData.splits);
       setCurrentSplit(cachedData.currentSplit);
       setSelectedSplitId(cachedData.currentSplit?.id);
+      setLocations(cachedData.locations);
+      setCurrentLocation(cachedData.currentLocation);
+      setSelectedLocationId(
+        cachedData.currentLocation?.id ?? cachedData.currentLocation?.location_id ?? null
+      );
       setLoading(false);
     } else {
       console.log('📋 Modal opened - need to fetch');
@@ -166,9 +208,12 @@ export default function SplitSelectionModal({
     }
   }, [token, fetchData]);
 
-  // ✅ OPTIMIZED: Memoized split selection handler
-  const handleSplitSelection = useCallback(async () => {
-    if (!selectedSplitId || selectedSplitId === currentSplit?.id) {
+  const handleApplyConfiguration = useCallback(async () => {
+    const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
+    const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
+    const locationChanged = selectedLocationId !== currentLocationId;
+
+    if (!splitChanged && !locationChanged) {
       onHide();
       return;
     }
@@ -177,55 +222,114 @@ export default function SplitSelectionModal({
     setError(null);
     setSuccessMessage('');
 
+    if (!apiBase) {
+      setSaving(false);
+      setError('Missing API configuration. Please set VITE_API_URL.');
+      return;
+    }
+
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/schedule/v2/user/split-preference`,
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            split_id: selectedSplitId
-          })
+      const messages = [];
+
+      if (splitChanged) {
+        const splitResponse = await fetch(
+          `${apiBase}/schedule/v2/user/split-preference`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              split_id: selectedSplitId
+            })
+          }
+        );
+
+        if (!splitResponse.ok) {
+          const errorData = await splitResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to update split preference');
         }
-      );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to update split preference');
+        await splitResponse.json();
+        const newSplit = splits.find(s => s.id === selectedSplitId);
+        setCurrentSplit(newSplit);
+        messages.push(`Workout split changed to "${newSplit?.name}".`);
+
+        if (cacheRef.current.data) {
+          cacheRef.current.data.currentSplit = newSplit;
+        }
+
+        if (onSplitChanged) {
+          onSplitChanged(newSplit);
+        }
       }
 
-      const result = await response.json();
-      console.log('✅ Split preference updated:', result);
-      
-      const newSplit = splits.find(s => s.id === selectedSplitId);
-      setCurrentSplit(newSplit);
-      setSuccessMessage(`Workout split changed to "${newSplit?.name}". This will apply to your next workout program.`);
-      
-      // ✅ BETTER: Update cache with new current split
-      if (cacheRef.current.data) {
-        cacheRef.current.data.currentSplit = newSplit;
-      }
-      
-      // Notify parent component
-      if (onSplitChanged) {
-        onSplitChanged(newSplit);
+      if (locationChanged) {
+        let newLocation = null;
+
+        if (selectedLocationId !== null) {
+          const locationResponse = await fetch(
+            `${apiBase}/locations/select/${selectedLocationId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (!locationResponse.ok) {
+            const errorData = await locationResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to update location preference');
+          }
+
+          const responseData = await locationResponse.json().catch(() => ({}));
+          newLocation = responseData.selected_location || responseData.location ||
+            locations.find(l => l.id === selectedLocationId) || null;
+          messages.push(`Workout location changed to "${newLocation?.name || 'selected location'}".`);
+        } else {
+          const clearResponse = await fetch(
+            `${apiBase}/locations/deactivate`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (!clearResponse.ok) {
+            const errorData = await clearResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to clear location preference');
+          }
+
+          await clearResponse.json();
+          messages.push('Workout location preference cleared.');
+        }
+
+        setCurrentLocation(newLocation);
+
+        if (cacheRef.current.data) {
+          cacheRef.current.data.currentLocation = newLocation;
+        }
       }
 
-      // Auto-close modal after success
+      setSuccessMessage(messages.join(' '));
+
       setTimeout(() => {
         onHide();
       }, 2000);
 
     } catch (err) {
-      console.error('❌ Error updating split preference:', err);
+      console.error('❌ Error updating workout configuration:', err);
       setError(err.message);
     } finally {
       setSaving(false);
     }
-  }, [selectedSplitId, currentSplit?.id, token, splits, onSplitChanged, onHide]);
+  }, [selectedSplitId, currentSplit?.id, selectedLocationId, currentLocation?.id, currentLocation?.location_id, token, splits, locations, onSplitChanged, onHide]);
 
   // ✅ OPTIMIZED: Memoized utility functions
   const getSplitSummary = useCallback((split) => {
@@ -271,6 +375,85 @@ export default function SplitSelectionModal({
     return split.name;
   }, [currentSplit?.id]);
 
+  const getLocationDescription = useCallback((location) => {
+    if (!location) return '';
+
+    const segments = [
+      location.address_line1,
+      location.address_line2,
+      location.city,
+      location.province,
+      location.postal_code,
+      location.country
+    ].filter(Boolean);
+
+    if (location.formatted_address) return location.formatted_address;
+    if (segments.length) return segments.join(', ');
+    if (location.description) return location.description;
+    if (location.type) return location.type.replace(/_/g, ' ');
+    return 'Preferred workout location';
+  }, []);
+
+  const getLocationTitle = useCallback((location) => {
+    const currentId = currentLocation?.id ?? currentLocation?.location_id;
+    const isCurrent = location.id === currentId;
+    if (isCurrent) {
+      return (
+        <>
+          {location.name}
+          <span className="status-indicator current">(current)</span>
+        </>
+      );
+    }
+
+    return location.name;
+  }, [currentLocation?.id]);
+
+  const handleTabClick = useCallback((section) => {
+    setActiveSection(section);
+    const ref = section === 'splits' ? splitsSectionRef : locationsSectionRef;
+    if (ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !show) return undefined;
+
+    const handleScroll = () => {
+      const containerTop = container.getBoundingClientRect().top;
+      const sections = [
+        { key: 'splits', ref: splitsSectionRef },
+        { key: 'locations', ref: locationsSectionRef }
+      ];
+
+      const closest = sections.reduce((closestSection, current) => {
+        if (!current.ref.current) return closestSection;
+        const rect = current.ref.current.getBoundingClientRect();
+        const distance = Math.abs(rect.top - containerTop);
+        if (!closestSection || distance < closestSection.distance) {
+          return { key: current.key, distance };
+        }
+        return closestSection;
+      }, null);
+
+      if (closest && closest.key !== activeSection) {
+        setActiveSection(closest.key);
+      }
+    };
+
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [show, activeSection]);
+
+  const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
+  const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
+  const locationChanged = selectedLocationId !== currentLocationId;
+  const applyDisabled = saving || loading || (!splitChanged && !locationChanged);
+  const applyVariant = splitChanged || locationChanged ? 'primary' : 'no-change';
+
   // Don't render if modal is not shown
   if (!show) return null;
 
@@ -280,19 +463,19 @@ export default function SplitSelectionModal({
         {/* Header */}
         <div className="split-modal-header">
           <h3 className="split-modal-title">
-            🏋️ Choose Your Workout Split
+            🏋️ Workout Configuration
           </h3>
           <button className="split-modal-close" onClick={onHide}>
             ×
           </button>
         </div>
-        
+
         {/* Body */}
-        <div className="split-modal-body">
+        <div className="split-modal-body" ref={scrollContainerRef}>
           {loading ? (
             <div className="split-modal-loading">
               <div className="split-modal-loading-icon">⏳</div>
-              <span>Loading workout splits...</span>
+              <span>Loading workout configuration...</span>
             </div>
           ) : error ? (
             <div className="split-modal-error">
@@ -310,63 +493,160 @@ export default function SplitSelectionModal({
                   ✅ {successMessage}
                 </div>
               )}
-              
-              <div className="split-modal-current-info">
-                <p className="split-modal-current-title">
-                  <strong>Current Split:</strong> {currentSplit?.name || 'Default Split'}
-                </p>
-                <small className="split-modal-current-subtitle">
-                  💡 Changing your split will apply to your next workout program (when current one expires).
-                </small>
+
+              <div className="split-modal-tabs">
+                <button
+                  className={`split-modal-tab ${activeSection === 'splits' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('splits')}
+                >
+                  Splits
+                </button>
+                <button
+                  className={`split-modal-tab ${activeSection === 'locations' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('locations')}
+                >
+                  Locations
+                </button>
               </div>
 
-              <div className="split-selection-list">
-                {splits.map(split => (
+              <section ref={splitsSectionRef} className="config-section" id="splits">
+                <div className="split-modal-current-info">
+                  <p className="split-modal-current-title">
+                    <strong>Current Split:</strong> {currentSplit?.name || 'Default Split'}
+                  </p>
+                  <small className="split-modal-current-subtitle">
+                    💡 Changing your split will apply to your next workout program (when current one expires).
+                  </small>
+                </div>
+
+                <div className="split-selection-list">
+                  {splits.map(split => (
+                    <div
+                      key={split.id}
+                      className={`split-option ${selectedSplitId === split.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedSplitId(split.id)}
+                    >
+                      <div className="split-option-content">
+                        <div className="split-option-radio">
+                          <input
+                            type="radio"
+                            name="split-selection"
+                            checked={selectedSplitId === split.id}
+                            onChange={() => setSelectedSplitId(split.id)}
+                          />
+                        </div>
+                        <div className="split-option-details">
+                          <div className="split-option-header">
+                            <h6 className="split-option-name">
+                              {getSplitTitle(split)}
+                            </h6>
+                          </div>
+
+                          <p className="split-option-description">
+                            {getSplitDescription(split.type)}
+                          </p>
+
+                          {split.summary && (
+                            <div className="split-option-summary">
+                              📊 {getSplitSummary(split)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {splits.length === 0 && (
+                  <div className="split-modal-empty">
+                    No workout splits available. Please contact support.
+                  </div>
+                )}
+              </section>
+
+              <section ref={locationsSectionRef} className="config-section" id="locations">
+                <div className="split-modal-current-info">
+                  <p className="split-modal-current-title">
+                    <strong>Current Location:</strong> {currentLocation?.name || 'No preferred location'}
+                  </p>
+                  <small className="split-modal-current-subtitle">
+                    💡 Updating your location helps us tailor equipment and exercise recommendations.
+                  </small>
+                </div>
+
+                <div className="split-selection-list">
                   <div
-                    key={split.id}
-                    className={`split-option ${selectedSplitId === split.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedSplitId(split.id)}
+                    className={`split-option ${selectedLocationId === null ? 'selected' : ''}`}
+                    onClick={() => setSelectedLocationId(null)}
                   >
                     <div className="split-option-content">
                       <div className="split-option-radio">
                         <input
                           type="radio"
-                          name="split-selection"
-                          checked={selectedSplitId === split.id}
-                          onChange={() => setSelectedSplitId(split.id)}
+                          name="location-selection"
+                          checked={selectedLocationId === null}
+                          onChange={() => setSelectedLocationId(null)}
                         />
                       </div>
                       <div className="split-option-details">
                         <div className="split-option-header">
                           <h6 className="split-option-name">
-                            {getSplitTitle(split)}
+                            No preferred location
                           </h6>
                         </div>
-                        
+
                         <p className="split-option-description">
-                          {getSplitDescription(split.type)}
+                          Continue without selecting a specific workout location.
                         </p>
-                        
-                        {split.summary && (
-                          <div className="split-option-summary">
-                            📊 {getSplitSummary(split)}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {splits.length === 0 && (
-                <div className="split-modal-empty">
-                  No workout splits available. Please contact support.
+                  {locations.length === 0 ? (
+                    <div className="split-option empty">No available locations.</div>
+                  ) : (
+                    locations.map(location => (
+                      <div
+                        key={location.id}
+                        className={`split-option ${selectedLocationId === location.id ? 'selected' : ''}`}
+                        onClick={() => setSelectedLocationId(location.id)}
+                      >
+                        <div className="split-option-content">
+                          <div className="split-option-radio">
+                            <input
+                              type="radio"
+                              name="location-selection"
+                              checked={selectedLocationId === location.id}
+                              onChange={() => setSelectedLocationId(location.id)}
+                            />
+                          </div>
+                          <div className="split-option-details">
+                            <div className="split-option-header">
+                              <h6 className="split-option-name">
+                                {getLocationTitle(location)}
+                              </h6>
+                            </div>
+
+                            <p className="split-option-description">
+                              {getLocationDescription(location)}
+                            </p>
+
+                            {location.notes && (
+                              <div className="split-option-summary">
+                                📍 {location.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              )}
+              </section>
             </>
           )}
         </div>
-        
+
         {/* Footer */}
         <div className="split-modal-footer">
           <button
@@ -377,20 +657,16 @@ export default function SplitSelectionModal({
             Cancel
           </button>
           <button
-            className={`split-modal-btn ${selectedSplitId === currentSplit?.id ? 'no-change' : 'primary'}`}
-            onClick={handleSplitSelection}
-            disabled={saving || loading || !selectedSplitId}
+            className={`split-modal-btn ${applyVariant}`}
+            onClick={handleApplyConfiguration}
+            disabled={applyDisabled}
           >
             {saving ? (
               <>
                 <span className="split-modal-btn-spinner"></span>
                 Saving...
               </>
-            ) : selectedSplitId === currentSplit?.id ? (
-              'No Change'
-            ) : (
-              'Apply Split'
-            )}
+            ) : 'Apply Changes'}
           </button>
         </div>
       </div>

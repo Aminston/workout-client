@@ -270,7 +270,7 @@ export default function SplitSelectionModal({
 
         if (selectedLocationId !== null) {
           const locationResponse = await fetch(
-            `${apiBase}/schedule/v2/locations/select/${selectedLocationId}`,
+            `${apiBase}/locations/select/${selectedLocationId}`,
             {
               method: 'POST',
               headers: {

@@ -8,7 +8,7 @@ export default function SplitSelectionModal({
   onSplitChanged
 }) {
   const apiBase = import.meta.env.VITE_API_URL;
-  const locationApiBase = import.meta.env.VITE_LOCATION_API_URL || apiBase;
+  const locationApiBase = import.meta.env.VITE_LOCATION_API_URL;
   const [splits, setSplits] = useState([]);
   const [currentSplit, setCurrentSplit] = useState(null);
   const [selectedSplitId, setSelectedSplitId] = useState(null);
@@ -74,7 +74,7 @@ export default function SplitSelectionModal({
     if (!apiBase || !locationApiBase) {
       cache.isLoading = false;
       setLoading(false);
-      setError('Missing API configuration.');
+      setError('Missing API configuration. Please set both VITE_API_URL and VITE_LOCATION_API_URL.');
       return null;
     }
 
@@ -228,7 +228,7 @@ export default function SplitSelectionModal({
 
     if (!apiBase || !locationApiBase) {
       setSaving(false);
-      setError('Missing API configuration.');
+      setError('Missing API configuration. Please set both VITE_API_URL and VITE_LOCATION_API_URL.');
       return;
     }
 

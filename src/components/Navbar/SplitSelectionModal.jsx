@@ -79,7 +79,7 @@ export default function SplitSelectionModal({
 
     try {
       // Fetch available splits/locations and current user preferences in parallel
-      const [splitsResponse, userPreferenceResponse] = await Promise.all([
+      const [splitsResponse, userPreferenceResponse, locationsResponse] = await Promise.all([
         fetch(`${apiBase}/schedule/v2/splits`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
@@ -91,17 +91,8 @@ export default function SplitSelectionModal({
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
-        })
-      ]);
-
-      const [locationsResponse, locationPreferenceResponse] = await Promise.all([
-        fetch(`${apiBase}/schedule/v2/locations`, {
-          headers: {
-            'Authorization': `Bearer ${currentToken}`,
-            'Content-Type': 'application/json'
-          }
         }),
-        fetch(`${apiBase}/schedule/v2/user/location-preference`, {
+        fetch(`${apiBase}/schedule/v2/locations`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
@@ -121,14 +112,12 @@ export default function SplitSelectionModal({
         throw new Error('Failed to fetch available locations');
       }
 
-      if (locationPreferenceResponse && !locationPreferenceResponse.ok) {
-        throw new Error('Failed to fetch user location preference');
-      }
-
       const splitsData = await splitsResponse.json();
       const userPreferenceData = await userPreferenceResponse.json();
       const locationsData = await locationsResponse.json();
-      const userLocationPreferenceData = await locationPreferenceResponse.json();
+
+      // Some environments return the current selection alongside the location list
+      const currentLocationFromLocations = locationsData.current_location || locationsData.selected_location;
 
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
@@ -138,7 +127,7 @@ export default function SplitSelectionModal({
         splits: splitsData.available_splits || [],
         currentSplit: userPreferenceData.current_split,
         locations: locationsData.available_locations || [],
-        currentLocation: userLocationPreferenceData.current_location
+        currentLocation: currentLocationFromLocations || null
       };
 
       // Update cache
@@ -273,7 +262,7 @@ export default function SplitSelectionModal({
 
       if (locationChanged) {
         const locationResponse = await fetch(
-          `${apiBase}/schedule/v2/user/location-preference`,
+          `${apiBase}/schedule/v2/locations`,
           {
             method: 'PUT',
             headers: {

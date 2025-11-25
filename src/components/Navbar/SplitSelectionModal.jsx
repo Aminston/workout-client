@@ -266,33 +266,54 @@ export default function SplitSelectionModal({
       }
 
       if (locationChanged) {
-        const locationResponse = await fetch(
-          `${apiBase}/schedule/v2/locations`,
-          {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              location_id: selectedLocationId
-            })
-          }
-        );
+        let newLocation = null;
 
-        if (!locationResponse.ok) {
-          const errorData = await locationResponse.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to update location preference');
+        if (selectedLocationId !== null) {
+          const locationResponse = await fetch(
+            `${apiBase}/schedule/v2/locations/select/${selectedLocationId}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (!locationResponse.ok) {
+            const errorData = await locationResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to update location preference');
+          }
+
+          const responseData = await locationResponse.json().catch(() => ({}));
+          newLocation = responseData.selected_location || responseData.location ||
+            locations.find(l => l.id === selectedLocationId) || null;
+          messages.push(`Workout location changed to "${newLocation?.name || 'selected location'}".`);
+        } else {
+          const clearResponse = await fetch(
+            `${apiBase}/schedule/v2/locations`,
+            {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                location_id: null
+              })
+            }
+          );
+
+          if (!clearResponse.ok) {
+            const errorData = await clearResponse.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to clear location preference');
+          }
+
+          await clearResponse.json();
+          messages.push('Workout location preference cleared.');
         }
 
-        await locationResponse.json();
-        const newLocation = selectedLocationId ? locations.find(l => l.id === selectedLocationId) : null;
         setCurrentLocation(newLocation);
-        messages.push(
-          selectedLocationId
-            ? `Workout location changed to "${newLocation?.name}".`
-            : 'Workout location preference cleared.'
-        );
 
         if (cacheRef.current.data) {
           cacheRef.current.data.currentLocation = newLocation;

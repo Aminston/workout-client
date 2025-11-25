@@ -7,6 +7,8 @@ export default function SplitSelectionModal({
   token,
   onSplitChanged
 }) {
+  const apiBase = import.meta.env.VITE_API_URL;
+  const locationApiBase = import.meta.env.VITE_LOCATION_API_URL || apiBase;
   const [splits, setSplits] = useState([]);
   const [currentSplit, setCurrentSplit] = useState(null);
   const [selectedSplitId, setSelectedSplitId] = useState(null);
@@ -54,7 +56,7 @@ export default function SplitSelectionModal({
       console.log('📋 Fetch already in progress for this token');
       return cache.data;
     }
-    
+
     // Use cache if valid
     if (isCacheValid(currentToken)) {
       console.log('📋 Using cached data');
@@ -68,29 +70,36 @@ export default function SplitSelectionModal({
     cache.token = currentToken;
     setLoading(true);
     setError(null);
-    
+
+    if (!apiBase || !locationApiBase) {
+      cache.isLoading = false;
+      setLoading(false);
+      setError('Missing API configuration.');
+      return null;
+    }
+
     try {
       // Fetch available splits/locations and current user preferences in parallel
       const [splitsResponse, userPreferenceResponse, locationsResponse, locationPreferenceResponse] = await Promise.all([
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/splits`, {
+        fetch(`${apiBase}/schedule/v2/splits`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/user/split-preference`, {
+        fetch(`${apiBase}/schedule/v2/user/split-preference`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/locations`, {
+        fetch(`${locationApiBase}/schedule/v2/locations`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
           }
         }),
-        fetch(`${import.meta.env.VITE_API_URL}/schedule/v2/user/location-preference`, {
+        fetch(`${locationApiBase}/schedule/v2/user/location-preference`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
@@ -217,12 +226,18 @@ export default function SplitSelectionModal({
     setError(null);
     setSuccessMessage('');
 
+    if (!apiBase || !locationApiBase) {
+      setSaving(false);
+      setError('Missing API configuration.');
+      return;
+    }
+
     try {
       const messages = [];
 
       if (splitChanged) {
         const splitResponse = await fetch(
-          `${import.meta.env.VITE_API_URL}/schedule/v2/user/split-preference`,
+          `${apiBase}/schedule/v2/user/split-preference`,
           {
             method: 'PUT',
             headers: {
@@ -256,7 +271,7 @@ export default function SplitSelectionModal({
 
       if (locationChanged) {
         const locationResponse = await fetch(
-          `${import.meta.env.VITE_API_URL}/schedule/v2/user/location-preference`,
+          `${locationApiBase}/schedule/v2/user/location-preference`,
           {
             method: 'PUT',
             headers: {

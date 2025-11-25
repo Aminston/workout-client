@@ -291,16 +291,13 @@ export default function SplitSelectionModal({
           messages.push(`Workout location changed to "${newLocation?.name || 'selected location'}".`);
         } else {
           const clearResponse = await fetch(
-            `${apiBase}/schedule/v2/locations`,
+            `${apiBase}/locations/deactivate`,
             {
-              method: 'PUT',
+              method: 'POST',
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                location_id: null
-              })
+              }
             }
           );
 

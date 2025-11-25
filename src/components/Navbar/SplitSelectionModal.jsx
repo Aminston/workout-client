@@ -141,7 +141,9 @@ export default function SplitSelectionModal({
       setSelectedSplitId(fetchedData.currentSplit?.id);
       setLocations(fetchedData.locations);
       setCurrentLocation(fetchedData.currentLocation);
-      setSelectedLocationId(fetchedData.currentLocation?.id ?? fetchedData.currentLocation?.location_id);
+      setSelectedLocationId(
+        fetchedData.currentLocation?.id ?? fetchedData.currentLocation?.location_id ?? null
+      );
 
       return fetchedData;
 
@@ -181,7 +183,9 @@ export default function SplitSelectionModal({
       setSelectedSplitId(cachedData.currentSplit?.id);
       setLocations(cachedData.locations);
       setCurrentLocation(cachedData.currentLocation);
-      setSelectedLocationId(cachedData.currentLocation?.id ?? cachedData.currentLocation?.location_id);
+      setSelectedLocationId(
+        cachedData.currentLocation?.id ?? cachedData.currentLocation?.location_id ?? null
+      );
       setLoading(false);
     } else {
       console.log('📋 Modal opened - need to fetch');
@@ -204,10 +208,10 @@ export default function SplitSelectionModal({
     }
   }, [token, fetchData]);
 
-    const handleApplyConfiguration = useCallback(async () => {
-      const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
-      const currentLocationId = currentLocation?.id ?? currentLocation?.location_id;
-      const locationChanged = selectedLocationId && selectedLocationId !== currentLocationId;
+  const handleApplyConfiguration = useCallback(async () => {
+    const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
+    const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
+    const locationChanged = selectedLocationId !== currentLocationId;
 
     if (!splitChanged && !locationChanged) {
       onHide();
@@ -282,9 +286,13 @@ export default function SplitSelectionModal({
         }
 
         await locationResponse.json();
-        const newLocation = locations.find(l => l.id === selectedLocationId);
+        const newLocation = selectedLocationId ? locations.find(l => l.id === selectedLocationId) : null;
         setCurrentLocation(newLocation);
-        messages.push(`Workout location changed to "${newLocation?.name}".`);
+        messages.push(
+          selectedLocationId
+            ? `Workout location changed to "${newLocation?.name}".`
+            : 'Workout location preference cleared.'
+        );
 
         if (cacheRef.current.data) {
           cacheRef.current.data.currentLocation = newLocation;
@@ -423,9 +431,9 @@ export default function SplitSelectionModal({
   }, [show, activeSection]);
 
   const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
-  const currentLocationId = currentLocation?.id ?? currentLocation?.location_id;
-  const locationChanged = selectedLocationId && selectedLocationId !== currentLocationId;
-  const applyDisabled = saving || loading || (!selectedSplitId && !selectedLocationId);
+  const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
+  const locationChanged = selectedLocationId !== currentLocationId;
+  const applyDisabled = saving || loading || (!splitChanged && !locationChanged);
   const applyVariant = splitChanged || locationChanged ? 'primary' : 'no-change';
 
   // Don't render if modal is not shown
@@ -541,7 +549,7 @@ export default function SplitSelectionModal({
               <section ref={locationsSectionRef} className="config-section" id="locations">
                 <div className="split-modal-current-info">
                   <p className="split-modal-current-title">
-                    <strong>Current Location:</strong> {currentLocation?.name || 'Default Location'}
+                    <strong>Current Location:</strong> {currentLocation?.name || 'No preferred location'}
                   </p>
                   <small className="split-modal-current-subtitle">
                     💡 Updating your location helps us tailor equipment and exercise recommendations.
@@ -549,6 +557,33 @@ export default function SplitSelectionModal({
                 </div>
 
                 <div className="split-selection-list">
+                  <div
+                    className={`split-option ${selectedLocationId === null ? 'selected' : ''}`}
+                    onClick={() => setSelectedLocationId(null)}
+                  >
+                    <div className="split-option-content">
+                      <div className="split-option-radio">
+                        <input
+                          type="radio"
+                          name="location-selection"
+                          checked={selectedLocationId === null}
+                          onChange={() => setSelectedLocationId(null)}
+                        />
+                      </div>
+                      <div className="split-option-details">
+                        <div className="split-option-header">
+                          <h6 className="split-option-name">
+                            No preferred location
+                          </h6>
+                        </div>
+
+                        <p className="split-option-description">
+                          Continue without selecting a specific workout location.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {locations.length === 0 ? (
                     <div className="split-option empty">No available locations.</div>
                   ) : (

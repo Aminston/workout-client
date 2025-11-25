@@ -8,7 +8,6 @@ export default function SplitSelectionModal({
   onSplitChanged
 }) {
   const apiBase = import.meta.env.VITE_API_URL;
-  const locationApiBase = import.meta.env.VITE_LOCATION_API_URL;
   const [splits, setSplits] = useState([]);
   const [currentSplit, setCurrentSplit] = useState(null);
   const [selectedSplitId, setSelectedSplitId] = useState(null);
@@ -20,7 +19,6 @@ export default function SplitSelectionModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [locationNotice, setLocationNotice] = useState('');
 
   const splitsSectionRef = useRef(null);
   const locationsSectionRef = useRef(null);
@@ -96,25 +94,20 @@ export default function SplitSelectionModal({
         })
       ]);
 
-      let locationsResponse = null;
-      let locationPreferenceResponse = null;
-
-      if (locationApiBase) {
-        [locationsResponse, locationPreferenceResponse] = await Promise.all([
-          fetch(`${locationApiBase}/schedule/v2/locations`, {
-            headers: {
-              'Authorization': `Bearer ${currentToken}`,
-              'Content-Type': 'application/json'
-            }
-          }),
-          fetch(`${locationApiBase}/schedule/v2/user/location-preference`, {
-            headers: {
-              'Authorization': `Bearer ${currentToken}`,
-              'Content-Type': 'application/json'
-            }
-          })
-        ]);
-      }
+      const [locationsResponse, locationPreferenceResponse] = await Promise.all([
+        fetch(`${apiBase}/schedule/v2/locations`, {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${apiBase}/schedule/v2/user/location-preference`, {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
 
       if (!splitsResponse.ok) {
         throw new Error('Failed to fetch available splits');
@@ -134,8 +127,8 @@ export default function SplitSelectionModal({
 
       const splitsData = await splitsResponse.json();
       const userPreferenceData = await userPreferenceResponse.json();
-      const locationsData = locationsResponse ? await locationsResponse.json() : { available_locations: [] };
-      const userLocationPreferenceData = locationPreferenceResponse ? await locationPreferenceResponse.json() : { current_location: null };
+      const locationsData = await locationsResponse.json();
+      const userLocationPreferenceData = await locationPreferenceResponse.json();
 
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
@@ -147,12 +140,6 @@ export default function SplitSelectionModal({
         locations: locationsData.available_locations || [],
         currentLocation: userLocationPreferenceData.current_location
       };
-
-      if (!locationApiBase) {
-        setLocationNotice('Location configuration is disabled because VITE_LOCATION_API_URL is not set.');
-      } else {
-        setLocationNotice('');
-      }
 
       // Update cache
       cache.data = fetchedData;
@@ -285,11 +272,8 @@ export default function SplitSelectionModal({
       }
 
       if (locationChanged) {
-        if (!locationApiBase) {
-          throw new Error('Cannot update location without VITE_LOCATION_API_URL.');
-        }
         const locationResponse = await fetch(
-          `${locationApiBase}/schedule/v2/user/location-preference`,
+          `${apiBase}/schedule/v2/user/location-preference`,
           {
             method: 'PUT',
             headers: {
@@ -562,9 +546,7 @@ export default function SplitSelectionModal({
                 </div>
 
                 <div className="split-selection-list">
-                  {locationNotice ? (
-                    <div className="split-modal-notice">{locationNotice}</div>
-                  ) : locations.length === 0 ? (
+                  {locations.length === 0 ? (
                     <div className="split-option empty">No available locations.</div>
                   ) : (
                     locations.map(location => (

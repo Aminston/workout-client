@@ -116,8 +116,8 @@ export default function SplitSelectionModal({
       const userPreferenceData = await userPreferenceResponse.json();
       const locationsData = await locationsResponse.json();
 
-      // Some environments return the current selection alongside the location list
-      const currentLocationFromLocations = locationsData.current_location || locationsData.selected_location;
+      const availableLocations = locationsData.locations || locationsData.available_locations || [];
+      const currentLocationFromLocations = locationsData.selected_location || locationsData.current_location;
 
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
@@ -126,7 +126,7 @@ export default function SplitSelectionModal({
       const fetchedData = {
         splits: splitsData.available_splits || [],
         currentSplit: userPreferenceData.current_split,
-        locations: locationsData.available_locations || [],
+        locations: availableLocations,
         currentLocation: currentLocationFromLocations || null
       };
 
@@ -141,7 +141,7 @@ export default function SplitSelectionModal({
       setSelectedSplitId(fetchedData.currentSplit?.id);
       setLocations(fetchedData.locations);
       setCurrentLocation(fetchedData.currentLocation);
-      setSelectedLocationId(fetchedData.currentLocation?.id);
+      setSelectedLocationId(fetchedData.currentLocation?.id ?? fetchedData.currentLocation?.location_id);
 
       return fetchedData;
 
@@ -181,7 +181,7 @@ export default function SplitSelectionModal({
       setSelectedSplitId(cachedData.currentSplit?.id);
       setLocations(cachedData.locations);
       setCurrentLocation(cachedData.currentLocation);
-      setSelectedLocationId(cachedData.currentLocation?.id);
+      setSelectedLocationId(cachedData.currentLocation?.id ?? cachedData.currentLocation?.location_id);
       setLoading(false);
     } else {
       console.log('📋 Modal opened - need to fetch');
@@ -204,9 +204,10 @@ export default function SplitSelectionModal({
     }
   }, [token, fetchData]);
 
-  const handleApplyConfiguration = useCallback(async () => {
-    const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
-    const locationChanged = selectedLocationId && selectedLocationId !== currentLocation?.id;
+    const handleApplyConfiguration = useCallback(async () => {
+      const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
+      const currentLocationId = currentLocation?.id ?? currentLocation?.location_id;
+      const locationChanged = selectedLocationId && selectedLocationId !== currentLocationId;
 
     if (!splitChanged && !locationChanged) {
       onHide();
@@ -302,7 +303,7 @@ export default function SplitSelectionModal({
     } finally {
       setSaving(false);
     }
-  }, [selectedSplitId, currentSplit?.id, selectedLocationId, currentLocation?.id, token, splits, locations, onSplitChanged, onHide]);
+  }, [selectedSplitId, currentSplit?.id, selectedLocationId, currentLocation?.id, currentLocation?.location_id, token, splits, locations, onSplitChanged, onHide]);
 
   // ✅ OPTIMIZED: Memoized utility functions
   const getSplitSummary = useCallback((split) => {
@@ -351,13 +352,25 @@ export default function SplitSelectionModal({
   const getLocationDescription = useCallback((location) => {
     if (!location) return '';
 
+    const segments = [
+      location.address_line1,
+      location.address_line2,
+      location.city,
+      location.province,
+      location.postal_code,
+      location.country
+    ].filter(Boolean);
+
+    if (location.formatted_address) return location.formatted_address;
+    if (segments.length) return segments.join(', ');
     if (location.description) return location.description;
     if (location.type) return location.type.replace(/_/g, ' ');
     return 'Preferred workout location';
   }, []);
 
   const getLocationTitle = useCallback((location) => {
-    const isCurrent = location.id === currentLocation?.id;
+    const currentId = currentLocation?.id ?? currentLocation?.location_id;
+    const isCurrent = location.id === currentId;
     if (isCurrent) {
       return (
         <>
@@ -410,7 +423,8 @@ export default function SplitSelectionModal({
   }, [show, activeSection]);
 
   const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
-  const locationChanged = selectedLocationId && selectedLocationId !== currentLocation?.id;
+  const currentLocationId = currentLocation?.id ?? currentLocation?.location_id;
+  const locationChanged = selectedLocationId && selectedLocationId !== currentLocationId;
   const applyDisabled = saving || loading || (!selectedSplitId && !selectedLocationId);
   const applyVariant = splitChanged || locationChanged ? 'primary' : 'no-change';
 

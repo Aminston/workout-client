@@ -1969,10 +1969,11 @@ export default function WorkoutDetailView() {
                                   handleRestartSet(exercise.id, set.id);
                                 }}
                               >
-                                {!set.isSynced && (
+                                {!set.isSynced ? (
                                   <span className="button-loader" aria-hidden="true" />
+                                ) : (
+                                  <RestartIcon />
                                 )}
-                                <RestartIcon />
                                 <span className="sr-only">
                                   {set.isSynced
                                     ? "Restart set"

@@ -1901,12 +1901,19 @@ export default function WorkoutDetailView() {
                       activeSetMenu?.exerciseId === exercise.id &&
                       activeSetMenu?.setId === set.id;
 
+                    const isSaving = set.status === "done" && !set.isSynced;
+
                     return (
                       <div
                         key={set.id}
                         className={`set-row ${
                           set.status === "in-progress" ? "set-active" : ""
-                        } ${set.status === "done" ? "set-completed" : ""}`}
+                        } ${set.status === "done" ? "set-completed" : ""} ${
+                          isSaving ? "is-saving" : ""
+                        }`}
+                        aria-busy={isSaving}
+                        aria-live={isSaving ? "polite" : undefined}
+                        aria-atomic={isSaving || undefined}
                       >
                         <span className="set-number">{set.id}</span>
 
@@ -1946,10 +1953,18 @@ export default function WorkoutDetailView() {
                                   className={`set-action-button neutral${
                                     set.isSynced ? "" : " is-loading"
                                   }`}
-                                  aria-label={`${set.isSynced ? "" : "Saving. "}Restart set`}
+                                  aria-label={
+                                    set.isSynced
+                                      ? "Restart set"
+                                      : "Saving set, restart disabled until sync completes"
+                                  }
                                   aria-busy={!set.isSynced}
                                   disabled={!set.isSynced}
-                                  title="Restart set"
+                                  title={
+                                    set.isSynced
+                                      ? "Restart set"
+                                      : "Saving set, restart disabled until sync completes"
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRestartSet(exercise.id, set.id);
@@ -1959,7 +1974,15 @@ export default function WorkoutDetailView() {
                                     <span className="button-loader" aria-hidden="true" />
                                   )}
                                   <RestartIcon />
+                                  <span className="sr-only">
+                                    {set.isSynced
+                                      ? "Restart set"
+                                      : "Saving set, restart disabled until sync completes"}
+                                  </span>
                                 </button>
+                                {!set.isSynced && (
+                                  <span className="set-saving-text">Saving…</span>
+                                )}
                               </div>
                             )
                           ) : set.status === "in-progress" ? (

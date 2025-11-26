@@ -736,6 +736,18 @@
   opacity: 0.4;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .set-action-button .button-loader {
   position: absolute;
   top: 50%;
@@ -758,7 +770,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+}
+
+.set-saving-text {
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.set-row.is-saving {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  transition: background var(--transition-smooth);
 }
 
 .set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }

@@ -1942,24 +1942,22 @@ export default function WorkoutDetailView() {
                               </button>
                             ) : (
                               <div className="set-done-actions">
-                                {set.isSynced ? null : (
-                                  <span
-                                    className="status-badge status-saving"
-                                    role="status"
-                                    aria-live="polite"
-                                  >
-                                    Saving...
-                                  </span>
-                                )}
                                 <button
-                                  className="set-action-button neutral"
-                                  aria-label="Restart set"
+                                  className={`set-action-button neutral${
+                                    set.isSynced ? "" : " is-loading"
+                                  }`}
+                                  aria-label={`${set.isSynced ? "" : "Saving. "}Restart set`}
+                                  aria-busy={!set.isSynced}
+                                  disabled={!set.isSynced}
                                   title="Restart set"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRestartSet(exercise.id, set.id);
                                   }}
                                 >
+                                  {!set.isSynced && (
+                                    <span className="button-loader" aria-hidden="true" />
+                                  )}
                                   <RestartIcon />
                                 </button>
                               </div>

@@ -714,6 +714,14 @@
   border-color: rgba(255, 255, 255, var(--alpha-03));
 }
 
+.set-action-button.neutral:disabled,
+.set-action-button.neutral.is-loading {
+  background: rgba(255, 255, 255, var(--alpha-01));
+  color: var(--color-text-secondary);
+  border-color: rgba(255, 255, 255, var(--alpha-03));
+  opacity: 1;
+}
+
 .set-action-button.success {
   background: rgba(70, 230, 138, var(--alpha-01));
   color: var(--md-sys-color-success-strong);

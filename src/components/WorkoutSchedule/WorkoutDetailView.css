@@ -766,19 +766,6 @@
   box-shadow: none;
 }
 
-.set-done-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-}
-
-.set-saving-text {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  letter-spacing: 0.01em;
-}
-
 .set-row.is-saving {
   background: linear-gradient(
     90deg,

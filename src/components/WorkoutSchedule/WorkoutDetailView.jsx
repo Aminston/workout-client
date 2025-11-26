@@ -1948,42 +1948,37 @@ export default function WorkoutDetailView() {
                                 Retry Save
                               </button>
                             ) : (
-                              <div className="set-done-actions">
-                                <button
-                                  className={`set-action-button neutral${
-                                    set.isSynced ? "" : " is-loading"
-                                  }`}
-                                  aria-label={
-                                    set.isSynced
-                                      ? "Restart set"
-                                      : "Saving set, restart disabled until sync completes"
-                                  }
-                                  aria-busy={!set.isSynced}
-                                  disabled={!set.isSynced}
-                                  title={
-                                    set.isSynced
-                                      ? "Restart set"
-                                      : "Saving set, restart disabled until sync completes"
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRestartSet(exercise.id, set.id);
-                                  }}
-                                >
-                                  {!set.isSynced && (
-                                    <span className="button-loader" aria-hidden="true" />
-                                  )}
-                                  <RestartIcon />
-                                  <span className="sr-only">
-                                    {set.isSynced
-                                      ? "Restart set"
-                                      : "Saving set, restart disabled until sync completes"}
-                                  </span>
-                                </button>
+                              <button
+                                className={`set-action-button neutral${
+                                  set.isSynced ? "" : " is-loading"
+                                }`}
+                                aria-label={
+                                  set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"
+                                }
+                                aria-busy={!set.isSynced}
+                                disabled={!set.isSynced}
+                                title={
+                                  set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRestartSet(exercise.id, set.id);
+                                }}
+                              >
                                 {!set.isSynced && (
-                                  <span className="set-saving-text">Saving…</span>
+                                  <span className="button-loader" aria-hidden="true" />
                                 )}
-                              </div>
+                                <RestartIcon />
+                                <span className="sr-only">
+                                  {set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"}
+                                </span>
+                              </button>
                             )
                           ) : set.status === "in-progress" ? (
                             <button

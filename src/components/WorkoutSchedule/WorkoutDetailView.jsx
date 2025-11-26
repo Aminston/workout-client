@@ -1901,12 +1901,19 @@ export default function WorkoutDetailView() {
                       activeSetMenu?.exerciseId === exercise.id &&
                       activeSetMenu?.setId === set.id;
 
+                    const isSaving = set.status === "done" && !set.isSynced;
+
                     return (
                       <div
                         key={set.id}
                         className={`set-row ${
                           set.status === "in-progress" ? "set-active" : ""
-                        } ${set.status === "done" ? "set-completed" : ""}`}
+                        } ${set.status === "done" ? "set-completed" : ""} ${
+                          isSaving ? "is-saving" : ""
+                        }`}
+                        aria-busy={isSaving}
+                        aria-live={isSaving ? "polite" : undefined}
+                        aria-atomic={isSaving || undefined}
                       >
                         <span className="set-number">{set.id}</span>
 
@@ -1941,28 +1948,38 @@ export default function WorkoutDetailView() {
                                 Retry Save
                               </button>
                             ) : (
-                              <div className="set-done-actions">
-                                {set.isSynced ? null : (
-                                  <span
-                                    className="status-badge status-saving"
-                                    role="status"
-                                    aria-live="polite"
-                                  >
-                                    Saving...
-                                  </span>
-                                )}
-                                <button
-                                  className="set-action-button neutral"
-                                  aria-label="Restart set"
-                                  title="Restart set"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRestartSet(exercise.id, set.id);
-                                  }}
-                                >
+                              <button
+                                className={`set-action-button neutral${
+                                  set.isSynced ? "" : " is-loading"
+                                }`}
+                                aria-label={
+                                  set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"
+                                }
+                                aria-busy={!set.isSynced}
+                                disabled={!set.isSynced}
+                                title={
+                                  set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRestartSet(exercise.id, set.id);
+                                }}
+                              >
+                                {!set.isSynced ? (
+                                  <span className="button-loader" aria-hidden="true" />
+                                ) : (
                                   <RestartIcon />
-                                </button>
-                              </div>
+                                )}
+                                <span className="sr-only">
+                                  {set.isSynced
+                                    ? "Restart set"
+                                    : "Saving set, restart disabled until sync completes"}
+                                </span>
+                              </button>
                             )
                           ) : set.status === "in-progress" ? (
                             <button

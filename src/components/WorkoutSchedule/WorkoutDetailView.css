@@ -714,6 +714,14 @@
   border-color: rgba(255, 255, 255, var(--alpha-03));
 }
 
+.set-action-button.neutral:disabled,
+.set-action-button.neutral.is-loading {
+  background: rgba(255, 255, 255, var(--alpha-01));
+  color: var(--color-text-secondary);
+  border-color: rgba(255, 255, 255, var(--alpha-03));
+  opacity: 1;
+}
+
 .set-action-button.success {
   background: rgba(70, 230, 138, var(--alpha-01));
   color: var(--md-sys-color-success-strong);
@@ -726,16 +734,54 @@
   border-color: rgba(255, 91, 91, var(--alpha-03));
 }
 
+.set-action-button.is-loading {
+  position: relative;
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.set-action-button.is-loading svg {
+  opacity: 0.4;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.set-action-button .button-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  transform: translate(-50%, -50%);
+  animation: spin 0.9s linear infinite;
+}
+
 .set-action-button:active {
   transform: translateY(0);
   box-shadow: none;
 }
 
-.set-done-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+.set-row.is-saving {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  transition: background var(--transition-smooth);
 }
 
 .set-action { display:flex; justify-content:center; align-items:center; padding:0; width:100%; }
@@ -808,6 +854,15 @@
 .sets-footer {
   margin-top: 0;
   padding: 1rem 1.25rem 0.5rem;
+}
+
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 .add-set-button {

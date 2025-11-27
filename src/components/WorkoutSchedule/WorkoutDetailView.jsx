@@ -1904,7 +1904,12 @@ export default function WorkoutDetailView() {
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (
-          <div key={exercise.id} className="exercise-detail-card">
+          <div
+            key={exercise.id}
+            className={`exercise-detail-card${
+              activeSetMenu?.exerciseId === exercise.id ? " has-open-menu" : ""
+            }`}
+          >
             <div className="exercise-header">
               <div className="exercise-header-main">
                 <h3 className="exercise-name" title={exercise.name}>

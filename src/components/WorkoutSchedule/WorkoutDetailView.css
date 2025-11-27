@@ -483,7 +483,7 @@
     border-color var(--transition-fast);
   position: relative;
   outline: none;
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }

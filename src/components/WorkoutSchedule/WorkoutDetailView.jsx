@@ -1725,8 +1725,22 @@ export default function WorkoutDetailView() {
       const targetSet = exercise?.sets.find((s) => s.id === setId);
       const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
       const setNumber = Number(targetSet?.setNumber ?? targetSet?.id ?? NaN);
+      const completedDate =
+        targetSet?.completedAt || targetSet?.createdAt || targetSet?.created_at || null;
+      const performedDate = (() => {
+        if (!completedDate) return null;
+        const parsed = new Date(toIso(completedDate));
+        return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+      })();
+      const today = new Date().toISOString().slice(0, 10);
 
       if (!exercise || !targetSet || !scheduleId || !Number.isInteger(setNumber)) {
+        setActiveSetMenu(null);
+        return;
+      }
+
+      if (performedDate && performedDate !== today) {
+        toast.show("danger", "Solo puedes eliminar las series registradas hoy.");
         setActiveSetMenu(null);
         return;
       }
@@ -1747,11 +1761,14 @@ export default function WorkoutDetailView() {
       );
 
       try {
-        const today = new Date().toISOString().slice(0, 10);
         const res = await fetch(getApiUrl("/sessions/delete"), {
           method: "DELETE",
           headers: getAuthHeaders(),
-          body: JSON.stringify({ scheduleId, setNumber, performedDate: today }),
+          body: JSON.stringify({
+            scheduleId,
+            setNumber,
+            performedDate: performedDate || today,
+          }),
         });
 
         if (!res.ok) {

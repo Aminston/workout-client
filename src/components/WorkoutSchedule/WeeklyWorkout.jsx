@@ -76,45 +76,57 @@ export default function WeeklyWorkout({
   const getWorkoutStatus = (workouts) => {
     let totalSets = 0;
     let completedSets = 0;
-    let hasAnyActivity = false;
+    let hasStartedActivity = false;
     let lastActivityDate = null;
 
     workouts.forEach(workout => {
       totalSets += workout.sets || 0;
-      
+
       // Count completed sets based on sessions
       const allSessions = workout.sessions || [];
-      const validSessions = allSessions.filter(session => 
-        session.set_number !== null && 
+      const completedSessions = allSessions.filter(session =>
+        session.set_number !== null &&
         session.set_status === 'completed'
       );
-      
+
       // Group by set_number to avoid counting duplicates
-      const uniqueCompletedSets = new Set(validSessions.map(s => s.set_number));
+      const uniqueCompletedSets = new Set(completedSessions.map(s => s.set_number));
       completedSets += uniqueCompletedSets.size;
-      
+
       // Check if there's any activity (started or completed sessions)
-      if (allSessions.length > 0) {
-        hasAnyActivity = true;
-        
+      const activeSessions = allSessions.filter(session =>
+        session.set_status === 'started' ||
+        session.set_status === 'completed'
+      );
+
+      if (activeSessions.length > 0 || completedSessions.length > 0) {
+        hasStartedActivity = true;
+
         // Find the most recent activity
-        const workoutLastActivity = Math.max(...allSessions.map(s => new Date(s.created_at).getTime()));
+        const activityTimestamps = (activeSessions.length > 0 ? activeSessions : completedSessions)
+          .map(s => new Date(s.created_at).getTime());
+        const workoutLastActivity = Math.max(...activityTimestamps);
         if (!lastActivityDate || workoutLastActivity > lastActivityDate) {
           lastActivityDate = workoutLastActivity;
         }
       }
     });
 
-    const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
-    
+    const hasCompletedSets = completedSets > 0;
+    const progress = totalSets > 0
+      ? (completedSets / totalSets) * 100
+      : hasCompletedSets
+        ? 100
+        : 0;
+
     return {
       totalSets,
       completedSets,
       progress: Math.round(progress),
-      isCompleted: progress >= 100,
-      isPartiallyCompleted: progress > 0 && progress < 100,
-      isStarted: hasAnyActivity,
-      mightBeCompleted: progress >= 80,
+      isCompleted: totalSets > 0 ? progress >= 100 : false,
+      isPartiallyCompleted: hasCompletedSets && progress < 100,
+      isStarted: hasStartedActivity || hasCompletedSets,
+      mightBeCompleted: totalSets > 0 ? progress >= 80 : hasCompletedSets,
       lastActivity: lastActivityDate ? new Date(lastActivityDate) : null
     };
   };

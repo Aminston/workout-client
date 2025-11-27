@@ -1763,7 +1763,9 @@ export default function WorkoutDetailView() {
         updateExercises((prev) =>
           prev.map((ex) => {
             if (ex.id !== exerciseId) return ex;
-            const nextSets = ex.sets.filter((set) => set.id !== setId);
+            const nextSets = ex.sets.filter(
+              (set) => Number(set.id) !== Number(setId)
+            );
             return {
               ...ex,
               sets: nextSets,

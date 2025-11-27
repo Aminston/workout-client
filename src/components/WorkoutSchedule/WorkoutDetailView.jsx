@@ -1725,10 +1725,29 @@ export default function WorkoutDetailView() {
       const targetSet = exercise?.sets.find((s) => s.id === setId);
       const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
       const setNumber = Number(targetSet?.setNumber ?? targetSet?.id ?? NaN);
-      if (!exercise || !targetSet || !scheduleId || !Number.isInteger(setNumber)) {
+      if (!exercise || !targetSet) {
         setActiveSetMenu(null);
         return;
       }
+
+      const requiresApi =
+        targetSet.isSynced && scheduleId && Number.isInteger(setNumber);
+
+      const removeLocally = () => {
+        updateExercises((prev) =>
+          prev.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            const nextSets = ex.sets.filter(
+              (set) => Number(set.id) !== Number(setId)
+            );
+            return {
+              ...ex,
+              sets: nextSets,
+              status: deriveExerciseStatus(nextSets),
+            };
+          })
+        );
+      };
 
       deletingSets.current.add(key);
 
@@ -1746,33 +1765,23 @@ export default function WorkoutDetailView() {
       );
 
       try {
-        const res = await fetch(getApiUrl("/sessions/delete"), {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            scheduleId,
-            setNumber,
-          }),
-        });
+        if (requiresApi) {
+          const res = await fetch(getApiUrl("/sessions/delete"), {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              scheduleId,
+              setNumber,
+            }),
+          });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(text || "Unable to delete set");
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || "Unable to delete set");
+          }
         }
 
-        updateExercises((prev) =>
-          prev.map((ex) => {
-            if (ex.id !== exerciseId) return ex;
-            const nextSets = ex.sets.filter(
-              (set) => Number(set.id) !== Number(setId)
-            );
-            return {
-              ...ex,
-              sets: nextSets,
-              status: deriveExerciseStatus(nextSets),
-            };
-          })
-        );
+        removeLocally();
       } catch (err) {
         console.error("Failed to delete set", err);
         toast.show(

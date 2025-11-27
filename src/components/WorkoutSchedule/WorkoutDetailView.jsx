@@ -595,6 +595,7 @@ export default function WorkoutDetailView() {
   const [selectedAlternative, setSelectedAlternative] = useState(null);
   const restIntervalRef = useRef(null);
   const inFlight = useRef(new Set()); // guard: `${exerciseId}-${setId}`
+  const deletingSets = useRef(new Set());
   const [activeSetMenu, setActiveSetMenu] = useState(null);
 
   const clearRestInterval = useCallback(() => {
@@ -1708,7 +1709,10 @@ export default function WorkoutDetailView() {
   );
 
   const handleDeleteSet = useCallback(
-    (exerciseId, setId) => {
+    async (exerciseId, setId) => {
+      const key = `${exerciseId}-${setId}`;
+      if (deletingSets.current.has(key)) return;
+
       setEditing((prev) =>
         prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
       );
@@ -1717,20 +1721,87 @@ export default function WorkoutDetailView() {
         closeRestTimer();
       }
 
+      const exercise = exercisesRef.current.find((ex) => ex.id === exerciseId);
+      const targetSet = exercise?.sets.find((s) => s.id === setId);
+      const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
+      const setNumber = Number(targetSet?.setNumber ?? targetSet?.id ?? NaN);
+      if (!exercise || !targetSet || !scheduleId || !Number.isInteger(setNumber)) {
+        setActiveSetMenu(null);
+        return;
+      }
+
+      deletingSets.current.add(key);
+
       updateExercises((prev) =>
-        prev.map((ex) => {
-          if (ex.id !== exerciseId) return ex;
-          const nextSets = ex.sets.filter((set) => set.id !== setId);
-          return {
-            ...ex,
-            sets: nextSets,
-            status: deriveExerciseStatus(nextSets),
-          };
-        })
+        prev.map((ex) =>
+          ex.id !== exerciseId
+            ? ex
+            : {
+                ...ex,
+                sets: ex.sets.map((s) =>
+                  s.id === setId ? { ...s, isDeleting: true } : s
+                ),
+              }
+        )
       );
-      setActiveSetMenu(null);
+
+      try {
+        const res = await fetch(getApiUrl("/sessions/delete"), {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          body: JSON.stringify({
+            scheduleId,
+            setNumber,
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(text || "Unable to delete set");
+        }
+
+        updateExercises((prev) =>
+          prev.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            const nextSets = ex.sets.filter((set) => set.id !== setId);
+            return {
+              ...ex,
+              sets: nextSets,
+              status: deriveExerciseStatus(nextSets),
+            };
+          })
+        );
+      } catch (err) {
+        console.error("Failed to delete set", err);
+        toast.show(
+          "danger",
+          "No se pudo eliminar la serie. Intenta nuevamente en unos segundos."
+        );
+        updateExercises((prev) =>
+          prev.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            const nextSets = ex.sets.map((set) =>
+              set.id === setId ? { ...set, isDeleting: false } : set
+            );
+            return {
+              ...ex,
+              sets: nextSets,
+              status: deriveExerciseStatus(nextSets),
+            };
+          })
+        );
+      } finally {
+        deletingSets.current.delete(key);
+        setActiveSetMenu(null);
+      }
     },
-    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+    [
+      closeRestTimer,
+      restTimer.exerciseId,
+      restTimer.setId,
+      updateExercises,
+      exercisesRef,
+    ]
   );
 
   /* ---------- leave warning ---------- */
@@ -1833,7 +1904,12 @@ export default function WorkoutDetailView() {
       {/* Exercises */}
       <div className="exercises-container">
         {exercises.map((exercise) => (
-          <div key={exercise.id} className="exercise-detail-card">
+          <div
+            key={exercise.id}
+            className={`exercise-detail-card${
+              activeSetMenu?.exerciseId === exercise.id ? " has-open-menu" : ""
+            }`}
+          >
             <div className="exercise-header">
               <div className="exercise-header-main">
                 <h3 className="exercise-name" title={exercise.name}>
@@ -2007,7 +2083,9 @@ export default function WorkoutDetailView() {
                             </button>
                           )}
                         </div>
-                        <div className="set-menu-cell">
+                        <div
+                          className={`set-menu-cell${isMenuOpen ? " is-open" : ""}`}
+                        >
                           <button
                             type="button"
                             className="set-menu-trigger"

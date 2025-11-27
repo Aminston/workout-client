@@ -189,8 +189,13 @@ function buildExercisesFromDay(dayData) {
       (m, s) => Math.max(m, Number(s.set_number || 0)),
       0
     );
+    // Prefer the latest session count when it exists (e.g., after deletions)
     const totalSets =
-      Number.isInteger(baseSets) && baseSets > 0 ? baseSets : maxSessionSet;
+      maxSessionSet > 0
+        ? maxSessionSet
+        : Number.isInteger(baseSets) && baseSets > 0
+        ? baseSets
+        : 0;
 
     // Pick latest completed per set_number (created_at desc, then session_id)
     const latestBySet = {};

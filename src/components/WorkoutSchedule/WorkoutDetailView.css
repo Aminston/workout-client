@@ -652,7 +652,7 @@
 
 .exercise-body {
   background: var(--color-bg-card);
-  padding: 0 0 1.25rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 0;

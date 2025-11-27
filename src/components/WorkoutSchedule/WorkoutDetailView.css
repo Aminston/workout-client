@@ -510,6 +510,14 @@
   cursor: text;
 }
 
+.exercise-footer {
+  display: flex;
+  justify-content: flex-start;
+  padding: 0.75rem 1.25rem 0.75rem;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
 /* ======================
    EXERCISE HEADER
    ====================== */
@@ -571,6 +579,37 @@
 .exercise-name-button:focus-visible {
   outline: 2px solid rgba(143, 185, 255, 0.6);
   outline-offset: 3px;
+}
+
+.exercise-add-set-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: rgba(143, 185, 255, 0.08);
+  color: var(--color-text-main);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 94px;
+}
+
+.exercise-add-set-btn:hover,
+.exercise-add-set-btn:focus-visible {
+  color: var(--md-sys-color-primary);
+  border-color: rgba(143, 185, 255, 0.65);
+  background: rgba(143, 185, 255, 0.14);
+  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.25);
+  transform: translateY(-1px);
+}
+
+.exercise-add-set-btn:focus-visible {
+  outline: 2px solid rgba(143, 185, 255, 0.45);
+  outline-offset: 2px;
 }
 
 .exercise-swap-trigger {

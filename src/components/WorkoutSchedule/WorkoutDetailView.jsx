@@ -2139,6 +2139,21 @@ export default function WorkoutDetailView() {
                 )}
               </div>
             </div>
+            <div className="exercise-footer">
+              <button
+                type="button"
+                className="exercise-add-set-btn"
+                title="Add a new set"
+                aria-label={`Add a set for ${exercise.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddSet(exercise.id);
+                }}
+                onKeyDown={(e) => e.stopPropagation()}
+              >
+                + Add Set
+              </button>
+            </div>
           </div>
         ))}
       </div>

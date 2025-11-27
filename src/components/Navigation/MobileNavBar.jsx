@@ -1,5 +1,6 @@
 // src/components/Navigation/MobileNavBar.jsx
 import React from 'react';
+import { MdHistory, MdHomeFilled } from 'react-icons/md';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './MobileNavBar.css';
 
@@ -12,14 +13,14 @@ const MobileNavBar = () => {
       id: 'home',
       label: 'Home',
       path: '/schedule',
-      icon: '🏠',
+      icon: <MdHomeFilled aria-hidden="true" focusable="false" />,
       ariaLabel: 'Navigate to workout schedule'
     },
     {
       id: 'history',
       label: 'History',
       path: '/history',
-      icon: '📊',
+      icon: <MdHistory aria-hidden="true" focusable="false" />,
       ariaLabel: 'Navigate to workout history'
     }
   ];
@@ -53,7 +54,7 @@ const MobileNavBar = () => {
               aria-label={item.ariaLabel}
               aria-current={isActive ? 'page' : undefined}
             >
-              <span className="nav-icon" role="img" aria-hidden="true">
+              <span className="nav-icon" aria-hidden="true">
                 {item.icon}
               </span>
               <span className="nav-label">{item.label}</span>

@@ -136,9 +136,13 @@ const getCreatedAt = (s) =>
 function normalizeSessions(raw) {
   const sessions = Array.isArray(raw) ? raw : [];
   return sessions
-    .map((s) => {
-      const sn = getSetNumber(s);
-      if (!Number.isInteger(sn) || sn < 1) return null;
+    .map((s, idx) => {
+      if (!s) return null;
+
+      const maybeNumber = getSetNumber(s);
+      const sn = Number.isInteger(maybeNumber) && maybeNumber > 0
+        ? maybeNumber
+        : idx + 1;
 
       // normalize weight to object with value+unit if possible
       const weight =
@@ -189,10 +193,11 @@ function buildExercisesFromDay(dayData) {
       (m, s) => Math.max(m, Number(s.set_number || 0)),
       0
     );
+    const sessionCount = sessions.length;
     // Prefer the latest session count when it exists (e.g., after deletions)
     const totalSets =
-      maxSessionSet > 0
-        ? maxSessionSet
+      Math.max(maxSessionSet, sessionCount) > 0
+        ? Math.max(maxSessionSet, sessionCount)
         : Number.isInteger(baseSets) && baseSets > 0
         ? baseSets
         : 0;
@@ -1735,8 +1740,7 @@ export default function WorkoutDetailView() {
         return;
       }
 
-      const requiresApi =
-        targetSet.isSynced && scheduleId && Number.isInteger(setNumber);
+      const requiresApi = scheduleId && Number.isInteger(setNumber);
 
       const removeLocally = () => {
         updateExercises((prev) =>

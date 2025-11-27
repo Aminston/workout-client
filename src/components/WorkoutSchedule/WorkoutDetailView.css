@@ -793,6 +793,10 @@
   width: 100%;
 }
 
+.set-menu-cell.is-open {
+  z-index: 20;
+}
+
 .set-menu-header {
   width: 100%;
 }

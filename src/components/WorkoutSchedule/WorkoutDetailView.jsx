@@ -2078,7 +2078,9 @@ export default function WorkoutDetailView() {
                             </button>
                           )}
                         </div>
-                        <div className="set-menu-cell">
+                        <div
+                          className={`set-menu-cell${isMenuOpen ? " is-open" : ""}`}
+                        >
                           <button
                             type="button"
                             className="set-menu-trigger"

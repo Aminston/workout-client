@@ -621,7 +621,7 @@
   margin: 0;
   background-color: var(--color-bg-hover);
   border-radius: 0;
-  overflow: hidden;
+  overflow: visible;
   width: 100%;
   border-left: none;
   border-right: none;

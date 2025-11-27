@@ -8,28 +8,28 @@
   }
   
   /* Main navigation container - BOTTOM POSITIONED FOR THUMB REACH */
-  .mobile-nav-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
+.mobile-nav-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 
-    /* Use your existing theme tokens */
-    background: linear-gradient(145deg, rgba(30, 36, 48, 0.86), rgba(24, 29, 38, 0.86));
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  /* Use your existing theme tokens */
+    background: linear-gradient(145deg, rgba(24, 29, 38, 0.82), rgba(17, 20, 27, 0.76));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
 
     /* Border using your theme */
-    border-top: 1px solid rgba(255, 255, 255, 0.02);
-    padding: 12px 16px;
-    padding-bottom: calc(12px + var(--nav-safe-area-bottom));
+    border-top: 1px solid rgba(255, 255, 255, 0.028);
+    padding: 10px 14px;
+    padding-bottom: calc(10px + var(--nav-safe-area-bottom));
 
     /* Height optimized for thumb reach */
-    height: calc(var(--nav-height) + var(--nav-safe-area-bottom) + 12px);
+    height: calc(var(--nav-height) + var(--nav-safe-area-bottom) + 10px);
     min-height: 60px;
 
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36);
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.03) inset;
   }
 
   /* Inner container for nav items */
@@ -42,10 +42,10 @@
     margin: 0 auto;
     padding: 10px 14px;
 
-    background: rgba(255, 255, 255, 0.02);
+    background: linear-gradient(135deg, rgba(24, 29, 38, 0.4), rgba(18, 22, 30, 0.32));
     border: 1px solid rgba(255, 255, 255, 0.02);
     border-radius: 18px;
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }

@@ -136,9 +136,13 @@ const getCreatedAt = (s) =>
 function normalizeSessions(raw) {
   const sessions = Array.isArray(raw) ? raw : [];
   return sessions
-    .map((s) => {
-      const sn = getSetNumber(s);
-      if (!Number.isInteger(sn) || sn < 1) return null;
+    .map((s, idx) => {
+      if (!s) return null;
+
+      const maybeNumber = getSetNumber(s);
+      const sn = Number.isInteger(maybeNumber) && maybeNumber > 0
+        ? maybeNumber
+        : idx + 1;
 
       // normalize weight to object with value+unit if possible
       const weight =
@@ -189,8 +193,14 @@ function buildExercisesFromDay(dayData) {
       (m, s) => Math.max(m, Number(s.set_number || 0)),
       0
     );
+    const sessionCount = sessions.length;
+    // Prefer the latest session count when it exists (e.g., after deletions)
     const totalSets =
-      Number.isInteger(baseSets) && baseSets > 0 ? baseSets : maxSessionSet;
+      Math.max(maxSessionSet, sessionCount) > 0
+        ? Math.max(maxSessionSet, sessionCount)
+        : Number.isInteger(baseSets) && baseSets > 0
+        ? baseSets
+        : 0;
 
     // Pick latest completed per set_number (created_at desc, then session_id)
     const latestBySet = {};
@@ -1725,10 +1735,28 @@ export default function WorkoutDetailView() {
       const targetSet = exercise?.sets.find((s) => s.id === setId);
       const scheduleId = exercise?.scheduleId ?? exercise?.id ?? null;
       const setNumber = Number(targetSet?.setNumber ?? targetSet?.id ?? NaN);
-      if (!exercise || !targetSet || !scheduleId || !Number.isInteger(setNumber)) {
+      if (!exercise || !targetSet) {
         setActiveSetMenu(null);
         return;
       }
+
+      const requiresApi = scheduleId && Number.isInteger(setNumber);
+
+      const removeLocally = () => {
+        updateExercises((prev) =>
+          prev.map((ex) => {
+            if (ex.id !== exerciseId) return ex;
+            const nextSets = ex.sets.filter(
+              (set) => Number(set.id) !== Number(setId)
+            );
+            return {
+              ...ex,
+              sets: nextSets,
+              status: deriveExerciseStatus(nextSets),
+            };
+          })
+        );
+      };
 
       deletingSets.current.add(key);
 
@@ -1746,31 +1774,23 @@ export default function WorkoutDetailView() {
       );
 
       try {
-        const res = await fetch(getApiUrl("/sessions/delete"), {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({
-            scheduleId,
-            setNumber,
-          }),
-        });
+        if (requiresApi) {
+          const res = await fetch(getApiUrl("/sessions/delete"), {
+            method: "DELETE",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({
+              scheduleId,
+              setNumber,
+            }),
+          });
 
-        if (!res.ok) {
-          const text = await res.text().catch(() => "");
-          throw new Error(text || "Unable to delete set");
+          if (!res.ok) {
+            const text = await res.text().catch(() => "");
+            throw new Error(text || "Unable to delete set");
+          }
         }
 
-        updateExercises((prev) =>
-          prev.map((ex) => {
-            if (ex.id !== exerciseId) return ex;
-            const nextSets = ex.sets.filter((set) => set.id !== setId);
-            return {
-              ...ex,
-              sets: nextSets,
-              status: deriveExerciseStatus(nextSets),
-            };
-          })
-        );
+        removeLocally();
       } catch (err) {
         console.error("Failed to delete set", err);
         toast.show(

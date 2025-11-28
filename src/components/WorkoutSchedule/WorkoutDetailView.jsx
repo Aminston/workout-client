@@ -479,7 +479,7 @@ const RestartIcon = () => (
   </svg>
 );
 
-function SetActionMenu({ onDelete, onReset, onClose }) {
+function SetActionMenu({ onDelete, onClose }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -502,9 +502,6 @@ function SetActionMenu({ onDelete, onReset, onClose }) {
 
   return (
     <div className="set-action-menu" ref={menuRef} role="menu">
-      <button type="button" className="set-action-menu__item" onClick={onReset} role="menuitem">
-        Reset
-      </button>
       <button type="button" className="set-action-menu__item delete" onClick={onDelete} role="menuitem">
         Delete
       </button>
@@ -1679,43 +1676,6 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     [createSetFromDefaults, updateExercises]
   );
 
-  const handleResetSet = useCallback(
-    (exerciseId, setId) => {
-      setEditing((prev) =>
-        prev && prev.exerciseId === exerciseId && prev.setId === setId ? null : prev
-      );
-
-      updateExercises((prev) =>
-        prev.map((ex) => {
-          if (ex.id !== exerciseId) return ex;
-          const nextSets = ex.sets.map((set) => {
-            if (set.id !== setId) return set;
-            const defaults = getSetDefaults(ex, set);
-            return {
-              ...set,
-              reps: defaults.reps,
-              weight: defaults.weight,
-              weightUnit: defaults.weightUnit,
-              status: "pending",
-              isModified: false,
-              isSynced: false,
-              saveError: false,
-              completedAt: null,
-              startedAt: null,
-            };
-          });
-          return {
-            ...ex,
-            sets: nextSets,
-            status: deriveExerciseStatus(nextSets),
-          };
-        })
-      );
-      setActiveSetMenu(null);
-    },
-    [getSetDefaults, updateExercises]
-  );
-
   const handleRestartSet = useCallback(
     (exerciseId, setId) => {
       if (restTimer.exerciseId === exerciseId && restTimer.setId === setId) {
@@ -2166,7 +2126,6 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
                           {isMenuOpen && (
                             <SetActionMenu
                               onDelete={() => handleDeleteSet(exercise.id, set.id)}
-                              onReset={() => handleResetSet(exercise.id, set.id)}
                               onClose={closeSetMenu}
                             />
                           )}

@@ -513,7 +513,7 @@ function SetActionMenu({ onDelete, onReset, onClose }) {
 }
 
 /* ================== Component ================== */
-export default function WorkoutDetailView() {
+export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -555,6 +555,7 @@ export default function WorkoutDetailView() {
   const lastResolvedFetchSignatureRef = useRef(null);
   const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
+  const completionNotifiedRef = useRef(false);
   const handleEditingInputRef = useCallback((node) => {
     editingInputRef.current = node;
   }, []);
@@ -1006,6 +1007,25 @@ export default function WorkoutDetailView() {
   const activeExerciseDetails = activeWorkoutId
     ? exerciseDetailsCache[activeWorkoutId]
     : null;
+  const completionMessage = useMemo(() => {
+    if (totalSets === 0) return null;
+    if (completedSets === totalSets) return "Workout completed!";
+    if (completedSets > 0) return "Workout progress saved.";
+    return null;
+  }, [completedSets, totalSets]);
+  const scheduleNavState = useMemo(() => {
+    const baseState = {
+      completedSets,
+      totalSets,
+    };
+    if (completionMessage) {
+      baseState.message = completionMessage;
+    }
+    if (completedSets > 0) {
+      baseState.forceRefresh = true;
+    }
+    return baseState;
+  }, [completedSets, completionMessage, totalSets]);
 
   const loadLatestSchedule = useCallback(
     (force = false) => {
@@ -1185,6 +1205,18 @@ export default function WorkoutDetailView() {
       ),
     [exercises]
   );
+
+  useEffect(() => {
+    const allSetsSynced = totalSets > 0 && completedSets === totalSets && !hasUnsaved;
+    if (allSetsSynced && !completionNotifiedRef.current) {
+      completionNotifiedRef.current = true;
+      if (onWorkoutComplete) {
+        onWorkoutComplete();
+      }
+    } else if (!allSetsSynced) {
+      completionNotifiedRef.current = false;
+    }
+  }, [completedSets, hasUnsaved, onWorkoutComplete, totalSets]);
 
   const getInputDefaultValue = useCallback(
     (set, field) => {
@@ -1853,7 +1885,10 @@ export default function WorkoutDetailView() {
         <div className="workout-error">
           <h3>Workout Loading Error</h3>
           <p>{error}</p>
-          <button className="btn btn-primary" onClick={() => navigate("/schedule")}>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/schedule", { state: scheduleNavState })}
+          >
             Back to Schedule
           </button>
         </div>
@@ -1865,7 +1900,10 @@ export default function WorkoutDetailView() {
       <div className="workout-detail-container">
         <div className="workout-error">
           <h3>No workout data available</h3>
-          <button className="btn btn-primary" onClick={() => navigate("/schedule")}>
+          <button
+            className="btn btn-primary"
+            onClick={() => navigate("/schedule", { state: scheduleNavState })}
+          >
             Back to Schedule
           </button>
         </div>
@@ -1889,7 +1927,7 @@ export default function WorkoutDetailView() {
                   )
                 )
                   return;
-                navigate("/schedule");
+                navigate("/schedule", { state: scheduleNavState });
               }}
             >
               ← Back

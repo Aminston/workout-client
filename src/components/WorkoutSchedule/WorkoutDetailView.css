@@ -83,6 +83,7 @@
 .workout-detail-container {
   background-color: var(--color-bg-main);
   min-height: 100vh;
+  min-height: 100dvh;
   padding: 1rem 0 calc(1rem + var(--workout-detail-bottom-padding));
   color: var(--color-text-main);
   max-width: 100%;

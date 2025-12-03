@@ -344,6 +344,21 @@ const INITIAL_REST_STATE = {
 const activeScheduleRequestCache = new Map();
 let lastScheduleSnapshot = null;
 
+const hydrateScheduleSnapshot = (payload) => {
+  if (!payload || typeof payload !== "object") return;
+  const schedule = Array.isArray(payload.schedule)
+    ? payload.schedule
+    : Array.isArray(payload.data?.schedule)
+    ? payload.data.schedule
+    : null;
+
+  if (!schedule || schedule.length === 0) return;
+  lastScheduleSnapshot = {
+    payload: { ...payload, schedule },
+    fetchedAt: Date.now(),
+  };
+};
+
 function ensureScheduleRequest(signature, factory) {
   const existing = activeScheduleRequestCache.get(signature);
   if (existing && !existing.controller.signal.aborted) {
@@ -1410,7 +1425,9 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     };
 
     try {
-      return await attemptSave(preferredMethod);
+      const payload = await attemptSave(preferredMethod);
+      hydrateScheduleSnapshot(payload);
+      return payload;
     } catch (err) {
       if (
         preferredMethod === "PATCH" &&

@@ -254,16 +254,25 @@ function buildExercisesFromDay(dayData) {
         });
       } else {
         // Pending - use program defaults (base reps & weight)
+        const weightKg = weightConverter.normalize(s?.weight);
+        const sessionWeight = Number.isFinite(Number(weightKg))
+          ? Number(weightKg)
+          : null;
+        const sessionReps = Number.isFinite(Number(s?.reps))
+          ? Number(s.reps)
+          : null;
+
         sets.push({
           id: i,
-          reps: defaultTemplate.reps,
-          weight: defaultTemplate.weight,
-          weightUnit: defaultTemplate.weightUnit,
+          reps: sessionReps ?? defaultTemplate.reps,
+          weight: sessionWeight ?? defaultTemplate.weight,
+          weightUnit: s?.weight?.unit || defaultTemplate.weightUnit,
           duration: null,
           status: "pending",
           completedAt: null,
-          isFromSession: false,
-          isSynced: false,
+          isFromSession: Boolean(s),
+          isSynced: Boolean(s),
+          sessionId: s?.session_id ?? s?.sessionId ?? null,
           defaultReps: defaultTemplate.reps,
           defaultWeight: defaultTemplate.weight,
           defaultWeightUnit: defaultTemplate.weightUnit,
@@ -1313,7 +1322,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       status: "done",
       duration,
       completedAt,
-      isFromSession: false,
+      isFromSession: Boolean(prevSet.isFromSession),
       isSynced: false,
       saveError: false,
     };

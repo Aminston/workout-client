@@ -312,11 +312,16 @@ const getAuthHeaders = () => {
 function toApiSession(
   exercise,
   sets,
-  { includeStatus = false, includeSetStatus = false } = {}
+  { includeStatus = false, statusOverride = null } = {}
 ) {
+  const sessionStatus =
+    statusOverride || (includeStatus && exercise.status === "done"
+      ? "completed"
+      : null);
+
   return {
     scheduleId: exercise.scheduleId,
-    ...(includeStatus && exercise.status === "done" && { status: "completed" }),
+    ...(sessionStatus && { status: sessionStatus }),
     performedSets: sets.map((s) => {
       const setNumber = Number(s.setNumber ?? s.id);
       const weight = Number(s.weight);
@@ -339,10 +344,6 @@ function toApiSession(
         ? Number(s.duration ?? s.elapsedTime)
         : null;
       if (duration != null) out.elapsedTime = duration;
-      if (includeSetStatus && s.status === "done") {
-        out.setStatus = "completed";
-        out.set_status = "completed";
-      }
       return out;
     }),
   };
@@ -1363,7 +1364,10 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
   const saveSingleSet = useCallback(async (exercise, setData) => {
     const payload = {
       workoutSessions: [
-        toApiSession(exercise, [setData], { includeSetStatus: true }),
+        toApiSession(exercise, [setData], {
+          includeStatus: true,
+          statusOverride: setData.status === "done" ? "completed" : null,
+        }),
       ],
     };
     const preferredMethod = setData.isFromSession ? "PATCH" : "POST";

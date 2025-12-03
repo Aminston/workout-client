@@ -309,10 +309,10 @@ const getAuthHeaders = () => {
 };
 
 /** Build the camelCase payload expected by /sessions/save */
-function toApiSession(exercise, sets) {
+function toApiSession(exercise, sets, { includeStatus = false } = {}) {
   return {
     scheduleId: exercise.scheduleId,
-    status: "completed",
+    ...(includeStatus && exercise.status === "done" && { status: "completed" }),
     performedSets: sets.map((s) => {
       const setNumber = Number(s.setNumber ?? s.id);
       const weight = Number(s.weight);

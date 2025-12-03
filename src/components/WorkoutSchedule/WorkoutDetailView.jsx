@@ -1108,9 +1108,6 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
 
       if (!appliedFromState) {
         resetLocalState();
-      } else if (!force) {
-        setLoading(false);
-        return () => {};
       }
 
       const fetchSignature = JSON.stringify({

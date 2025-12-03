@@ -552,6 +552,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
   const exercisesRef = useRef([]);
   const initialCompletedSetsRef = useRef(0);
   const lastResolvedFetchSignatureRef = useRef(null);
+  const prefetchedWorkoutIdsRef = useRef(new Set());
   const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
   const completionNotifiedRef = useRef(false);
@@ -1000,6 +1001,53 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     if (!isExerciseModalOpen || !activeWorkoutId) return;
     fetchExerciseDetails(activeWorkoutId);
   }, [isExerciseModalOpen, activeWorkoutId, fetchExerciseDetails]);
+
+  useEffect(() => {
+    if (!exercises.length) return undefined;
+
+    const candidates = exercises
+      .slice(0, Math.min(4, exercises.length))
+      .map((ex) => ex?.workout_id)
+      .filter(
+        (id) =>
+          id != null &&
+          !exerciseDetailsCache[id] &&
+          !prefetchedWorkoutIdsRef.current.has(id)
+      );
+
+    const uniqueIds = Array.from(new Set(candidates));
+    if (uniqueIds.length === 0) return undefined;
+
+    const schedulePrefetch = () => {
+      const idsToFetch = uniqueIds.filter(
+        (id) => !exerciseDetailsCache[id] && !prefetchedWorkoutIdsRef.current.has(id)
+      );
+      if (idsToFetch.length === 0) return;
+
+      idsToFetch.forEach((id) => prefetchedWorkoutIdsRef.current.add(id));
+
+      Promise.allSettled(idsToFetch.map((id) => fetchExerciseDetails(id))).finally(() => {
+        idsToFetch.forEach((id) => {
+          if (!exerciseDetailsCache[id]) {
+            prefetchedWorkoutIdsRef.current.delete(id);
+          }
+        });
+      });
+    };
+
+    const idleHandle =
+      typeof requestIdleCallback === "function"
+        ? requestIdleCallback(schedulePrefetch, { timeout: 1000 })
+        : setTimeout(schedulePrefetch, 0);
+
+    return () => {
+      if (typeof cancelIdleCallback === "function") {
+        cancelIdleCallback(idleHandle);
+      } else {
+        clearTimeout(idleHandle);
+      }
+    };
+  }, [exercises, exerciseDetailsCache, fetchExerciseDetails]);
 
   // derived
   const totalSets = useMemo(

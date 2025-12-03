@@ -312,10 +312,14 @@ const getAuthHeaders = () => {
 function toApiSession(
   exercise,
   sets,
-  { includeStatus = false, statusOverride = null } = {}
+  {
+    includeSessionStatus = false,
+    sessionStatusOverride = null,
+    includeSetStatus = false,
+  } = {}
 ) {
   const sessionStatus =
-    statusOverride || (includeStatus && exercise.status === "done"
+    sessionStatusOverride || (includeSessionStatus && exercise.status === "done"
       ? "completed"
       : null);
 
@@ -324,26 +328,42 @@ function toApiSession(
     ...(sessionStatus && { status: sessionStatus }),
     performedSets: sets.map((s) => {
       const setNumber = Number(s.setNumber ?? s.id);
-      const weight = Number(s.weight);
-      const reps = Number(s.reps);
       if (!Number.isInteger(setNumber)) {
         throw new Error("Invalid set data: set number is required.");
       }
-      if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
-        throw new Error("Invalid set data: weight and reps are required.");
+
+      const out = { setNumber };
+
+      const weight = Number(s.weight);
+      if (Number.isFinite(weight)) {
+        out.weight = weight;
+        out.weightUnit = s.weightUnit || "kg";
       }
 
-      const out = {
-        setNumber,
-        weight,
-        reps,
-        weightUnit: s.weightUnit || "kg",
-      };
+      const reps = Number(s.reps);
+      if (Number.isFinite(reps)) {
+        out.reps = reps;
+      }
 
       const duration = Number.isFinite(Number(s.duration ?? s.elapsedTime))
         ? Number(s.duration ?? s.elapsedTime)
         : null;
       if (duration != null) out.elapsedTime = duration;
+
+      if (includeSetStatus && s.status !== undefined) {
+        const normalizedStatus =
+          s.status == null
+            ? null
+            : s.status === "done"
+            ? "completed"
+            : s.status;
+        out.status = normalizedStatus;
+      }
+
+      if (Object.keys(out).length === 1) {
+        throw new Error("Invalid set data: nothing to update.");
+      }
+
       return out;
     }),
   };
@@ -1365,8 +1385,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     const payload = {
       workoutSessions: [
         toApiSession(exercise, [setData], {
-          includeStatus: true,
-          statusOverride: setData.status === "done" ? "completed" : null,
+          includeSetStatus: true,
         }),
       ],
     };

@@ -299,6 +299,10 @@
   min-width: 0;
 }
 
+.split-option-details.full-width {
+  width: 100%;
+}
+
 /* ✅ SIMPLIFIED: Clean header without badges */
 .split-option-header {
   margin-bottom: 0.75rem;
@@ -332,6 +336,35 @@
   margin: 0 0 0.75rem 0;
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+.split-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.split-option-radio-card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--color-bg-main);
+}
+
+.split-option-radio-card input {
+  margin: 0;
+}
+
+.split-option-radio-card.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+  background-color: rgba(59, 130, 246, 0.08);
 }
 
 .split-option-summary {

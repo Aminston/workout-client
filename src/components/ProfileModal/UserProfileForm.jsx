@@ -1,49 +1,10 @@
 import { Form } from 'react-bootstrap';
 import FormField from '@/components/FormField';
 import MetricInput from '@/styles/MetricInput';
-import {
-  TRAINING_GOALS,
-  EXPERIENCE_LEVELS,
-  INJURY_AREAS
-} from '../../../constants/enums';
-
-const trainingGoalOptions = TRAINING_GOALS.map(opt => ({
-  value: opt.key,
-  label: opt.label
-}));
-
-const trainingExperienceOptions = EXPERIENCE_LEVELS.map(opt => ({
-  value: opt.key,
-  label: opt.label
-}));
-
-const injuryCautionOptions = INJURY_AREAS.map(opt => ({
-  value: opt.key,
-  label: opt.label
-}));
-
 const profileFields = [
   { name: 'name', label: 'Full name', type: 'text', autoFocus: true },
   { name: 'email', label: 'Email', type: 'email' },
-  { name: 'birthday', label: 'Birthday', type: 'date' },
-  {
-    name: 'training_goal',
-    label: 'Training goal',
-    type: 'select',
-    options: trainingGoalOptions
-  },
-  {
-    name: 'training_experience',
-    label: 'Experience level',
-    type: 'select',
-    options: trainingExperienceOptions
-  },
-  {
-    name: 'injury_caution_area',
-    label: 'Injury concerns',
-    type: 'select',
-    options: injuryCautionOptions
-  }
+  { name: 'birthday', label: 'Birthday', type: 'date' }
 ];
 
 export default function UserProfileForm({

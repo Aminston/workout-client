@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './SplitSelectionModal.css';
+import {
+  EXPERIENCE_LEVELS,
+  INJURY_AREAS,
+  TRAINING_GOALS
+} from '../../../constants/enums';
 
 export default function SplitSelectionModal({
   show,
@@ -14,6 +19,17 @@ export default function SplitSelectionModal({
   const [locations, setLocations] = useState([]);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
+  const [personalization, setPersonalization] = useState({
+    training_goal: 'general_fitness',
+    training_experience: 'beginner',
+    injury_caution_area: 'none'
+  });
+  const [selectedPersonalization, setSelectedPersonalization] = useState({
+    training_goal: 'general_fitness',
+    training_experience: 'beginner',
+    injury_caution_area: 'none'
+  });
+  const [profileSnapshot, setProfileSnapshot] = useState(null);
   const [activeSection, setActiveSection] = useState('splits');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -22,6 +38,7 @@ export default function SplitSelectionModal({
 
   const splitsSectionRef = useRef(null);
   const locationsSectionRef = useRef(null);
+  const personalizationSectionRef = useRef(null);
   const scrollContainerRef = useRef(null);
   
   // ✅ BETTER: Single cache object with all data
@@ -79,7 +96,7 @@ export default function SplitSelectionModal({
 
     try {
       // Fetch available splits/locations and current user preferences in parallel
-      const [splitsResponse, userPreferenceResponse, locationsResponse] = await Promise.all([
+      const [splitsResponse, userPreferenceResponse, locationsResponse, profileResponse] = await Promise.all([
         fetch(`${apiBase}/schedule/v2/splits`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
@@ -93,6 +110,12 @@ export default function SplitSelectionModal({
           }
         }),
         fetch(`${apiBase}/schedule/v2/locations`, {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(`${apiBase}/user-profile`, {
           headers: {
             'Authorization': `Bearer ${currentToken}`,
             'Content-Type': 'application/json'
@@ -112,9 +135,14 @@ export default function SplitSelectionModal({
         throw new Error('Failed to fetch available locations');
       }
 
+      if (!profileResponse.ok) {
+        throw new Error('Failed to fetch user personalization');
+      }
+
       const splitsData = await splitsResponse.json();
       const userPreferenceData = await userPreferenceResponse.json();
       const locationsData = await locationsResponse.json();
+      const profileData = await profileResponse.json();
 
       const availableLocations = locationsData.locations || locationsData.available_locations || [];
       const currentLocationFromLocations = locationsData.selected_location || locationsData.current_location;
@@ -122,12 +150,31 @@ export default function SplitSelectionModal({
       console.log('📋 Available splits:', splitsData);
       console.log('👤 User current split:', userPreferenceData);
 
+      const personalizationData = {
+        training_goal: profileData.training_goal || 'general_fitness',
+        training_experience: profileData.training_experience || 'beginner',
+        injury_caution_area: profileData.injury_caution_area || 'none'
+      };
+
+      const snapshot = {
+        name: profileData.name || '',
+        email: profileData.email || '',
+        birthday: profileData.birthday || '',
+        height: profileData.height ?? '',
+        height_unit: profileData.height_unit || 'cm',
+        weight: profileData.weight ?? '',
+        weight_unit: profileData.weight_unit || 'kg',
+        background: profileData.background || ''
+      };
+
       // ✅ BETTER: Store in cache and component state
       const fetchedData = {
         splits: splitsData.available_splits || [],
         currentSplit: userPreferenceData.current_split,
         locations: availableLocations,
-        currentLocation: currentLocationFromLocations || null
+        currentLocation: currentLocationFromLocations || null,
+        personalization: personalizationData,
+        profileSnapshot: snapshot
       };
 
       // Update cache
@@ -144,6 +191,9 @@ export default function SplitSelectionModal({
       setSelectedLocationId(
         fetchedData.currentLocation?.id ?? fetchedData.currentLocation?.location_id ?? null
       );
+      setPersonalization(fetchedData.personalization);
+      setSelectedPersonalization(fetchedData.personalization);
+      setProfileSnapshot(fetchedData.profileSnapshot);
 
       return fetchedData;
 
@@ -186,6 +236,9 @@ export default function SplitSelectionModal({
       setSelectedLocationId(
         cachedData.currentLocation?.id ?? cachedData.currentLocation?.location_id ?? null
       );
+      setPersonalization(cachedData.personalization);
+      setSelectedPersonalization(cachedData.personalization);
+      setProfileSnapshot(cachedData.profileSnapshot);
       setLoading(false);
     } else {
       console.log('📋 Modal opened - need to fetch');
@@ -212,8 +265,12 @@ export default function SplitSelectionModal({
     const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
     const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
     const locationChanged = selectedLocationId !== currentLocationId;
+    const personalizationChanged =
+      selectedPersonalization.training_goal !== personalization.training_goal ||
+      selectedPersonalization.training_experience !== personalization.training_experience ||
+      selectedPersonalization.injury_caution_area !== personalization.injury_caution_area;
 
-    if (!splitChanged && !locationChanged) {
+    if (!splitChanged && !locationChanged && !personalizationChanged) {
       onHide();
       return;
     }
@@ -317,6 +374,40 @@ export default function SplitSelectionModal({
         }
       }
 
+      if (personalizationChanged) {
+        const profilePayload = {
+          ...(profileSnapshot || {}),
+          ...selectedPersonalization
+        };
+
+        const profileResponse = await fetch(
+          `${apiBase}/user-profile`,
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(profilePayload)
+          }
+        );
+
+        if (!profileResponse.ok) {
+          const errorData = await profileResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to update personalization');
+        }
+
+        await profileResponse.json();
+        setPersonalization(selectedPersonalization);
+
+        if (cacheRef.current.data) {
+          cacheRef.current.data.personalization = selectedPersonalization;
+          cacheRef.current.data.profileSnapshot = profilePayload;
+        }
+
+        messages.push('Personalization preferences updated.');
+      }
+
       setSuccessMessage(messages.join(' '));
 
       setTimeout(() => {
@@ -329,7 +420,7 @@ export default function SplitSelectionModal({
     } finally {
       setSaving(false);
     }
-  }, [selectedSplitId, currentSplit?.id, selectedLocationId, currentLocation?.id, currentLocation?.location_id, token, splits, locations, onSplitChanged, onHide]);
+  }, [selectedSplitId, currentSplit?.id, selectedLocationId, currentLocation?.id, currentLocation?.location_id, token, splits, locations, onSplitChanged, onHide, selectedPersonalization, personalization, profileSnapshot, apiBase]);
 
   // ✅ OPTIMIZED: Memoized utility functions
   const getSplitSummary = useCallback((split) => {
@@ -411,7 +502,11 @@ export default function SplitSelectionModal({
 
   const handleTabClick = useCallback((section) => {
     setActiveSection(section);
-    const ref = section === 'splits' ? splitsSectionRef : locationsSectionRef;
+    const ref = section === 'splits'
+      ? splitsSectionRef
+      : section === 'locations'
+        ? locationsSectionRef
+        : personalizationSectionRef;
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -425,7 +520,8 @@ export default function SplitSelectionModal({
       const containerTop = container.getBoundingClientRect().top;
       const sections = [
         { key: 'splits', ref: splitsSectionRef },
-        { key: 'locations', ref: locationsSectionRef }
+        { key: 'locations', ref: locationsSectionRef },
+        { key: 'personalization', ref: personalizationSectionRef }
       ];
 
       const closest = sections.reduce((closestSection, current) => {
@@ -451,8 +547,12 @@ export default function SplitSelectionModal({
   const splitChanged = selectedSplitId && selectedSplitId !== currentSplit?.id;
   const currentLocationId = currentLocation?.id ?? currentLocation?.location_id ?? null;
   const locationChanged = selectedLocationId !== currentLocationId;
-  const applyDisabled = saving || loading || (!splitChanged && !locationChanged);
-  const applyVariant = splitChanged || locationChanged ? 'primary' : 'no-change';
+  const personalizationChanged =
+    selectedPersonalization.training_goal !== personalization.training_goal ||
+    selectedPersonalization.training_experience !== personalization.training_experience ||
+    selectedPersonalization.injury_caution_area !== personalization.injury_caution_area;
+  const applyDisabled = saving || loading || (!splitChanged && !locationChanged && !personalizationChanged);
+  const applyVariant = splitChanged || locationChanged || personalizationChanged ? 'primary' : 'no-change';
 
   // Don't render if modal is not shown
   if (!show) return null;
@@ -506,6 +606,12 @@ export default function SplitSelectionModal({
                   onClick={() => handleTabClick('locations')}
                 >
                   Locations
+                </button>
+                <button
+                  className={`split-modal-tab ${activeSection === 'personalization' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('personalization')}
+                >
+                  Personalization
                 </button>
               </div>
 
@@ -641,6 +747,100 @@ export default function SplitSelectionModal({
                       </div>
                     ))
                   )}
+                </div>
+              </section>
+
+              <section ref={personalizationSectionRef} className="config-section" id="personalization">
+                <div className="split-modal-current-info">
+                  <p className="split-modal-current-title">
+                    <strong>Personalization:</strong> Tailor recommendations to your goals
+                  </p>
+                  <small className="split-modal-current-subtitle">
+                    💡 These preferences guide exercise selection and coaching cues.
+                  </small>
+                </div>
+
+                <div className="split-selection-list">
+                  <div className="split-option">
+                    <div className="split-option-content">
+                      <div className="split-option-details full-width">
+                        <div className="split-option-header">
+                          <h6 className="split-option-name">Training Goal</h6>
+                        </div>
+                        <div className="split-option-grid">
+                          {TRAINING_GOALS.map(goal => (
+                            <label
+                              key={goal.key}
+                              className={`split-option-radio-card ${selectedPersonalization.training_goal === goal.key ? 'selected' : ''}`}
+                            >
+                              <input
+                                type="radio"
+                                name="training_goal"
+                                value={goal.key}
+                                checked={selectedPersonalization.training_goal === goal.key}
+                                onChange={() => setSelectedPersonalization(prev => ({ ...prev, training_goal: goal.key }))}
+                              />
+                              <span>{goal.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="split-option">
+                    <div className="split-option-content">
+                      <div className="split-option-details full-width">
+                        <div className="split-option-header">
+                          <h6 className="split-option-name">Experience Level</h6>
+                        </div>
+                        <div className="split-option-grid">
+                          {EXPERIENCE_LEVELS.map(level => (
+                            <label
+                              key={level.key}
+                              className={`split-option-radio-card ${selectedPersonalization.training_experience === level.key ? 'selected' : ''}`}
+                            >
+                              <input
+                                type="radio"
+                                name="training_experience"
+                                value={level.key}
+                                checked={selectedPersonalization.training_experience === level.key}
+                                onChange={() => setSelectedPersonalization(prev => ({ ...prev, training_experience: level.key }))}
+                              />
+                              <span>{level.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="split-option">
+                    <div className="split-option-content">
+                      <div className="split-option-details full-width">
+                        <div className="split-option-header">
+                          <h6 className="split-option-name">Injury Concerns</h6>
+                        </div>
+                        <div className="split-option-grid">
+                          {INJURY_AREAS.map(area => (
+                            <label
+                              key={area.key}
+                              className={`split-option-radio-card ${selectedPersonalization.injury_caution_area === area.key ? 'selected' : ''}`}
+                            >
+                              <input
+                                type="radio"
+                                name="injury_caution_area"
+                                value={area.key}
+                                checked={selectedPersonalization.injury_caution_area === area.key}
+                                onChange={() => setSelectedPersonalization(prev => ({ ...prev, injury_caution_area: area.key }))}
+                              />
+                              <span>{area.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </section>
             </>

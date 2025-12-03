@@ -224,7 +224,7 @@ export default function AppNavbar({
                         📝 Edit Profile
                       </Dropdown.Item>
                       <Dropdown.Item onClick={handleConfigureSplit}>
-                        🏋️ Configure Split
+                        🏋️ Workout Settings
                       </Dropdown.Item>
                       <Dropdown.Item onClick={handleGetWorkout} disabled={loadingWorkout}>
                         {loadingWorkout ? (

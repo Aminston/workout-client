@@ -254,16 +254,25 @@ function buildExercisesFromDay(dayData) {
         });
       } else {
         // Pending - use program defaults (base reps & weight)
+        const weightKg = weightConverter.normalize(s?.weight);
+        const sessionWeight = Number.isFinite(Number(weightKg))
+          ? Number(weightKg)
+          : null;
+        const sessionReps = Number.isFinite(Number(s?.reps))
+          ? Number(s.reps)
+          : null;
+
         sets.push({
           id: i,
-          reps: defaultTemplate.reps,
-          weight: defaultTemplate.weight,
-          weightUnit: defaultTemplate.weightUnit,
+          reps: sessionReps ?? defaultTemplate.reps,
+          weight: sessionWeight ?? defaultTemplate.weight,
+          weightUnit: s?.weight?.unit || defaultTemplate.weightUnit,
           duration: null,
           status: "pending",
           completedAt: null,
-          isFromSession: false,
-          isSynced: false,
+          isFromSession: Boolean(s),
+          isSynced: Boolean(s),
+          sessionId: s?.session_id ?? s?.sessionId ?? null,
           defaultReps: defaultTemplate.reps,
           defaultWeight: defaultTemplate.weight,
           defaultWeightUnit: defaultTemplate.weightUnit,
@@ -300,32 +309,61 @@ const getAuthHeaders = () => {
 };
 
 /** Build the camelCase payload expected by /sessions/save */
-function toApiSession(exercise, sets) {
+function toApiSession(
+  exercise,
+  sets,
+  {
+    includeSessionStatus = false,
+    sessionStatusOverride = null,
+    includeSetStatus = false,
+  } = {}
+) {
+  const sessionStatus =
+    sessionStatusOverride || (includeSessionStatus && exercise.status === "done"
+      ? "completed"
+      : null);
+
   return {
     scheduleId: exercise.scheduleId,
-    status: "completed",
+    ...(sessionStatus && { status: sessionStatus }),
     performedSets: sets.map((s) => {
       const setNumber = Number(s.setNumber ?? s.id);
-      const weight = Number(s.weight);
-      const reps = Number(s.reps);
       if (!Number.isInteger(setNumber)) {
         throw new Error("Invalid set data: set number is required.");
       }
-      if (!Number.isFinite(weight) || !Number.isFinite(reps)) {
-        throw new Error("Invalid set data: weight and reps are required.");
+
+      const out = { setNumber };
+
+      const weight = Number(s.weight);
+      if (Number.isFinite(weight)) {
+        out.weight = weight;
+        out.weightUnit = s.weightUnit || "kg";
       }
 
-      const out = {
-        setNumber,
-        weight,
-        reps,
-        weightUnit: s.weightUnit || "kg",
-      };
+      const reps = Number(s.reps);
+      if (Number.isFinite(reps)) {
+        out.reps = reps;
+      }
 
       const duration = Number.isFinite(Number(s.duration ?? s.elapsedTime))
         ? Number(s.duration ?? s.elapsedTime)
         : null;
       if (duration != null) out.elapsedTime = duration;
+
+      if (includeSetStatus && s.status !== undefined) {
+        const normalizedStatus =
+          s.status == null
+            ? null
+            : s.status === "done"
+            ? "completed"
+            : s.status;
+        out.status = normalizedStatus;
+      }
+
+      if (Object.keys(out).length === 1) {
+        throw new Error("Invalid set data: nothing to update.");
+      }
+
       return out;
     }),
   };
@@ -1070,6 +1108,9 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
 
       if (!appliedFromState) {
         resetLocalState();
+      } else if (!force) {
+        setLoading(false);
+        return () => {};
       }
 
       const fetchSignature = JSON.stringify({
@@ -1310,7 +1351,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       status: "done",
       duration,
       completedAt,
-      isFromSession: false,
+      isFromSession: Boolean(prevSet.isFromSession),
       isSynced: false,
       saveError: false,
     };
@@ -1341,7 +1382,13 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     inFlight.current.delete(key);
   };
   const saveSingleSet = useCallback(async (exercise, setData) => {
-    const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
+    const payload = {
+      workoutSessions: [
+        toApiSession(exercise, [setData], {
+          includeSetStatus: true,
+        }),
+      ],
+    };
     const preferredMethod = setData.isFromSession ? "PATCH" : "POST";
 
     const attemptSave = async (method) => {

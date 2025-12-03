@@ -377,6 +377,86 @@ const persistScheduleSnapshot = (snapshot) => {
 
 let lastScheduleSnapshot = readStoredScheduleSnapshot();
 
+const statusFromSet = (set) => {
+  if (!set) return "pending";
+  if (set.status === "done") return "done";
+  if (set.status === "in-progress") return "in-progress";
+  return "pending";
+};
+
+const updateSnapshotWithLocalSets = (exercises, dayNumber) => {
+  if (!lastScheduleSnapshot?.payload?.schedule || !Array.isArray(exercises)) {
+    return;
+  }
+
+  const schedule = lastScheduleSnapshot.payload.schedule;
+  const resolvedDay = schedule.find((day) => {
+    if (dayNumber != null) {
+      return Number(day?.day_number) === Number(dayNumber);
+    }
+    return Array.isArray(day?.workouts) && day.workouts.length > 0;
+  });
+
+  if (!resolvedDay) return;
+
+  const mapSetToSession = (set) => {
+    const duration = Number.isFinite(Number(set.duration ?? set.elapsedTime))
+      ? Number(set.duration ?? set.elapsedTime)
+      : null;
+
+    const weightUnit = set.weightUnit || set.weight_unit || "kg";
+    const weightValue = numOr(set.weight, null);
+
+    return {
+      ...set,
+      set_number: Number(set.setNumber ?? set.id ?? set.set_number ?? 0),
+      set_status: statusFromSet(set),
+      status: statusFromSet(set),
+      weight_unit: weightUnit,
+      weight_value: weightValue,
+      weight: weightValue,
+      reps: numOr(set.reps, null),
+      time: duration,
+      elapsedTime: duration,
+      created_at: set.completedAt || set.created_at || new Date().toISOString(),
+    };
+  };
+
+  const updatedWorkouts = resolvedDay.workouts.map((workout) => {
+    const targetId =
+      workout.scheduleId ?? workout.id ?? workout.workout_id ?? workout.workoutId;
+    const currentExercise = exercises.find(
+      (ex) => (ex.scheduleId ?? ex.id ?? ex.workout_id ?? ex.workoutId) === targetId
+    );
+    if (!currentExercise) return workout;
+
+    const sessions = Array.isArray(currentExercise.sets)
+      ? currentExercise.sets
+          .filter((s) => statusFromSet(s) !== "pending")
+          .map(mapSetToSession)
+      : [];
+
+    return {
+      ...workout,
+      sets: Math.max(workout.sets ?? 0, currentExercise.sets?.length ?? 0),
+      sessions,
+    };
+  });
+
+  const updatedSchedule = schedule.map((day) =>
+    day === resolvedDay ? { ...day, workouts: updatedWorkouts } : day
+  );
+
+  lastScheduleSnapshot = {
+    ...lastScheduleSnapshot,
+    payload: {
+      ...lastScheduleSnapshot.payload,
+      schedule: updatedSchedule,
+    },
+  };
+  persistScheduleSnapshot(lastScheduleSnapshot);
+};
+
 const hydrateScheduleSnapshot = (payload) => {
   if (!payload || typeof payload !== "object") return false;
   const schedule = Array.isArray(payload.schedule)
@@ -1464,8 +1544,15 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       const payload = await attemptSave(preferredMethod);
       const hydrated = hydrateScheduleSnapshot(payload);
       if (!hydrated) {
-        lastScheduleSnapshot = null;
-        persistScheduleSnapshot(null);
+        if (lastScheduleSnapshot?.payload?.schedule) {
+          updateSnapshotWithLocalSets(
+            exercisesRef.current,
+            workoutMeta?.dayNumber ?? null
+          );
+        } else {
+          lastScheduleSnapshot = null;
+          persistScheduleSnapshot(null);
+        }
       }
       return payload;
     } catch (err) {

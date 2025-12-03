@@ -14,13 +14,14 @@ export default function SplitSelectionModal({
   const [locations, setLocations] = useState([]);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedLocationId, setSelectedLocationId] = useState(null);
-  const [activeSection, setActiveSection] = useState('splits');
+  const [activeSection, setActiveSection] = useState('personalization');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   const splitsSectionRef = useRef(null);
+  const personalizationSectionRef = useRef(null);
   const locationsSectionRef = useRef(null);
   const scrollContainerRef = useRef(null);
   
@@ -411,7 +412,12 @@ export default function SplitSelectionModal({
 
   const handleTabClick = useCallback((section) => {
     setActiveSection(section);
-    const ref = section === 'splits' ? splitsSectionRef : locationsSectionRef;
+    const ref =
+      section === 'splits'
+        ? splitsSectionRef
+        : section === 'locations'
+          ? locationsSectionRef
+          : personalizationSectionRef;
     if (ref.current) {
       ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -424,6 +430,7 @@ export default function SplitSelectionModal({
     const handleScroll = () => {
       const containerTop = container.getBoundingClientRect().top;
       const sections = [
+        { key: 'personalization', ref: personalizationSectionRef },
         { key: 'splits', ref: splitsSectionRef },
         { key: 'locations', ref: locationsSectionRef }
       ];
@@ -463,7 +470,7 @@ export default function SplitSelectionModal({
         {/* Header */}
         <div className="split-modal-header">
           <h3 className="split-modal-title">
-            🏋️ Workout Configuration
+            🏋️ Workout Settings
           </h3>
           <button className="split-modal-close" onClick={onHide}>
             ×
@@ -496,6 +503,12 @@ export default function SplitSelectionModal({
 
               <div className="split-modal-tabs">
                 <button
+                  className={`split-modal-tab ${activeSection === 'personalization' ? 'active' : ''}`}
+                  onClick={() => handleTabClick('personalization')}
+                >
+                  Personalization
+                </button>
+                <button
                   className={`split-modal-tab ${activeSection === 'splits' ? 'active' : ''}`}
                   onClick={() => handleTabClick('splits')}
                 >
@@ -508,6 +521,18 @@ export default function SplitSelectionModal({
                   Locations
                 </button>
               </div>
+
+              <section ref={personalizationSectionRef} className="config-section" id="personalization">
+                <div className="split-modal-current-info">
+                  <p className="split-modal-current-title">
+                    <strong>Personalize Your Plan:</strong>
+                  </p>
+                  <small className="split-modal-current-subtitle">
+                    Tailor your workout experience with your preferred split and workout location. These settings
+                    guide how we build your programs.
+                  </small>
+                </div>
+              </section>
 
               <section ref={splitsSectionRef} className="config-section" id="splits">
                 <div className="split-modal-current-info">

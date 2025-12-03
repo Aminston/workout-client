@@ -547,8 +547,10 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
   const [useMetric, setUseMetric] = useState(true);
   const [editing, setEditing] = useState(null); // {exerciseId,setId,field,initialValue}
   const [shouldAutoFocusEditing, setShouldAutoFocusEditing] = useState(false);
+  const [hasSessionChanges, setHasSessionChanges] = useState(false);
   const autoSaveTimers = useRef(new Map());
   const exercisesRef = useRef([]);
+  const initialCompletedSetsRef = useRef(0);
   const lastResolvedFetchSignatureRef = useRef(null);
   const isMountedRef = useRef(true);
   const editingInputRef = useRef(null);
@@ -570,6 +572,12 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       }
 
       const built = buildExercisesFromDay(dayData);
+      const initialCompletedSets = built
+        .flatMap((ex) => ex.sets)
+        .filter((set) => set.status === "done").length;
+
+      initialCompletedSetsRef.current = initialCompletedSets;
+      setHasSessionChanges(false);
 
       autoSaveTimers.current.forEach((t) => clearTimeout(t));
       autoSaveTimers.current.clear();
@@ -612,6 +620,8 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       restIntervalRef.current = null;
     }
   }, []);
+
+  const markSessionChange = useCallback(() => setHasSessionChanges(true), []);
 
   const activeWorkoutId = activeExercise?.workout_id ?? null;
 
@@ -1000,16 +1010,23 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     () => exercises.flatMap((e) => e.sets).filter((s) => s.status === "done").length,
     [exercises]
   );
+  const sessionCompletedDelta = useMemo(
+    () => Math.max(0, completedSets - (initialCompletedSetsRef.current || 0)),
+    [completedSets]
+  );
   const progressPct = totalSets > 0 ? Math.round((completedSets / totalSets) * 100) : 0;
   const activeExerciseDetails = activeWorkoutId
     ? exerciseDetailsCache[activeWorkoutId]
     : null;
   const completionMessage = useMemo(() => {
     if (totalSets === 0) return null;
-    if (completedSets === totalSets) return "Workout completed!";
-    if (completedSets > 0) return "Workout progress saved.";
+    if (!hasSessionChanges && sessionCompletedDelta === 0) return null;
+    if (completedSets === totalSets && (sessionCompletedDelta > 0 || hasSessionChanges)) {
+      return "Workout completed!";
+    }
+    if (sessionCompletedDelta > 0 || hasSessionChanges) return "Workout progress saved.";
     return null;
-  }, [completedSets, totalSets]);
+  }, [completedSets, hasSessionChanges, sessionCompletedDelta, totalSets]);
   const scheduleNavState = useMemo(() => {
     const baseState = {
       completedSets,
@@ -1279,6 +1296,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     }
 
     startRestTimer(exerciseId, setId);
+    markSessionChange();
 
     const completedAt = new Date().toISOString();
     const duration = prevSet.startedAt
@@ -1543,6 +1561,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       }
     }
 
+    markSessionChange();
     updateExercises((prev) =>
       prev.map((ex) =>
         ex.id !== exerciseId
@@ -1658,6 +1677,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
 
   const handleAddSet = useCallback(
     (exerciseId) => {
+      markSessionChange();
       updateExercises((prev) =>
         prev.map((ex) => {
           if (ex.id !== exerciseId) return ex;
@@ -1673,7 +1693,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         })
       );
     },
-    [createSetFromDefaults, updateExercises]
+    [createSetFromDefaults, markSessionChange, updateExercises]
   );
 
   const handleRestartSet = useCallback(
@@ -1682,6 +1702,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         closeRestTimer();
       }
 
+      markSessionChange();
       updateExercises((prev) =>
         prev.map((ex) => {
           if (ex.id !== exerciseId) return ex;
@@ -1707,7 +1728,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         })
       );
     },
-    [closeRestTimer, restTimer.exerciseId, restTimer.setId, updateExercises]
+    [closeRestTimer, markSessionChange, restTimer.exerciseId, restTimer.setId, updateExercises]
   );
 
   const handleDeleteSet = useCallback(
@@ -1735,6 +1756,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       const requiresApi = scheduleId && Number.isInteger(setNumber);
 
       const removeLocally = () => {
+        markSessionChange();
         updateExercises((prev) =>
           prev.map((ex) => {
             if (ex.id !== exerciseId) return ex;
@@ -1809,6 +1831,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     },
     [
       closeRestTimer,
+      markSessionChange,
       restTimer.exerciseId,
       restTimer.setId,
       updateExercises,

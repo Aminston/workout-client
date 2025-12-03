@@ -309,7 +309,11 @@ const getAuthHeaders = () => {
 };
 
 /** Build the camelCase payload expected by /sessions/save */
-function toApiSession(exercise, sets, { includeStatus = false } = {}) {
+function toApiSession(
+  exercise,
+  sets,
+  { includeStatus = false, includeSetStatus = false } = {}
+) {
   return {
     scheduleId: exercise.scheduleId,
     ...(includeStatus && exercise.status === "done" && { status: "completed" }),
@@ -335,6 +339,10 @@ function toApiSession(exercise, sets, { includeStatus = false } = {}) {
         ? Number(s.duration ?? s.elapsedTime)
         : null;
       if (duration != null) out.elapsedTime = duration;
+      if (includeSetStatus && s.status === "done") {
+        out.setStatus = "completed";
+        out.set_status = "completed";
+      }
       return out;
     }),
   };
@@ -1353,7 +1361,11 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     inFlight.current.delete(key);
   };
   const saveSingleSet = useCallback(async (exercise, setData) => {
-    const payload = { workoutSessions: [toApiSession(exercise, [setData])] };
+    const payload = {
+      workoutSessions: [
+        toApiSession(exercise, [setData], { includeSetStatus: true }),
+      ],
+    };
     const preferredMethod = setData.isFromSession ? "PATCH" : "POST";
 
     const attemptSave = async (method) => {

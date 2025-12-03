@@ -342,7 +342,40 @@ const INITIAL_REST_STATE = {
 };
 
 const activeScheduleRequestCache = new Map();
-let lastScheduleSnapshot = null;
+const SCHEDULE_SNAPSHOT_STORAGE_KEY = "workout_schedule_snapshot";
+
+const readStoredScheduleSnapshot = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SCHEDULE_SNAPSHOT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Array.isArray(parsed.payload?.schedule)) return null;
+    return parsed;
+  } catch (err) {
+    console.warn("Failed to read cached schedule snapshot", err);
+    return null;
+  }
+};
+
+const persistScheduleSnapshot = (snapshot) => {
+  if (typeof window === "undefined") return;
+  try {
+    if (!snapshot) {
+      sessionStorage.removeItem(SCHEDULE_SNAPSHOT_STORAGE_KEY);
+      return;
+    }
+    sessionStorage.setItem(
+      SCHEDULE_SNAPSHOT_STORAGE_KEY,
+      JSON.stringify(snapshot)
+    );
+  } catch (err) {
+    console.warn("Failed to persist schedule snapshot", err);
+  }
+};
+
+let lastScheduleSnapshot = readStoredScheduleSnapshot();
 
 const hydrateScheduleSnapshot = (payload) => {
   if (!payload || typeof payload !== "object") return false;
@@ -357,6 +390,7 @@ const hydrateScheduleSnapshot = (payload) => {
     payload: { ...payload, schedule },
     fetchedAt: Date.now(),
   };
+  persistScheduleSnapshot(lastScheduleSnapshot);
   return true;
 };
 
@@ -1073,26 +1107,16 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         updateExercises([]);
       };
 
-      const appliedFromState = (() => {
-        if (!statePayload) return false;
+      let appliedFromState = false;
+      if (statePayload) {
         try {
           applyDayData(statePayload);
           setError(null);
-          return true;
+          appliedFromState = true;
         } catch (err) {
           setError(err.message || "Failed to load workout");
           resetLocalState();
-          return false;
         }
-      })();
-
-      if (appliedFromState && !force && !stateForceRefresh) {
-        setLoading(false);
-        return () => {};
-      }
-
-      if (!appliedFromState) {
-        resetLocalState();
       }
 
       const fetchSignature = JSON.stringify({
@@ -1133,6 +1157,16 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
           setLoading(false);
           return () => {};
         }
+      }
+
+      if (appliedFromState && !force && !stateForceRefresh) {
+        lastResolvedFetchSignatureRef.current = fetchSignature;
+        setLoading(false);
+        return () => {};
+      }
+
+      if (!appliedFromState) {
+        resetLocalState();
       }
 
       const shouldFetchLatest =
@@ -1215,6 +1249,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
             payload,
             fetchedAt: Date.now(),
           };
+          persistScheduleSnapshot(lastScheduleSnapshot);
         })
         .catch((err) => {
           if (entry.controller.signal.aborted || didCancel) {
@@ -1430,6 +1465,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
       const hydrated = hydrateScheduleSnapshot(payload);
       if (!hydrated) {
         lastScheduleSnapshot = null;
+        persistScheduleSnapshot(null);
       }
       return payload;
     } catch (err) {

@@ -342,6 +342,7 @@ const INITIAL_REST_STATE = {
 };
 
 const activeScheduleRequestCache = new Map();
+let lastScheduleSnapshot = null;
 
 function ensureScheduleRequest(signature, factory) {
   const existing = activeScheduleRequestCache.get(signature);
@@ -1047,6 +1048,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         parsedLocationState?.originalApiData ??
         parsedLocationState?.workoutData?.originalApiData ??
         null;
+      const stateForceRefresh = Boolean(parsedLocationState?.forceRefresh);
 
       const resetLocalState = () => {
         autoSaveTimers.current.forEach((t) => clearTimeout(t));
@@ -1068,6 +1070,11 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         }
       })();
 
+      if (appliedFromState && !force && !stateForceRefresh) {
+        setLoading(false);
+        return () => {};
+      }
+
       if (!appliedFromState) {
         resetLocalState();
       }
@@ -1078,8 +1085,42 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         targetDay: targetDayNumber ?? null,
       });
 
+      const cachedPayload = lastScheduleSnapshot?.payload ?? null;
+      if (!force && !stateForceRefresh && cachedPayload) {
+        const schedule = Array.isArray(cachedPayload.schedule)
+          ? cachedPayload.schedule
+          : [];
+
+        let resolvedDay = null;
+        if (targetDayNumber != null) {
+          resolvedDay = schedule.find(
+            (day) => Number(day?.day_number) === Number(targetDayNumber)
+          );
+        }
+        if (!resolvedDay && statePayload) {
+          resolvedDay = schedule.find(
+            (day) =>
+              Number(day?.day_number) === Number(statePayload.day_number) ||
+              day?.day_name === statePayload.day_name
+          );
+        }
+        if (!resolvedDay) {
+          resolvedDay = schedule.find(
+            (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
+          );
+        }
+
+        if (resolvedDay) {
+          applyDayData(resolvedDay);
+          setError(null);
+          lastResolvedFetchSignatureRef.current = fetchSignature;
+          setLoading(false);
+          return () => {};
+        }
+      }
+
       const shouldFetchLatest =
-        force || lastResolvedFetchSignatureRef.current !== fetchSignature;
+        force || stateForceRefresh || lastResolvedFetchSignatureRef.current !== fetchSignature;
 
       if (!shouldFetchLatest) {
         setLoading(false);
@@ -1154,6 +1195,10 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
           applyDayData(resolvedDay);
           setError(null);
           lastResolvedFetchSignatureRef.current = fetchSignature;
+          lastScheduleSnapshot = {
+            payload,
+            fetchedAt: Date.now(),
+          };
         })
         .catch((err) => {
           if (entry.controller.signal.aborted || didCancel) {

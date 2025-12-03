@@ -565,6 +565,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     }
   }, [locationStateKey]);
   const dayQueryValue = searchParams.get("day");
+  const forceRefreshQuery = searchParams.get("forceRefresh");
   const stateDayNumber = useMemo(() => {
     const originalDayNumber =
       parsedLocationState?.originalApiData?.day_number ??
@@ -578,6 +579,12 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     if (!Number.isNaN(fromQuery)) return fromQuery;
     return stateDayNumber;
   }, [dayQueryValue, stateDayNumber]);
+  const forceRefreshRequested = useMemo(() => {
+    if (parsedLocationState?.forceRefresh) return true;
+    if (!forceRefreshQuery) return false;
+    const normalized = String(forceRefreshQuery).toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "yes";
+  }, [forceRefreshQuery, parsedLocationState]);
 
   // state
   const [exercises, setExercises] = useState([]);
@@ -1226,11 +1233,11 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
 
   /* ---------- load day data from router state ---------- */
   useEffect(() => {
-    const cleanup = loadLatestSchedule();
+    const cleanup = loadLatestSchedule(forceRefreshRequested);
     return () => {
       if (typeof cleanup === "function") cleanup();
     };
-  }, [loadLatestSchedule]);
+  }, [forceRefreshRequested, loadLatestSchedule]);
 
   useEffect(() => {
     isMountedRef.current = true;

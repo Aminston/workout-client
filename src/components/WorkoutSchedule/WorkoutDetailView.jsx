@@ -342,6 +342,137 @@ const INITIAL_REST_STATE = {
 };
 
 const activeScheduleRequestCache = new Map();
+const SCHEDULE_SNAPSHOT_STORAGE_KEY = "workout_schedule_snapshot";
+
+const readStoredScheduleSnapshot = () => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(SCHEDULE_SNAPSHOT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!Array.isArray(parsed.payload?.schedule)) return null;
+    return parsed;
+  } catch (err) {
+    console.warn("Failed to read cached schedule snapshot", err);
+    return null;
+  }
+};
+
+const persistScheduleSnapshot = (snapshot) => {
+  if (typeof window === "undefined") return;
+  try {
+    if (!snapshot) {
+      sessionStorage.removeItem(SCHEDULE_SNAPSHOT_STORAGE_KEY);
+      return;
+    }
+    sessionStorage.setItem(
+      SCHEDULE_SNAPSHOT_STORAGE_KEY,
+      JSON.stringify(snapshot)
+    );
+  } catch (err) {
+    console.warn("Failed to persist schedule snapshot", err);
+  }
+};
+
+let lastScheduleSnapshot = readStoredScheduleSnapshot();
+
+const statusFromSet = (set) => {
+  if (!set) return "pending";
+  if (set.status === "done") return "done";
+  if (set.status === "in-progress") return "in-progress";
+  return "pending";
+};
+
+const updateSnapshotWithLocalSets = (exercises, dayNumber) => {
+  if (!lastScheduleSnapshot?.payload?.schedule || !Array.isArray(exercises)) {
+    return;
+  }
+
+  const schedule = lastScheduleSnapshot.payload.schedule;
+  const resolvedDay = schedule.find((day) => {
+    if (dayNumber != null) {
+      return Number(day?.day_number) === Number(dayNumber);
+    }
+    return Array.isArray(day?.workouts) && day.workouts.length > 0;
+  });
+
+  if (!resolvedDay) return;
+
+  const mapSetToSession = (set) => {
+    const duration = Number.isFinite(Number(set.duration ?? set.elapsedTime))
+      ? Number(set.duration ?? set.elapsedTime)
+      : null;
+
+    const weightUnit = set.weightUnit || set.weight_unit || "kg";
+    const weightValue = numOr(set.weight, null);
+
+    return {
+      ...set,
+      set_number: Number(set.setNumber ?? set.id ?? set.set_number ?? 0),
+      set_status: statusFromSet(set),
+      status: statusFromSet(set),
+      weight_unit: weightUnit,
+      weight_value: weightValue,
+      weight: weightValue,
+      reps: numOr(set.reps, null),
+      time: duration,
+      elapsedTime: duration,
+      created_at: set.completedAt || set.created_at || new Date().toISOString(),
+    };
+  };
+
+  const updatedWorkouts = resolvedDay.workouts.map((workout) => {
+    const targetId =
+      workout.scheduleId ?? workout.id ?? workout.workout_id ?? workout.workoutId;
+    const currentExercise = exercises.find(
+      (ex) => (ex.scheduleId ?? ex.id ?? ex.workout_id ?? ex.workoutId) === targetId
+    );
+    if (!currentExercise) return workout;
+
+    const sessions = Array.isArray(currentExercise.sets)
+      ? currentExercise.sets
+          .filter((s) => statusFromSet(s) !== "pending")
+          .map(mapSetToSession)
+      : [];
+
+    return {
+      ...workout,
+      sets: Math.max(workout.sets ?? 0, currentExercise.sets?.length ?? 0),
+      sessions,
+    };
+  });
+
+  const updatedSchedule = schedule.map((day) =>
+    day === resolvedDay ? { ...day, workouts: updatedWorkouts } : day
+  );
+
+  lastScheduleSnapshot = {
+    ...lastScheduleSnapshot,
+    payload: {
+      ...lastScheduleSnapshot.payload,
+      schedule: updatedSchedule,
+    },
+  };
+  persistScheduleSnapshot(lastScheduleSnapshot);
+};
+
+const hydrateScheduleSnapshot = (payload) => {
+  if (!payload || typeof payload !== "object") return false;
+  const schedule = Array.isArray(payload.schedule)
+    ? payload.schedule
+    : Array.isArray(payload.data?.schedule)
+    ? payload.data.schedule
+    : null;
+
+  if (!schedule || schedule.length === 0) return false;
+  lastScheduleSnapshot = {
+    payload: { ...payload, schedule },
+    fetchedAt: Date.now(),
+  };
+  persistScheduleSnapshot(lastScheduleSnapshot);
+  return true;
+};
 
 function ensureScheduleRequest(signature, factory) {
   const existing = activeScheduleRequestCache.get(signature);
@@ -1047,6 +1178,7 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         parsedLocationState?.originalApiData ??
         parsedLocationState?.workoutData?.originalApiData ??
         null;
+      const stateForceRefresh = Boolean(parsedLocationState?.forceRefresh);
 
       const resetLocalState = () => {
         autoSaveTimers.current.forEach((t) => clearTimeout(t));
@@ -1055,21 +1187,16 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         updateExercises([]);
       };
 
-      const appliedFromState = (() => {
-        if (!statePayload) return false;
+      let appliedFromState = false;
+      if (statePayload) {
         try {
           applyDayData(statePayload);
           setError(null);
-          return true;
+          appliedFromState = true;
         } catch (err) {
           setError(err.message || "Failed to load workout");
           resetLocalState();
-          return false;
         }
-      })();
-
-      if (!appliedFromState) {
-        resetLocalState();
       }
 
       const fetchSignature = JSON.stringify({
@@ -1078,8 +1205,52 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
         targetDay: targetDayNumber ?? null,
       });
 
+      const cachedPayload = lastScheduleSnapshot?.payload ?? null;
+      if (!force && !stateForceRefresh && cachedPayload) {
+        const schedule = Array.isArray(cachedPayload.schedule)
+          ? cachedPayload.schedule
+          : [];
+
+        let resolvedDay = null;
+        if (targetDayNumber != null) {
+          resolvedDay = schedule.find(
+            (day) => Number(day?.day_number) === Number(targetDayNumber)
+          );
+        }
+        if (!resolvedDay && statePayload) {
+          resolvedDay = schedule.find(
+            (day) =>
+              Number(day?.day_number) === Number(statePayload.day_number) ||
+              day?.day_name === statePayload.day_name
+          );
+        }
+        if (!resolvedDay) {
+          resolvedDay = schedule.find(
+            (day) => Array.isArray(day?.workouts) && day.workouts.length > 0
+          );
+        }
+
+        if (resolvedDay) {
+          applyDayData(resolvedDay);
+          setError(null);
+          lastResolvedFetchSignatureRef.current = fetchSignature;
+          setLoading(false);
+          return () => {};
+        }
+      }
+
+      if (appliedFromState && !force && !stateForceRefresh) {
+        lastResolvedFetchSignatureRef.current = fetchSignature;
+        setLoading(false);
+        return () => {};
+      }
+
+      if (!appliedFromState) {
+        resetLocalState();
+      }
+
       const shouldFetchLatest =
-        force || lastResolvedFetchSignatureRef.current !== fetchSignature;
+        force || stateForceRefresh || lastResolvedFetchSignatureRef.current !== fetchSignature;
 
       if (!shouldFetchLatest) {
         setLoading(false);
@@ -1154,6 +1325,11 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
           applyDayData(resolvedDay);
           setError(null);
           lastResolvedFetchSignatureRef.current = fetchSignature;
+          lastScheduleSnapshot = {
+            payload,
+            fetchedAt: Date.now(),
+          };
+          persistScheduleSnapshot(lastScheduleSnapshot);
         })
         .catch((err) => {
           if (entry.controller.signal.aborted || didCancel) {
@@ -1365,7 +1541,20 @@ export default function WorkoutDetailView({ onWorkoutComplete } = {}) {
     };
 
     try {
-      return await attemptSave(preferredMethod);
+      const payload = await attemptSave(preferredMethod);
+      const hydrated = hydrateScheduleSnapshot(payload);
+      if (!hydrated) {
+        if (lastScheduleSnapshot?.payload?.schedule) {
+          updateSnapshotWithLocalSets(
+            exercisesRef.current,
+            workoutMeta?.dayNumber ?? null
+          );
+        } else {
+          lastScheduleSnapshot = null;
+          persistScheduleSnapshot(null);
+        }
+      }
+      return payload;
     } catch (err) {
       if (
         preferredMethod === "PATCH" &&
